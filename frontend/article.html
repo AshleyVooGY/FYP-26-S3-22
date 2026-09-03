@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Article — News Release System</title>
+  <link rel="stylesheet" href="css/shell.css" />
+  <link rel="stylesheet" href="css/feature5.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar__brand">
+      <span class="topbar__brand-icon">📰</span>
+      <span>NEWS RELEASE SYSTEM</span>
+    </div>
+    <nav class="topbar__nav">
+      <a href="index.html">Home</a>
+      <a href="#" class="is-disabled" title="Coming soon">Categories ▾</a>
+      <a href="trending.html" class="is-active">Trending</a>
+      <a href="#" class="is-disabled" title="Coming soon">Bookmarks</a>
+    </nav>
+    <div class="topbar__actions">
+      <input class="topbar__search" type="text" placeholder="Search news..." disabled title="Coming soon" />
+      <button class="icon-btn" title="Coming soon">🔔</button>
+      <button class="btn-publish" title="Coming soon">+ Publish</button>
+      <div class="user-chip">
+        <span class="user-chip__avatar">👤</span>
+        <span id="user-label">Guest</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout layout--full">
+    <main class="content content--article">
+      <a class="back-link" href="trending.html">← Back to Trending</a>
+
+      <div id="article-slot">
+        <p class="state-message">Loading article…</p>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="js/article.js"></script>
+</body>
+</html>

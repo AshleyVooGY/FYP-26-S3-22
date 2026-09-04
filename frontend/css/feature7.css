@@ -1,0 +1,860 @@
+/* ==========================================================
+   FEATURE 7
+   USER PREFERENCE AND INTEREST MANAGEMENT
+========================================================== */
+
+
+/* ==========================================================
+   RESET
+========================================================== */
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    color: #30343b;
+
+    background: #ffffff;
+}
+
+button,
+input,
+select {
+    font-family: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+.hidden {
+    display: none !important;
+}
+
+
+/* ==========================================================
+   TOP BAR
+========================================================== */
+
+.topbar {
+
+    height: 70px;
+
+    display: flex;
+    align-items: center;
+
+    padding: 0 28px;
+
+    border-bottom: 1px solid #e7e9ed;
+
+    background: white;
+}
+
+
+.brand {
+
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+
+    min-width: 165px;
+
+    font-size: 11px;
+    font-weight: 700;
+}
+
+
+.brand-icon {
+
+    color: #7165ed;
+
+    font-size: 17px;
+}
+
+
+.top-nav {
+
+    display: flex;
+
+    gap: 24px;
+
+    margin-left: 18px;
+}
+
+
+.top-nav a {
+
+    color: #42474f;
+
+    text-decoration: none;
+
+    font-size: 12px;
+}
+
+
+.top-nav a:hover {
+
+    color: #7165ed;
+}
+
+
+.top-actions {
+
+    margin-left: auto;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+}
+
+
+.search-box {
+
+    width: 220px;
+
+    height: 34px;
+
+    padding: 0 10px;
+
+    border: 1px solid #b7bdc5;
+
+    border-radius: 3px;
+
+    font-size: 12px;
+
+    outline: none;
+}
+
+
+.search-box:focus {
+
+    border-color: #7165ed;
+}
+
+
+.notification {
+
+    border: none;
+
+    background: transparent;
+
+    font-size: 17px;
+
+    color: #59616b;
+}
+
+
+.publish-button {
+
+    border: none;
+
+    border-radius: 3px;
+
+    padding: 9px 15px;
+
+    color: white;
+
+    background: #7165ed;
+
+    font-size: 12px;
+}
+
+
+.publish-button:hover {
+
+    background: #5e52dc;
+}
+
+
+.user-menu {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 6px;
+
+    font-size: 12px;
+
+    color: #555c65;
+}
+
+
+.user-icon {
+
+    width: 25px;
+    height: 25px;
+
+    display: flex;
+
+    justify-content: center;
+    align-items: center;
+
+    border-radius: 50%;
+
+    color: #9ca3ad;
+
+    background: #e8ebef;
+}
+
+
+/* ==========================================================
+   PAGE LAYOUT
+========================================================== */
+
+.page-container {
+
+    display: flex;
+
+    min-height: calc(100vh - 70px);
+}
+
+
+/* ==========================================================
+   SIDEBAR
+========================================================== */
+
+.sidebar {
+
+    width: 180px;
+
+    flex-shrink: 0;
+
+    padding: 20px 12px;
+
+    border-right: 1px solid #e7e9ed;
+
+    background: #ffffff;
+}
+
+
+.sidebar a {
+
+    height: 36px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    padding: 0 10px;
+
+    margin-bottom: 4px;
+
+    border-radius: 3px;
+
+    color: #555d67;
+
+    text-decoration: none;
+
+    font-size: 12px;
+}
+
+
+.sidebar a:hover {
+
+    background: #f1f1ff;
+
+    color: #7165ed;
+}
+
+
+.sidebar a.active {
+
+    color: #7165ed;
+
+    background: #f0efff;
+
+    font-weight: 600;
+}
+
+
+.side-icon {
+
+    width: 18px;
+
+    text-align: center;
+
+    font-size: 14px;
+}
+
+
+/* ==========================================================
+   MAIN CONTENT
+========================================================== */
+
+.main-content {
+
+    flex: 1;
+
+    min-width: 0;
+
+    padding: 28px 45px;
+
+    background: #f4f5f7;
+}
+
+
+.page-section {
+
+    max-width: 900px;
+
+    margin: 0 auto;
+
+    padding: 28px 35px 40px;
+
+    background: #f4f5f7;
+}
+
+
+.page-section h1 {
+
+    margin: 0;
+
+    text-align: center;
+
+    color: #3b4149;
+
+    font-size: 25px;
+}
+
+
+.subtitle {
+
+    margin: 12px 0 25px;
+
+    text-align: center;
+
+    color: #737982;
+
+    font-size: 12px;
+}
+
+
+/* ==========================================================
+   INTEREST GRID
+========================================================== */
+
+.interest-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 14px;
+
+    max-width: 650px;
+
+    margin: 0 auto;
+}
+
+
+.interest-card {
+
+    position: relative;
+
+    height: 105px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    justify-content: center;
+
+    align-items: center;
+
+    gap: 8px;
+
+    border: 1px solid #eeeeef;
+
+    background: #ffffff;
+
+    transition:
+        background 0.15s,
+        border 0.15s,
+        transform 0.15s;
+}
+
+
+.interest-card:hover {
+
+    border-color: #bcb7fa;
+
+    transform: translateY(-1px);
+}
+
+
+.interest-card.selected {
+
+    border-color: #d7d3ff;
+
+    background: #dfddfa;
+}
+
+
+.category-icon {
+
+    font-size: 25px;
+
+    color: #6e7580;
+}
+
+
+.category-name {
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+    color: #343a42;
+}
+
+
+.check-box {
+
+    position: absolute;
+
+    top: 8px;
+
+    right: 8px;
+
+    width: 16px;
+    height: 16px;
+
+    display: flex;
+
+    justify-content: center;
+    align-items: center;
+
+    border: 1px solid #c7cdd4;
+
+    background: white;
+
+    color: transparent;
+
+    font-size: 10px;
+}
+
+
+.interest-card.selected
+.check-box {
+
+    border-color: #7165ed;
+
+    background: #7165ed;
+
+    color: white;
+}
+
+
+/* ==========================================================
+   SETUP BUTTONS
+========================================================== */
+
+.setup-actions {
+
+    display: flex;
+
+    justify-content: center;
+
+    gap: 10px;
+
+    margin-top: 20px;
+}
+
+
+.save-button {
+
+    border: none;
+
+    border-radius: 3px;
+
+    padding: 9px 18px;
+
+    color: white;
+
+    background: #5eb6a7;
+
+    font-size: 12px;
+}
+
+
+.save-button:hover {
+
+    background: #4ca596;
+}
+
+
+.skip-button,
+.cancel-button {
+
+    padding: 8px 18px;
+
+    border: 1px solid #bfc5cc;
+
+    border-radius: 3px;
+
+    background: white;
+
+    color: #555d66;
+
+    font-size: 12px;
+}
+
+
+.skip-button:hover,
+.cancel-button:hover {
+
+    background: #f1f2f4;
+}
+
+
+/* ==========================================================
+   PREFERENCES PAGE
+========================================================== */
+
+.preference-panel,
+.manage-interest-panel {
+
+    margin-top: 20px;
+
+    padding: 25px;
+
+    background: white;
+
+    border: 1px solid #e4e6e9;
+}
+
+
+.preference-panel h2,
+.manage-interest-panel h2 {
+
+    margin: 0 0 10px;
+
+    font-size: 16px;
+
+    color: #3d434a;
+}
+
+
+.preference-panel p,
+.manage-interest-panel p {
+
+    margin: 0 0 20px;
+
+    color: #707780;
+
+    font-size: 12px;
+}
+
+
+/* ==========================================================
+   PREFERENCE LIST
+========================================================== */
+
+.preference-list {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 10px;
+}
+
+
+.preference-item {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    font-size: 13px;
+
+    color: #454b53;
+}
+
+
+.preference-item input {
+
+    width: 15px;
+    height: 15px;
+
+    accent-color: #7165ed;
+}
+
+
+.manage-actions {
+
+    display: flex;
+
+    gap: 10px;
+
+    margin-top: 25px;
+}
+
+
+/* ==========================================================
+   MANAGE INTERESTS
+========================================================== */
+
+.manage-interest-panel {
+
+    margin-top: 20px;
+}
+
+
+.selected-section {
+
+    padding-bottom: 18px;
+
+    border-bottom: 1px solid #dfe2e6;
+}
+
+
+.selected-section h3,
+.add-section h3 {
+
+    margin: 0 0 12px;
+
+    font-size: 13px;
+
+    color: #454b52;
+}
+
+
+.interest-tags {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 7px;
+}
+
+
+.interest-tag {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 7px;
+
+    padding: 6px 9px;
+
+    border-radius: 2px;
+
+    background: #dedcfa;
+
+    color: #4b4b73;
+
+    font-size: 11px;
+}
+
+
+.remove-interest {
+
+    border: none;
+
+    padding: 0;
+
+    background: transparent;
+
+    color: #666a76;
+
+    font-size: 13px;
+}
+
+
+.remove-interest:hover {
+
+    color: #d34d5d;
+}
+
+
+/* ==========================================================
+   ADD INTEREST
+========================================================== */
+
+.add-section {
+
+    padding: 18px 0;
+
+    border-bottom: 1px solid #dfe2e6;
+}
+
+
+.add-controls {
+
+    display: flex;
+
+    gap: 8px;
+}
+
+
+.add-controls select {
+
+    width: 260px;
+
+    height: 34px;
+
+    padding: 0 8px;
+
+    border: 1px solid #bcc2ca;
+
+    background: white;
+
+    color: #50565e;
+
+    font-size: 12px;
+}
+
+
+.add-button {
+
+    border: none;
+
+    border-radius: 3px;
+
+    padding: 0 16px;
+
+    background: #7165ed;
+
+    color: white;
+
+    font-size: 12px;
+}
+
+
+.add-button:hover {
+
+    background: #5e52dc;
+}
+
+
+.manage-interest-panel
+> .save-button {
+
+    margin-top: 18px;
+}
+
+
+/* ==========================================================
+   SUCCESS MESSAGE
+========================================================== */
+
+.success-message {
+
+    width: fit-content;
+
+    margin-top: 14px;
+
+    padding: 9px 13px;
+
+    background: #dff2ee;
+
+    color: #47897d;
+
+    font-size: 11px;
+}
+
+
+/* ==========================================================
+   RESPONSIVE
+========================================================== */
+
+@media (max-width: 900px) {
+
+    .top-navigation {
+
+        display: none;
+    }
+
+    .search-box {
+
+        width: 150px;
+    }
+
+    .sidebar {
+
+        width: 150px;
+    }
+
+    .main-content {
+
+        padding: 20px;
+    }
+
+}
+
+
+@media (max-width: 650px) {
+
+    .topbar {
+
+        padding: 0 15px;
+    }
+
+    .brand {
+
+        min-width: auto;
+    }
+
+    .brand span:last-child {
+
+        display: none;
+    }
+
+    .user-menu {
+
+        display: none;
+    }
+
+    .search-box {
+
+        width: 120px;
+    }
+
+    .sidebar {
+
+        width: 60px;
+    }
+
+    .sidebar a {
+
+        justify-content: center;
+
+        padding: 0;
+    }
+
+    .sidebar a {
+
+        font-size: 0;
+    }
+
+    .side-icon {
+
+        font-size: 16px;
+    }
+
+    .interest-grid {
+
+        grid-template-columns: 1fr 1fr;
+    }
+
+}

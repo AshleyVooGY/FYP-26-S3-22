@@ -5,9 +5,12 @@ values
   ('Technology'),
   ('Sports'),
   ('Entertainment'),
-  ('Health')
+  ('Health'),
+  ('Politics'),
+  ('Science'),
+  ('Lifestyle'),
+  ('Environment')
 on conflict (name) do nothing;
-
 
 -- Insert sample articles for Feature 5 testing
 with sample_articles (
@@ -137,7 +140,131 @@ with sample_articles (
 
   ('Exercise Supports Daily Wellness',
    'Regular physical activity can support general health and daily well-being.',
-   'Health', 510, 65, 8)
+   'Health', 510, 65, 8),
+
+  (
+    'New Policy Plans Announced',
+    'Government officials announced new policy plans aimed at supporting communities and public services.',
+    'Politics', 1420, 215, 1
+  ),
+  (
+    'Parliament Debates New Proposal',
+    'Lawmakers debated a new proposal during the latest parliamentary session.',
+    'Politics', 1860, 305, 2
+  ),
+  (
+    'Public Consultation Opens',
+    'Residents are invited to provide feedback on proposed changes through a public consultation.',
+    'Politics', 790, 105, 3
+  ),
+  (
+    'Leaders Discuss Regional Cooperation',
+    'Regional leaders met to discuss opportunities for stronger economic and social cooperation.',
+    'Politics', 1120, 165, 4
+  ),
+  (
+    'New Community Initiative Launched',
+    'A new government initiative has been launched to support local community development.',
+    'Politics', 640, 78, 6
+  ),
+  (
+    'Youth Forum Discusses Policy',
+    'Young participants shared their views on public policy issues during a national youth forum.',
+    'Politics', 480, 55, 9
+  ),
+
+  (
+    'Scientists Discover New Material',
+    'Researchers have developed a new material with potential applications in future technologies.',
+    'Science', 1680, 290, 1
+  ),
+  (
+    'Space Research Mission Begins',
+    'Scientists have launched a new research mission to collect data about space and planetary environments.',
+    'Science', 2050, 380, 2
+  ),
+  (
+    'Study Reveals Climate Trends',
+    'A new scientific study has identified changing climate patterns observed over recent years.',
+    'Science', 1240, 195, 3
+  ),
+  (
+    'Researchers Improve Solar Technology',
+    'Researchers have developed improvements that could increase the efficiency of solar energy technology.',
+    'Science', 980, 145, 4
+  ),
+  (
+    'Marine Study Finds New Species',
+    'Researchers studying marine ecosystems have documented a previously unidentified species.',
+    'Science', 750, 98, 6
+  ),
+  (
+    'Students Showcase Science Projects',
+    'Students presented innovative research projects during an annual science exhibition.',
+    'Science', 430, 52, 8
+  ),
+
+  (
+    'Simple Habits Improve Daily Routine',
+    'Small changes to everyday habits can help people improve productivity and maintain a balanced routine.',
+    'Lifestyle', 1380, 225, 1
+  ),
+  (
+    'Minimalist Living Gains Interest',
+    'More people are exploring minimalist lifestyles as a way to simplify their homes and daily routines.',
+    'Lifestyle', 1020, 155, 2
+  ),
+  (
+    'Home Cooking Becomes Popular',
+    'More households are exploring simple home-cooked meals as part of their everyday lifestyle.',
+    'Lifestyle', 1740, 315, 3
+  ),
+  (
+    'Weekend Markets Attract Visitors',
+    'Local weekend markets are attracting visitors with food, crafts and community activities.',
+    'Lifestyle', 890, 130, 4
+  ),
+  (
+    'Simple Tips for Better Organisation',
+    'Experts share practical organisation tips for creating more manageable daily routines.',
+    'Lifestyle', 610, 72, 6
+  ),
+  (
+    'New Travel Trends Emerge',
+    'Travellers are showing greater interest in flexible itineraries and experiences closer to local communities.',
+    'Lifestyle', 520, 64, 9
+  ),
+
+  (
+    'City Expands Green Spaces',
+    'New green spaces are being developed across the city to support biodiversity and improve urban living.',
+    'Environment', 1520, 260, 1
+  ),
+  (
+    'Recycling Programme Expands',
+    'A recycling initiative is expanding to encourage more households to adopt sustainable practices.',
+    'Environment', 1080, 170, 2
+  ),
+  (
+    'Clean Energy Projects Increase',
+    'New clean energy projects are being introduced as organisations work towards more sustainable operations.',
+    'Environment', 1950, 350, 3
+  ),
+  (
+    'Volunteers Lead Coastal Cleanup',
+    'Community volunteers gathered to remove waste and protect local coastal environments.',
+    'Environment', 870, 125, 4
+  ),
+  (
+    'Tree Planting Campaign Begins',
+    'A new tree planting campaign aims to increase greenery and support local ecosystems.',
+    'Environment', 690, 86, 6
+  ),
+  (
+    'Schools Promote Sustainability',
+    'Schools are introducing activities that encourage students to learn about environmental sustainability.',
+    'Environment', 460, 50, 8
+  )
 )
 
 insert into public.articles (

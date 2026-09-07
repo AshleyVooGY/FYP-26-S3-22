@@ -6,7 +6,7 @@ import { supabase } from "../../config/supabaseClient.js";
 
 
 // ==========================================================
-// CATEGORY DATA
+// For CATEGORY DATA
 // ==========================================================
 
 const categories = [
@@ -59,8 +59,7 @@ const categories = [
 
 
 // ==========================================================
-// DEFAULT SELECTED INTERESTS
-// Matches your Whimsical design
+//  SELECTED INTERESTS
 // ==========================================================
 
 let selectedInterests = [
@@ -70,7 +69,7 @@ let selectedInterests = [
 ];
 
 
-// Used when editing preferences
+// Use only when editing preferences
 
 let originalInterests = [
     ...selectedInterests
@@ -213,7 +212,6 @@ function toggleInterest(categoryId) {
     }
 
 }
-
 
 // ==========================================================
 // RENDER PREFERENCE CHECKBOXES
@@ -401,7 +399,7 @@ function renderSelectedInterestTags() {
 
 
 // ==========================================================
-// POPULATE ADD INTEREST DROPDOWN
+// POPULATE INTEREST DROPDOWN
 // ==========================================================
 
 function populateInterestSelect() {

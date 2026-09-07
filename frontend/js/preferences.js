@@ -1,4 +1,5 @@
 import { supabase } from "../../config/supabaseClient.js";
+
 // ==========================================================
 // FEATURE 7
 // USER PREFERENCE AND INTEREST MANAGEMENT
@@ -6,74 +7,48 @@ import { supabase } from "../../config/supabaseClient.js";
 
 
 // ==========================================================
-// For CATEGORY DATA
+// CATEGORY ICONS
+// These icons are only for display.
 // ==========================================================
 
-const categories = [
-    {
-        id: "technology",
-        name: "Technology",
-        icon: "▣"
-    },
-    {
-        id: "business",
-        name: "Business",
-        icon: "▥"
-    },
-    {
-        id: "sports",
-        name: "Sports",
-        icon: "⚝"
-    },
-    {
-        id: "politics",
-        name: "Politics",
-        icon: "▤"
-    },
-    {
-        id: "entertainment",
-        name: "Entertainment",
-        icon: "▷"
-    },
-    {
-        id: "science",
-        name: "Science",
-        icon: "♧"
-    },
-    {
-        id: "health",
-        name: "Health",
-        icon: "♡"
-    },
-    {
-        id: "lifestyle",
-        name: "Lifestyle",
-        icon: "✎"
-    },
-    {
-        id: "environment",
-        name: "Environment",
-        icon: "♧"
-    }
-];
+const categoryIcons = {
+    Technology: "▣",
+    Business: "▥",
+    Sports: "⚝",
+    Politics: "▤",
+    Entertainment: "▷",
+    Science: "♧",
+    Health: "♡",
+    Lifestyle: "✎",
+    Environment: "♧"
+};
 
 
 // ==========================================================
-//  SELECTED INTERESTS
+// DATA
 // ==========================================================
 
-let selectedInterests = [
-    "technology",
-    "business",
-    "sports"
-];
+// Categories will be loaded from Supabase.
+// Each category will look like:
+// {
+//     id: 1,
+//     name: "Technology",
+//     icon: "▣"
+// }
+
+let categories = [];
 
 
-// Use only when editing preferences
+// Stores the category IDs in numeric format selected by the user.
+// Example:
+// [1, 2, 3]
 
-let originalInterests = [
-    ...selectedInterests
-];
+let selectedInterests = [];
+
+
+// Keeps the last saved version so Cancel can restore it.
+
+let originalInterests = [];
 
 
 // ==========================================================
@@ -121,6 +96,253 @@ const successMessage =
 
 
 // ==========================================================
+// GET CURRENT LOGGED-IN USER
+// ==========================================================
+
+async function getCurrentUser() {
+
+    const {
+        data: { user },
+        error
+    } = await supabase.auth.getUser();
+
+
+    if (error) {
+
+        console.error(
+            "Unable to get current user:",
+            error
+        );
+
+        return null;
+    }
+
+
+    return user;
+}
+
+
+// ==========================================================
+// LOAD CATEGORIES FROM SUPABASE
+// ==========================================================
+
+async function loadCategories() {
+
+    const {
+        data,
+        error
+    } = await supabase
+        .from("categories")
+        .select("id, name")
+        .order("id");
+
+
+    if (error) {
+
+        console.error(
+            "Unable to load categories:",
+            error
+        );
+
+        alert(
+            "Unable to load news categories."
+        );
+
+        return false;
+    }
+
+
+    categories = data.map(category => ({
+
+        id: category.id,
+
+        name: category.name,
+
+        icon:
+            categoryIcons[category.name] ??
+            "◉"
+
+    }));
+
+
+    console.log(
+        "Categories loaded:",
+        categories
+    );
+
+
+    return true;
+}
+
+
+// ==========================================================
+// LOAD USER PREFERENCES FROM SUPABASE
+// ==========================================================
+
+async function loadUserPreferences(userId) {
+
+    const {
+        data,
+        error
+    } = await supabase
+        .from("user_preferences")
+        .select("category_id")
+        .eq("user_id", userId);
+
+
+    if (error) {
+
+        console.error(
+            "Unable to load preferences:",
+            error
+        );
+
+        return false;
+    }
+
+
+    selectedInterests =
+        data.map(
+            preference =>
+                preference.category_id
+        );
+
+
+    originalInterests =
+        [...selectedInterests];
+
+
+    console.log(
+        "Saved preferences:",
+        selectedInterests
+    );
+
+
+    return true;
+}
+
+
+// ==========================================================
+// SAVE USER PREFERENCES TO SUPABASE
+// ==========================================================
+
+async function saveUserPreferences() {
+
+    const user =
+        await getCurrentUser();
+
+
+    if (!user) {
+
+        alert(
+            "You must be logged in to save preferences."
+        );
+
+        return false;
+    }
+
+
+    // ------------------------------------------------------
+    // Remove the user's previous preferences
+    // ------------------------------------------------------
+
+    const {
+        error: deleteError
+    } = await supabase
+        .from("user_preferences")
+        .delete()
+        .eq("user_id", user.id);
+
+
+    if (deleteError) {
+
+        console.error(
+            "Unable to remove previous preferences:",
+            deleteError
+        );
+
+        alert(
+            "Unable to update your preferences."
+        );
+
+        return false;
+    }
+
+
+    // ------------------------------------------------------
+    // If the user selected nothing,
+    // deleting the old preferences is enough.
+    // ------------------------------------------------------
+
+    if (
+        selectedInterests.length === 0
+    ) {
+
+        originalInterests = [];
+
+        return true;
+    }
+
+
+    // ------------------------------------------------------
+    // Prepare rows for insertion
+    // ------------------------------------------------------
+
+    const preferenceRows =
+        selectedInterests.map(
+            categoryId => ({
+
+                user_id: user.id,
+
+                category_id: categoryId
+
+            })
+        );
+
+
+    // ------------------------------------------------------
+    // Insert new preferences
+    // ------------------------------------------------------
+
+    const {
+        error: insertError
+    } = await supabase
+        .from("user_preferences")
+        .insert(
+            preferenceRows
+        );
+
+
+    if (insertError) {
+
+        console.error(
+            "Unable to save preferences:",
+            insertError
+        );
+
+        alert(
+            "Unable to save your preferences."
+        );
+
+        return false;
+    }
+
+
+    originalInterests =
+        [...selectedInterests];
+
+
+    console.log(
+        "Preferences saved:",
+        preferenceRows
+    );
+
+
+    return true;
+}
+
+
+// ==========================================================
 // CREATE INTEREST CARDS
 // ==========================================================
 
@@ -129,71 +351,83 @@ function renderInterestCards() {
     interestGrid.innerHTML = "";
 
 
-    categories.forEach(category => {
+    categories.forEach(
+        category => {
 
-        const card =
-            document.createElement("div");
-
-
-        card.className =
-            "interest-card";
-
-
-        if (
-            selectedInterests.includes(category.id)
-        ) {
-
-            card.classList.add("selected");
-
-        }
-
-
-        card.innerHTML = `
-
-            <div class="check-box">
-                ✓
-            </div>
-
-            <div class="category-icon">
-                ${category.icon}
-            </div>
-
-            <div class="category-name">
-                ${category.name}
-            </div>
-
-        `;
-
-
-        card.addEventListener(
-            "click",
-            () => {
-
-                toggleInterest(
-                    category.id
+            const card =
+                document.createElement(
+                    "div"
                 );
 
-                renderInterestCards();
+
+            card.className =
+                "interest-card";
+
+
+            if (
+                selectedInterests.includes(
+                    category.id
+                )
+            ) {
+
+                card.classList.add(
+                    "selected"
+                );
 
             }
-        );
 
 
-        interestGrid.appendChild(card);
+            card.innerHTML = `
 
-    });
+                <div class="check-box">
+                    ✓
+                </div>
+
+                <div class="category-icon">
+                    ${category.icon}
+                </div>
+
+                <div class="category-name">
+                    ${category.name}
+                </div>
+
+            `;
+
+
+            card.addEventListener(
+                "click",
+                () => {
+
+                    toggleInterest(
+                        category.id
+                    );
+
+                    renderInterestCards();
+
+                }
+            );
+
+
+            interestGrid.appendChild(
+                card
+            );
+
+        }
+    );
 
 }
 
 
 // ==========================================================
-// TOGGLE INTEREST
+// SELECT / UNSELECT INTEREST
 // ==========================================================
 
 function toggleInterest(categoryId) {
 
     const index =
-        selectedInterests.indexOf(categoryId);
+        selectedInterests.indexOf(
+            categoryId
+        );
 
 
     if (index === -1) {
@@ -213,8 +447,9 @@ function toggleInterest(categoryId) {
 
 }
 
+
 // ==========================================================
-// RENDER PREFERENCE CHECKBOXES
+// RENDER MANAGE PREFERENCE CHECKBOXES
 // ==========================================================
 
 function renderPreferenceList() {
@@ -222,82 +457,94 @@ function renderPreferenceList() {
     preferenceList.innerHTML = "";
 
 
-    categories.forEach(category => {
+    categories.forEach(
+        category => {
 
-        const label =
-            document.createElement("label");
-
-
-        label.className =
-            "preference-item";
-
-
-        const checked =
-            selectedInterests.includes(
-                category.id
-            );
+            const label =
+                document.createElement(
+                    "label"
+                );
 
 
-        label.innerHTML = `
-
-            <input
-                type="checkbox"
-                value="${category.id}"
-                ${checked ? "checked" : ""}
-            >
-
-            <span>
-                ${category.icon}
-                &nbsp;
-                ${category.name}
-            </span>
-
-        `;
+            label.className =
+                "preference-item";
 
 
-        const checkbox =
-            label.querySelector(
-                "input"
-            );
+            const checked =
+                selectedInterests.includes(
+                    category.id
+                );
 
 
-        checkbox.addEventListener(
-            "change",
-            event => {
+            label.innerHTML = `
 
-                if (event.target.checked) {
+                <input
+                    type="checkbox"
+                    value="${category.id}"
+                    ${checked ? "checked" : ""}
+                >
+
+                <span>
+                    ${category.icon}
+                    &nbsp;
+                    ${category.name}
+                </span>
+
+            `;
+
+
+            const checkbox =
+                label.querySelector(
+                    "input"
+                );
+
+
+            checkbox.addEventListener(
+                "change",
+                event => {
 
                     if (
-                        !selectedInterests.includes(
-                            category.id
-                        )
+                        event.target.checked
                     ) {
 
-                        selectedInterests.push(
-                            category.id
-                        );
+                        if (
+                            !selectedInterests.includes(
+                                category.id
+                            )
+                        ) {
+
+                            selectedInterests.push(
+                                category.id
+                            );
+
+                        }
+
+                    } else {
+
+                        selectedInterests =
+                            selectedInterests.filter(
+                                id =>
+                                    id !==
+                                    category.id
+                            );
 
                     }
 
-                } else {
 
-                    selectedInterests =
-                        selectedInterests.filter(
-                            id =>
-                                id !== category.id
-                        );
+                    renderSelectedInterestTags();
+
+                    populateInterestSelect();
 
                 }
-
-            }
-        );
+            );
 
 
-        preferenceList.appendChild(
-            label
-        );
+            preferenceList.appendChild(
+                label
+            );
 
-    });
+        }
+    );
 
 }
 
@@ -308,10 +555,13 @@ function renderPreferenceList() {
 
 function renderSelectedInterestTags() {
 
-    selectedInterestsContainer.innerHTML = "";
+    selectedInterestsContainer.innerHTML =
+        "";
 
 
-    if (selectedInterests.length === 0) {
+    if (
+        selectedInterests.length === 0
+    ) {
 
         selectedInterestsContainer.innerHTML = `
 
@@ -331,17 +581,22 @@ function renderSelectedInterestTags() {
             const category =
                 categories.find(
                     item =>
-                        item.id === categoryId
+                        item.id ===
+                        categoryId
                 );
 
 
             if (!category) {
+
                 return;
+
             }
 
 
             const tag =
-                document.createElement("div");
+                document.createElement(
+                    "div"
+                );
 
 
             tag.className =
@@ -350,6 +605,7 @@ function renderSelectedInterestTags() {
 
             tag.innerHTML = `
 
+                ${category.icon}
                 ${category.name}
 
                 <button
@@ -376,13 +632,16 @@ function renderSelectedInterestTags() {
                     selectedInterests =
                         selectedInterests.filter(
                             id =>
-                                id !== category.id
+                                id !==
+                                category.id
                         );
 
 
                     renderSelectedInterestTags();
 
                     renderPreferenceList();
+
+                    populateInterestSelect();
 
                 }
             );
@@ -399,7 +658,7 @@ function renderSelectedInterestTags() {
 
 
 // ==========================================================
-// POPULATE INTEREST DROPDOWN
+// POPULATE ADD INTEREST DROPDOWN
 // ==========================================================
 
 function populateInterestSelect() {
@@ -413,39 +672,43 @@ function populateInterestSelect() {
     `;
 
 
-    categories.forEach(category => {
+    categories.forEach(
+        category => {
 
-        if (
-            !selectedInterests.includes(
-                category.id
-            )
-        ) {
+            if (
+                !selectedInterests.includes(
+                    category.id
+                )
+            ) {
 
-            const option =
-                document.createElement("option");
-
-
-            option.value =
-                category.id;
-
-
-            option.textContent =
-                category.name;
+                const option =
+                    document.createElement(
+                        "option"
+                    );
 
 
-            interestSelect.appendChild(
-                option
-            );
+                option.value =
+                    category.id;
+
+
+                option.textContent =
+                    category.name;
+
+
+                interestSelect.appendChild(
+                    option
+                );
+
+            }
 
         }
-
-    });
+    );
 
 }
 
 
 // ==========================================================
-// ADD NEW INTEREST
+// ADD INTEREST BUTTON
 // ==========================================================
 
 addInterestButton.addEventListener(
@@ -453,7 +716,9 @@ addInterestButton.addEventListener(
     () => {
 
         const categoryId =
-            interestSelect.value;
+            Number(
+                interestSelect.value
+            );
 
 
         if (!categoryId) {
@@ -492,7 +757,7 @@ addInterestButton.addEventListener(
 
 savePreferencesButton.addEventListener(
     "click",
-    () => {
+    async () => {
 
         if (
             selectedInterests.length === 0
@@ -507,16 +772,23 @@ savePreferencesButton.addEventListener(
         }
 
 
-        localStorage.setItem(
-            "newsPreferences",
-            JSON.stringify(
-                selectedInterests
-            )
-        );
+        savePreferencesButton.disabled =
+            true;
 
 
-        originalInterests =
-            [...selectedInterests];
+        const success =
+            await saveUserPreferences();
+
+
+        savePreferencesButton.disabled =
+            false;
+
+
+        if (!success) {
+
+            return;
+
+        }
 
 
         alert(
@@ -538,7 +810,8 @@ skipPreferencesButton.addEventListener(
     "click",
     () => {
 
-        showManagePage();
+        window.location.href =
+            "index.html";
 
     }
 );
@@ -550,11 +823,29 @@ skipPreferencesButton.addEventListener(
 
 manageSaveButton.addEventListener(
     "click",
-    () => {
+    async () => {
 
-        saveCurrentPreferences();
+        manageSaveButton.disabled =
+            true;
 
-        showSuccessMessage();
+
+        const success =
+            await saveUserPreferences();
+
+
+        manageSaveButton.disabled =
+            false;
+
+
+        if (success) {
+
+            showSuccessMessage();
+
+            renderSelectedInterestTags();
+
+            populateInterestSelect();
+
+        }
 
     }
 );
@@ -566,38 +857,32 @@ manageSaveButton.addEventListener(
 
 saveChangesButton.addEventListener(
     "click",
-    () => {
+    async () => {
 
-        saveCurrentPreferences();
+        saveChangesButton.disabled =
+            true;
 
-        showSuccessMessage();
+
+        const success =
+            await saveUserPreferences();
+
+
+        saveChangesButton.disabled =
+            false;
+
+
+        if (success) {
+
+            showSuccessMessage();
+
+        }
 
     }
 );
 
 
 // ==========================================================
-// SAVE TO LOCAL STORAGE
-// ==========================================================
-
-function saveCurrentPreferences() {
-
-    localStorage.setItem(
-        "newsPreferences",
-        JSON.stringify(
-            selectedInterests
-        )
-    );
-
-
-    originalInterests =
-        [...selectedInterests];
-
-}
-
-
-// ==========================================================
-// CANCEL
+// CANCEL CHANGES
 // ==========================================================
 
 cancelButton.addEventListener(
@@ -653,6 +938,7 @@ function showManagePage() {
         "hidden"
     );
 
+
     managePage.classList.remove(
         "hidden"
     );
@@ -668,50 +954,107 @@ function showManagePage() {
 
 
 // ==========================================================
-// LOAD SAVED PREFERENCES
+// SHOW INITIAL SETUP PAGE
 // ==========================================================
 
-function loadPreferences() {
+function showSetupPage() {
 
-    const saved =
-        localStorage.getItem(
-            "newsPreferences"
-        );
+    setupPage.classList.remove(
+        "hidden"
+    );
 
 
-    if (saved) {
+    managePage.classList.add(
+        "hidden"
+    );
 
-        try {
 
-            selectedInterests =
-                JSON.parse(saved);
-
-            originalInterests =
-                [...selectedInterests];
-
-        } catch (error) {
-
-            console.error(
-                "Unable to load preferences:",
-                error
-            );
-
-        }
-
-    }
+    renderInterestCards();
 
 }
 
 
 // ==========================================================
-// INITIALISE
+// INITIALISE FEATURE 7
 // ==========================================================
 
-function initialise() {
+async function initialise() {
 
-    loadPreferences();
+    // ------------------------------------------------------
+    // Check if user is logged in
+    // ------------------------------------------------------
 
-    renderInterestCards();
+    const user =
+        await getCurrentUser();
+
+
+    if (!user) {
+
+        alert(
+            "Please log in before managing your preferences."
+        );
+
+        return;
+
+    }
+
+
+    console.log(
+        "Logged-in user:",
+        user.id
+    );
+
+
+    // ------------------------------------------------------
+    // Load categories
+    // ------------------------------------------------------
+
+    const categoriesLoaded =
+        await loadCategories();
+
+
+    if (!categoriesLoaded) {
+
+        return;
+
+    }
+
+
+    // ------------------------------------------------------
+    // Load the user's existing preferences
+    // ------------------------------------------------------
+
+    const preferencesLoaded =
+        await loadUserPreferences(
+            user.id
+        );
+
+
+    if (!preferencesLoaded) {
+
+        return;
+
+    }
+
+
+    // ------------------------------------------------------
+    // If the user has saved preferences before,
+    // show Manage Preferences.
+    //
+    // Otherwise show first-time setup.
+    // ------------------------------------------------------
+
+    if (
+        selectedInterests.length > 0
+    ) {
+
+        showManagePage();
+
+    } else {
+
+        showSetupPage();
+
+    }
 
 }
 

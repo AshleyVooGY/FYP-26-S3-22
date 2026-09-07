@@ -1,3 +1,4 @@
+import { supabase } from "../../config/supabaseClient.js";
 // ==========================================================
 // FEATURE 7
 // USER PREFERENCE AND INTEREST MANAGEMENT

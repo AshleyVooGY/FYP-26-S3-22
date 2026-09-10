@@ -23,10 +23,10 @@
       <input class="topbar__search" type="text" placeholder="Search news..." disabled title="Coming soon" />
       <button class="icon-btn" title="Coming soon">🔔</button>
       <button class="btn-publish" title="Coming soon">+ Publish</button>
-      <div class="user-chip">
+      <a href="login.html" class="user-chip" id="user-chip">
         <span class="user-chip__avatar">👤</span>
         <span id="user-label">Guest</span>
-      </div>
+      </a>
     </div>
   </header>
 
@@ -40,7 +40,7 @@
         <a href="#" class="is-disabled" title="Coming soon"><span class="sidebar__icon">🕘</span>History</a>
         <a href="preferences.html"><span class="sidebar__icon">⚙️</span>Preferences</a>
         <a href="#" class="is-disabled" title="Coming soon"><span class="sidebar__icon">🛠</span>Settings</a>
-        <a href="#" class="is-disabled" title="Coming soon"><span class="sidebar__icon">↩</span>Logout</a>
+        <a href="#" data-logout><span class="sidebar__icon">↩</span>Logout</a>
       </nav>
     </aside>
 
@@ -69,6 +69,7 @@
     </main>
   </div>
 
+  <script type="module" src="js/auth.js"></script>
   <script type="module" src="js/trending.js"></script>
 </body>
 </html>

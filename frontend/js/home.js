@@ -1,4 +1,3 @@
-import { supabase } from "../../config/supabaseClient.js";
 import {
   getTrendingArticles,
   getPopularArticles,
@@ -95,17 +94,7 @@ function renderTrendingGrid(articles) {
     .join("");
 }
 
-async function renderUserLabel() {
-  const { data } = await supabase.auth.getUser();
-  const label = document.getElementById("user-label");
-  if (data?.user) {
-    label.textContent = data.user.email ?? "Account";
-  }
-}
-
 async function init() {
-  renderUserLabel();
-
   try {
     const popular = await getPopularArticles(1);
     renderFeatured(popular[0] ?? null);

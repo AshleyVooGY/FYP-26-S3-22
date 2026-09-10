@@ -1,4 +1,3 @@
-import { supabase } from "../../config/supabaseClient.js";
 import { getTrendingArticles, getPopularArticles } from "../../services/feature5Service.js";
 import { formatCount, formatRelativeTime, escapeHtml } from "./format.js";
 
@@ -174,20 +173,11 @@ async function renderList() {
   renderPagination(state.cache[state.tabKey].length);
 }
 
-async function renderUserLabel() {
-  const { data } = await supabase.auth.getUser();
-  const label = document.getElementById("user-label");
-  if (data?.user) {
-    label.textContent = data.user.email ?? "Account";
-  }
-}
-
 document.getElementById("sort-select").addEventListener("change", (e) => {
   state.sort = e.target.value;
   state.page = 1;
   renderRows();
 });
 
-renderUserLabel();
 renderTabs();
 renderList();

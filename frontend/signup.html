@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign Up — News Release System</title>
+  <link rel="stylesheet" href="css/shell.css" />
+  <link rel="stylesheet" href="css/auth.css" />
+</head>
+<body>
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <span class="auth-brand-icon">📰</span>
+        <span>NEWS RELEASE SYSTEM</span>
+      </div>
+
+      <h1 class="auth-title">Create your account</h1>
+      <p class="auth-subtitle">Sign up to save preferences, bookmark articles and react to news.</p>
+
+      <div id="form-message"></div>
+
+      <form id="signup-form">
+        <div class="form-group">
+          <label for="display-name">Display name</label>
+          <input class="form-input" type="text" id="display-name" name="displayName" placeholder="Jane Doe" required autocomplete="name" />
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input class="form-input" type="email" id="email" name="email" placeholder="you@example.com" required autocomplete="email" />
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input class="form-input" type="password" id="password" name="password" placeholder="At least 6 characters" required minlength="6" autocomplete="new-password" />
+        </div>
+
+        <button class="auth-submit" type="submit" id="submit-btn">Sign Up</button>
+      </form>
+
+      <p class="auth-footer">Already have an account? <a href="login.html">Log in</a></p>
+    </div>
+  </div>
+
+  <script type="module" src="js/signup.js"></script>
+</body>
+</html>

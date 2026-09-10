@@ -60,26 +60,25 @@ function wireLogoutLinks() {
 
 async function renderUserChip() {
   const label = document.getElementById("user-label");
-  if (!label) {
-    return;
-  }
-
   const chip = document.getElementById("user-chip");
-  const user = await getCurrentUser();
 
-  if (user) {
-    label.textContent = user.user_metadata?.display_name || user.email || "Account";
-    if (chip) {
-      chip.href = "#";
-      chip.setAttribute("data-logout", "");
-      chip.title = "Log out";
-    }
-  } else {
-    label.textContent = "Guest";
-    if (chip) {
-      chip.href = "login.html";
-      chip.removeAttribute("data-logout");
-      chip.title = "Log in";
+  if (label) {
+    const user = await getCurrentUser();
+
+    if (user) {
+      label.textContent = user.user_metadata?.display_name || user.email || "Account";
+      if (chip) {
+        chip.href = "#";
+        chip.setAttribute("data-logout", "");
+        chip.title = "Log out";
+      }
+    } else {
+      label.textContent = "Guest";
+      if (chip) {
+        chip.href = "login.html";
+        chip.removeAttribute("data-logout");
+        chip.title = "Log in";
+      }
     }
   }
 

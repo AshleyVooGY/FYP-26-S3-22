@@ -10,7 +10,8 @@ export async function signUp(email, password, displayName) {
     email,
     password,
     options: {
-      data: { display_name: displayName }
+      data: { display_name: displayName },
+      emailRedirectTo: new URL("login.html", window.location.href).href
     }
   });
 }

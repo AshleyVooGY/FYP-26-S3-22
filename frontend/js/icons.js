@@ -34,6 +34,7 @@ export const ICONS = {
   shareHub: svg(`<circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><line x1="8.2" y1="13.4" x2="15.8" y2="17.6"/><line x1="15.8" y1="6.4" x2="8.2" y2="10.6"/>`),
   heartPulse: svg(`<path d="M20.5 4.9a5.2 5.2 0 0 0-7.4 0L12 6l-1.1-1.1a5.2 5.2 0 0 0-7.4 7.4l1 1L12 21l7.5-7.7 1-1a5.2 5.2 0 0 0 0-7.4z"/><polyline points="4.5 12 7.5 12 9.5 8 12 15.5 14 12 16.5 12"/>`),
   mountain: svg(`<path d="M2.5 19.5 8 9l3.5 5.5 2-2.5 8 7.5"/><line x1="2.5" y1="19.5" x2="21.5" y2="19.5"/>`),
+  tag: svg(`<path d="M20.6 13.4 12 22 2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8z"/><circle cx="7" cy="7" r="1.4" fill="currentColor" stroke="none"/>`),
 };
 
 export function icon(name, className) {

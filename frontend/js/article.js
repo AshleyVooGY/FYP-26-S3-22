@@ -1,4 +1,3 @@
-import { supabase } from "../../config/supabaseClient.js";
 import { getArticleById, getTrendingArticles, recordArticleView } from "../../services/feature5Service.js";
 import { formatCount, formatRelativeTime, escapeHtml } from "./format.js";
 
@@ -87,17 +86,7 @@ function renderArticle(article) {
   });
 }
 
-async function renderUserLabel() {
-  const { data } = await supabase.auth.getUser();
-  const label = document.getElementById("user-label");
-  if (data?.user) {
-    label.textContent = data.user.email ?? "Account";
-  }
-}
-
 async function init() {
-  renderUserLabel();
-
   if (!articleId) {
     document.getElementById("article-slot").innerHTML =
       '<p class="state-message is-error">No article was specified.</p>';

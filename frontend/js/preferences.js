@@ -5,6 +5,8 @@ import { supabase } from "../../config/supabaseClient.js";
 // USER PREFERENCE AND INTEREST MANAGEMENT
 // ==========================================================
 
+import { ICONS } from "./icons.js";
+
 
 // ==========================================================
 // CATEGORY ICONS
@@ -12,15 +14,15 @@ import { supabase } from "../../config/supabaseClient.js";
 // ==========================================================
 
 const categoryIcons = {
-    Technology: "▣",
-    Business: "▥",
-    Sports: "⚝",
-    Politics: "▤",
-    Entertainment: "▷",
-    Science: "♧",
-    Health: "♡",
-    Lifestyle: "✎",
-    Environment: "♧"
+    Technology: ICONS.cpu,
+    Business: ICONS.building,
+    Sports: ICONS.runner,
+    Politics: ICONS.government,
+    Entertainment: ICONS.play,
+    Science: ICONS.shareHub,
+    Health: ICONS.heartPulse,
+    Lifestyle: ICONS.pencilSquare,
+    Environment: ICONS.mountain
 };
 
 
@@ -160,7 +162,7 @@ async function loadCategories() {
 
         icon:
             categoryIcons[category.name] ??
-            "◉"
+            ICONS.tag
 
     }));
 
@@ -476,6 +478,15 @@ function renderPreferenceList() {
                 );
 
 
+            if (checked) {
+
+                label.classList.add(
+                    "is-checked"
+                );
+
+            }
+
+
             label.innerHTML = `
 
                 <input
@@ -484,9 +495,11 @@ function renderPreferenceList() {
                     ${checked ? "checked" : ""}
                 >
 
-                <span>
+                <span class="pref-icon">
                     ${category.icon}
-                    &nbsp;
+                </span>
+
+                <span>
                     ${category.name}
                 </span>
 
@@ -502,6 +515,12 @@ function renderPreferenceList() {
             checkbox.addEventListener(
                 "change",
                 event => {
+
+                    label.classList.toggle(
+                        "is-checked",
+                        event.target.checked
+                    );
+
 
                     if (
                         event.target.checked

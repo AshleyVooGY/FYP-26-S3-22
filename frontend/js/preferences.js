@@ -3,6 +3,8 @@
 // USER PREFERENCE AND INTEREST MANAGEMENT
 // ==========================================================
 
+import { ICONS } from "./icons.js";
+
 
 // ==========================================================
 // CATEGORY DATA
@@ -12,47 +14,47 @@ const categories = [
     {
         id: "technology",
         name: "Technology",
-        icon: "▣"
+        icon: ICONS.cpu
     },
     {
         id: "business",
         name: "Business",
-        icon: "▥"
+        icon: ICONS.building
     },
     {
         id: "sports",
         name: "Sports",
-        icon: "⚝"
+        icon: ICONS.runner
     },
     {
         id: "politics",
         name: "Politics",
-        icon: "▤"
+        icon: ICONS.government
     },
     {
         id: "entertainment",
         name: "Entertainment",
-        icon: "▷"
+        icon: ICONS.play
     },
     {
         id: "science",
         name: "Science",
-        icon: "♧"
+        icon: ICONS.shareHub
     },
     {
         id: "health",
         name: "Health",
-        icon: "♡"
+        icon: ICONS.heartPulse
     },
     {
         id: "lifestyle",
         name: "Lifestyle",
-        icon: "✎"
+        icon: ICONS.pencilSquare
     },
     {
         id: "environment",
         name: "Environment",
-        icon: "♧"
+        icon: ICONS.mountain
     }
 ];
 
@@ -239,6 +241,15 @@ function renderPreferenceList() {
             );
 
 
+        if (checked) {
+
+            label.classList.add(
+                "is-checked"
+            );
+
+        }
+
+
         label.innerHTML = `
 
             <input
@@ -247,9 +258,11 @@ function renderPreferenceList() {
                 ${checked ? "checked" : ""}
             >
 
-            <span>
+            <span class="pref-icon">
                 ${category.icon}
-                &nbsp;
+            </span>
+
+            <span>
                 ${category.name}
             </span>
 
@@ -265,6 +278,12 @@ function renderPreferenceList() {
         checkbox.addEventListener(
             "change",
             event => {
+
+                label.classList.toggle(
+                    "is-checked",
+                    event.target.checked
+                );
+
 
                 if (event.target.checked) {
 

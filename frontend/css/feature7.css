@@ -81,6 +81,15 @@ button {
 }
 
 
+.brand-icon svg {
+
+    width: 20px;
+    height: 20px;
+
+    display: block;
+}
+
+
 .top-nav {
 
     display: flex;
@@ -152,6 +161,17 @@ button {
     font-size: 17px;
 
     color: #59616b;
+
+    display: flex;
+
+    align-items: center;
+}
+
+
+.notification svg {
+
+    width: 19px;
+    height: 19px;
 }
 
 
@@ -206,6 +226,13 @@ button {
     color: #9ca3ad;
 
     background: #e8ebef;
+}
+
+
+.user-icon svg {
+
+    width: 15px;
+    height: 15px;
 }
 
 
@@ -284,10 +311,21 @@ button {
 .side-icon {
 
     width: 18px;
+    height: 18px;
 
-    text-align: center;
+    display: flex;
 
-    font-size: 14px;
+    justify-content: center;
+    align-items: center;
+
+    flex-shrink: 0;
+}
+
+
+.side-icon svg {
+
+    width: 17px;
+    height: 17px;
 }
 
 
@@ -407,9 +445,25 @@ button {
 
 .category-icon {
 
-    font-size: 25px;
-
     color: #6e7580;
+
+    transition: color 0.15s;
+}
+
+
+.category-icon svg {
+
+    width: 26px;
+    height: 26px;
+
+    display: block;
+}
+
+
+.interest-card.selected
+.category-icon {
+
+    color: #7165ed;
 }
 
 
@@ -595,6 +649,30 @@ button {
     height: 15px;
 
     accent-color: #7165ed;
+}
+
+
+.pref-icon {
+
+    display: flex;
+
+    color: #6e7580;
+
+    transition: color 0.15s;
+}
+
+
+.pref-icon svg {
+
+    width: 16px;
+    height: 16px;
+}
+
+
+.preference-item.is-checked
+.pref-icon {
+
+    color: #7165ed;
 }
 
 

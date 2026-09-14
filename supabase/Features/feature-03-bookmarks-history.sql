@@ -33,6 +33,11 @@ for delete
 to authenticated
 using (auth.uid() = user_id);
 
+-- Grant permissions to authenticated users
+grant select, insert, delete
+on public.bookmarks
+to authenticated;
+
 -- 2. READING HISTORY
 create or replace function public.get_reading_history()
 returns table (

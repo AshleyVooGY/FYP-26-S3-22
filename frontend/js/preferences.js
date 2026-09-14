@@ -1,11 +1,6 @@
 import { supabase } from "../../config/supabaseClient.js";
+
 import { ICONS } from "./icons.js";
-
-
-// ==========================================================
-// FEATURE 7
-// USER PREFERENCE AND INTEREST MANAGEMENT
-// ==========================================================
 
 
 // ==========================================================
@@ -13,20 +8,30 @@ import { ICONS } from "./icons.js";
 // ==========================================================
 
 const categoryIcons = {
+
     Technology: ICONS.cpu,
+
     Business: ICONS.building,
+
     Sports: ICONS.runner,
+
     Politics: ICONS.government,
+
     Entertainment: ICONS.play,
+
     Science: ICONS.shareHub,
+
     Health: ICONS.heartPulse,
+
     Lifestyle: ICONS.pencilSquare,
+
     Environment: ICONS.mountain
+
 };
 
 
 // ==========================================================
-// VARIABLES
+// STATE
 // ==========================================================
 
 let categories = [];
@@ -39,17 +44,17 @@ let currentUser = null;
 
 
 // ==========================================================
-// PAGE ELEMENTS
+// ELEMENTS
 // ==========================================================
-
-const interestGrid =
-    document.getElementById("interestGrid");
 
 const setupPage =
     document.getElementById("setupPage");
 
 const managePage =
     document.getElementById("managePage");
+
+const interestGrid =
+    document.getElementById("interestGrid");
 
 const preferenceList =
     document.getElementById("preferenceList");
@@ -66,9 +71,6 @@ const savePreferencesButton =
 const skipPreferencesButton =
     document.getElementById("skipPreferences");
 
-const manageSaveButton =
-    document.getElementById("manageSaveButton");
-
 const cancelButton =
     document.getElementById("cancelButton");
 
@@ -81,281 +83,134 @@ const saveChangesButton =
 const successMessage =
     document.getElementById("successMessage");
 
+const userLabel =
+    document.getElementById("user-label");
+
 
 // ==========================================================
-// CHECK LOGIN STATUS
+// AUTHENTICATION
 // ==========================================================
 
-async function checkLoggedInUser() {
+async function getCurrentUser() {
 
-    try {
-
-        const {
-            data,
-            error
-        } = await supabase.auth.getUser();
+    const {
+        data,
+        error
+    } = await supabase.auth.getUser();
 
 
-        if (error) {
-
-            console.error(
-                "Error checking authentication:",
-                error
-            );
-
-            currentUser = null;
-
-            return null;
-        }
-
-
-        currentUser =
-            data?.user ?? null;
-
-
-        if (currentUser) {
-
-            console.log(
-                "Logged-in user:",
-                currentUser.email
-            );
-
-        } else {
-
-            console.log(
-                "No user is currently logged in."
-            );
-
-            console.log(
-                "Preference page is running in demo mode."
-            );
-
-        }
-
-
-        return currentUser;
-
-
-    } catch (error) {
+    if (error) {
 
         console.error(
-            "Authentication check failed:",
+            "Unable to get current user:",
             error
         );
 
-        currentUser = null;
-
         return null;
+
     }
+
+
+    return data?.user ?? null;
+
 }
 
 
 // ==========================================================
-// LOAD CATEGORIES FROM SUPABASE
+// LOAD CATEGORIES
 // ==========================================================
 
 async function loadCategories() {
 
-    try {
+    const {
+        data,
+        error
+    } = await supabase
+        .from("categories")
+        .select("id, name")
+        .order("id");
 
-        const {
-            data,
+
+    if (error) {
+
+        console.error(
+            "Unable to load categories:",
             error
-        } = await supabase
-            .from("categories")
-            .select("id, name")
-            .order("id");
+        );
+
+        throw error;
+
+    }
 
 
-        if (error) {
-
-            console.error(
-                "Error loading categories:",
-                error
-            );
-
-            alert(
-                "Unable to load news categories from the database."
-            );
-
-            return false;
-        }
-
-
-        // Convert Supabase category data
-        // into the format used by the frontend.
-
-        categories = (data || []).map(
+    categories =
+        (data || []).map(
             category => ({
 
-                id: category.id,
+                id:
+                    category.id,
 
-                name: category.name,
+                name:
+                    category.name,
 
                 icon:
-                    categoryIcons[category.name] ??
-                    ICONS.tag
+                    categoryIcons[
+                        category.name
+                    ] ??
+                    "<span>●</span>"
 
             })
         );
 
-
-        console.log(
-            "Categories loaded from Supabase:",
-            categories
-        );
-
-
-        if (categories.length === 0) {
-
-            console.warn(
-                "No categories were found in the categories table."
-            );
-
-            alert(
-                "No news categories were found in the database."
-            );
-
-            return false;
-        }
-
-
-        return true;
-
-
-    } catch (error) {
-
-        console.error(
-            "Unexpected error loading categories:",
-            error
-        );
-
-        return false;
-    }
 }
 
 
 // ==========================================================
-// SET DEFAULT INTERESTS FOR DEMO MODE
-// ==========================================================
-
-function setDefaultInterests() {
-
-    const defaultCategoryNames = [
-
-        "Technology",
-
-        "Business",
-
-        "Sports"
-
-    ];
-
-
-    selectedInterests =
-        categories
-            .filter(
-                category =>
-                    defaultCategoryNames.includes(
-                        category.name
-                    )
-            )
-            .map(
-                category =>
-                    Number(category.id)
-            );
-
-
-    originalInterests =
-        [...selectedInterests];
-
-
-    console.log(
-        "Default demo interests:",
-        selectedInterests
-    );
-}
-
-
-// ==========================================================
-// LOAD USER PREFERENCES FROM SUPABASE
+// LOAD USER PREFERENCES
 // ==========================================================
 
 async function loadUserPreferences() {
 
-    // ------------------------------------------------------
-    // User is not logged in
-    // ------------------------------------------------------
-
     if (!currentUser) {
 
-        setDefaultInterests();
+        return [];
 
-        return;
     }
 
 
-    // ------------------------------------------------------
-    // User is logged in
-    // ------------------------------------------------------
-
-    try {
-
-        const {
-            data,
-            error
-        } = await supabase
-            .from("user_preferences")
-            .select("category_id")
-            .eq(
-                "user_id",
-                currentUser.id
-            );
-
-
-        if (error) {
-
-            console.error(
-                "Error loading user preferences:",
-                error
-            );
-
-            selectedInterests = [];
-
-            originalInterests = [];
-
-            return;
-        }
-
-
-        selectedInterests =
-            (data || []).map(
-                item =>
-                    Number(item.category_id)
-            );
-
-
-        originalInterests =
-            [...selectedInterests];
-
-
-        console.log(
-            "Saved user preferences:",
-            selectedInterests
+    const {
+        data,
+        error
+    } = await supabase
+        .from("user_preferences")
+        .select("category_id")
+        .eq(
+            "user_id",
+            currentUser.id
         );
 
 
-    } catch (error) {
+    if (error) {
 
         console.error(
-            "Unexpected error loading preferences:",
+            "Unable to load user preferences:",
             error
         );
 
-        selectedInterests = [];
+        throw error;
 
-        originalInterests = [];
     }
+
+
+    return (
+        data || []
+    ).map(
+        row =>
+            Number(
+                row.category_id
+            )
+    );
+
 }
 
 
@@ -368,81 +223,91 @@ function renderInterestCards() {
     if (!interestGrid) {
 
         return;
+
     }
 
 
-    interestGrid.innerHTML = "";
+    if (categories.length === 0) {
+
+        interestGrid.innerHTML = `
+
+            <p class="state-message">
+                No categories available.
+            </p>
+
+        `;
+
+        return;
+
+    }
 
 
-    categories.forEach(
-        category => {
+    interestGrid.innerHTML =
+        categories
+            .map(
+                category => {
 
-            const categoryId =
-                Number(category.id);
-
-
-            const isSelected =
-                selectedInterests.includes(
-                    categoryId
-                );
+                    const selected =
+                        selectedInterests.includes(
+                            category.id
+                        );
 
 
-            const card =
-                document.createElement("div");
+                    return `
+
+                        <div
+                            class="interest-card
+                            ${selected ? "selected" : ""}"
+                            data-category-id="${category.id}"
+                        >
+
+                            <div class="check-box">
+                                ${selected ? "✓" : ""}
+                            </div>
 
 
-            card.className =
-                "interest-card";
+                            <div class="category-icon">
+                                ${category.icon}
+                            </div>
 
 
-            if (isSelected) {
+                            <div class="category-name">
+                                ${escapeHtml(
+                                    category.name
+                                )}
+                            </div>
 
-                card.classList.add(
-                    "selected"
+                        </div>
+
+                    `;
+
+                }
+            )
+            .join("");
+
+
+    document
+        .querySelectorAll(
+            ".interest-card"
+        )
+        .forEach(
+            card => {
+
+                card.addEventListener(
+                    "click",
+                    () => {
+
+                        toggleInterest(
+                            Number(
+                                card.dataset.categoryId
+                            )
+                        );
+
+                    }
                 );
 
             }
-
-
-            card.dataset.categoryId =
-                categoryId;
-
-
-            card.innerHTML = `
-
-                <div class="check-box">
-                    ${isSelected ? "✓" : ""}
-                </div>
-
-                <div class="category-icon">
-                    ${category.icon}
-                </div>
-
-                <div class="category-name">
-                    ${category.name}
-                </div>
-
-            `;
-
-
-            card.addEventListener(
-                "click",
-                () => {
-
-                    toggleInterest(
-                        categoryId
-                    );
-
-                }
-            );
-
-
-            interestGrid.appendChild(
-                card
-            );
-
-        }
-    );
+        );
 
 }
 
@@ -451,25 +316,26 @@ function renderInterestCards() {
 // TOGGLE INTEREST
 // ==========================================================
 
-function toggleInterest(categoryId) {
+function toggleInterest(
+    categoryId
+) {
 
-    const index =
-        selectedInterests.indexOf(
+    if (
+        selectedInterests.includes(
             categoryId
-        );
+        )
+    ) {
 
-
-    if (index === -1) {
-
-        selectedInterests.push(
-            categoryId
-        );
+        selectedInterests =
+            selectedInterests.filter(
+                id =>
+                    id !== categoryId
+            );
 
     } else {
 
-        selectedInterests.splice(
-            index,
-            1
+        selectedInterests.push(
+            categoryId
         );
 
     }
@@ -482,11 +348,12 @@ function toggleInterest(categoryId) {
     renderSelectedInterestTags();
 
     populateInterestSelect();
+
 }
 
 
 // ==========================================================
-// RENDER PREFERENCE CHECKBOXES
+// RENDER PREFERENCE LIST
 // ==========================================================
 
 function renderPreferenceList() {
@@ -494,122 +361,81 @@ function renderPreferenceList() {
     if (!preferenceList) {
 
         return;
+
     }
 
 
-    preferenceList.innerHTML = "";
+    preferenceList.innerHTML =
+        categories
+            .map(
+                category => {
+
+                    const checked =
+                        selectedInterests.includes(
+                            category.id
+                        );
 
 
-    categories.forEach(
-        category => {
+                    return `
 
-            const categoryId =
-                Number(category.id);
+                        <label
+                            class="preference-item
+                            ${checked ? "is-checked" : ""}"
+                        >
 
-
-            const checked =
-                selectedInterests.includes(
-                    categoryId
-                );
-
-
-            const label =
-                document.createElement("label");
+                            <input
+                                type="checkbox"
+                                value="${category.id}"
+                                ${checked ? "checked" : ""}
+                            />
 
 
-            label.className =
-                "preference-item";
+                            <span class="pref-icon">
+                                ${category.icon}
+                            </span>
 
 
-            if (checked) {
+                            <span>
+                                ${escapeHtml(
+                                    category.name
+                                )}
+                            </span>
 
-                label.classList.add(
-                    "is-checked"
+                        </label>
+
+                    `;
+
+                }
+            )
+            .join("");
+
+
+    preferenceList
+        .querySelectorAll(
+            'input[type="checkbox"]'
+        )
+        .forEach(
+            checkbox => {
+
+                checkbox.addEventListener(
+                    "change",
+                    event => {
+
+                        const categoryId =
+                            Number(
+                                event.target.value
+                            );
+
+
+                        toggleInterest(
+                            categoryId
+                        );
+
+                    }
                 );
 
             }
-
-
-            label.innerHTML = `
-
-                <input
-                    type="checkbox"
-                    value="${categoryId}"
-                    ${checked ? "checked" : ""}
-                >
-
-                <span class="pref-icon">
-                    ${category.icon}
-                </span>
-
-                <span>
-                    ${category.name}
-                </span>
-
-            `;
-
-
-            const checkbox =
-                label.querySelector(
-                    "input"
-                );
-
-
-            checkbox.addEventListener(
-                "change",
-                event => {
-
-                    const isChecked =
-                        event.target.checked;
-
-
-                    label.classList.toggle(
-                        "is-checked",
-                        isChecked
-                    );
-
-
-                    if (isChecked) {
-
-                        if (
-                            !selectedInterests.includes(
-                                categoryId
-                            )
-                        ) {
-
-                            selectedInterests.push(
-                                categoryId
-                            );
-
-                        }
-
-                    } else {
-
-                        selectedInterests =
-                            selectedInterests.filter(
-                                id =>
-                                    id !== categoryId
-                            );
-
-                    }
-
-
-                    renderInterestCards();
-
-                    renderSelectedInterestTags();
-
-                    populateInterestSelect();
-
-                }
-            );
-
-
-            preferenceList.appendChild(
-                label
-            );
-
-        }
-    );
+        );
 
 }
 
@@ -623,18 +449,21 @@ function renderSelectedInterestTags() {
     if (!selectedInterestsContainer) {
 
         return;
+
     }
 
 
-    selectedInterestsContainer.innerHTML = "";
+    const selectedCategories =
+        categories.filter(
+            category =>
+                selectedInterests.includes(
+                    category.id
+                )
+        );
 
-
-    // ------------------------------------------------------
-    // No interests
-    // ------------------------------------------------------
 
     if (
-        selectedInterests.length === 0
+        selectedCategories.length === 0
     ) {
 
         selectedInterestsContainer.innerHTML = `
@@ -646,101 +475,70 @@ function renderSelectedInterestTags() {
         `;
 
         return;
+
     }
 
 
-    // ------------------------------------------------------
-    // Display selected interests
-    // ------------------------------------------------------
+    selectedInterestsContainer.innerHTML =
+        selectedCategories
+            .map(
+                category => `
 
-    selectedInterests.forEach(
-        categoryId => {
+                    <span class="interest-tag">
 
-            const category =
-                categories.find(
-                    item =>
-                        Number(item.id) ===
-                        Number(categoryId)
-                );
+                        ${escapeHtml(
+                            category.name
+                        )}
 
+                        <button
+                            class="remove-interest"
+                            type="button"
+                            data-category-id="${category.id}"
+                            aria-label="Remove ${escapeHtml(
+                                category.name
+                            )}"
+                        >
+                            ×
+                        </button>
 
-            if (!category) {
+                    </span>
 
-                return;
-            }
-
-
-            const tag =
-                document.createElement("div");
-
-
-            tag.className =
-                "interest-tag";
-
-
-            tag.innerHTML = `
-
-                <span>
-                    ${category.name}
-                </span>
-
-                <button
-                    type="button"
-                    class="remove-interest"
-                    data-id="${category.id}"
-                    title="Remove interest"
-                >
-                    ×
-                </button>
-
-            `;
+                `
+            )
+            .join("");
 
 
-            const removeButton =
-                tag.querySelector(
-                    ".remove-interest"
-                );
+    selectedInterestsContainer
+        .querySelectorAll(
+            ".remove-interest"
+        )
+        .forEach(
+            button => {
+
+                button.addEventListener(
+                    "click",
+                    event => {
+
+                        event.stopPropagation();
 
 
-            removeButton.addEventListener(
-                "click",
-                event => {
-
-                    event.stopPropagation();
-
-
-                    selectedInterests =
-                        selectedInterests.filter(
-                            id =>
-                                Number(id) !==
-                                Number(category.id)
+                        toggleInterest(
+                            Number(
+                                button.dataset.categoryId
+                            )
                         );
 
+                    }
+                );
 
-                    renderInterestCards();
-
-                    renderSelectedInterestTags();
-
-                    renderPreferenceList();
-
-                    populateInterestSelect();
-
-                }
-            );
-
-
-            selectedInterestsContainer.appendChild(
-                tag
-            );
-
-        }
-    );
+            }
+        );
 
 }
 
 
 // ==========================================================
-// POPULATE ADD INTEREST DROPDOWN
+// POPULATE SELECT
 // ==========================================================
 
 function populateInterestSelect() {
@@ -748,7 +546,17 @@ function populateInterestSelect() {
     if (!interestSelect) {
 
         return;
+
     }
+
+
+    const available =
+        categories.filter(
+            category =>
+                !selectedInterests.includes(
+                    category.id
+                )
+        );
 
 
     interestSelect.innerHTML = `
@@ -757,50 +565,31 @@ function populateInterestSelect() {
             Choose a category
         </option>
 
-    `;
+        ${
+            available
+                .map(
+                    category => `
 
+                        <option
+                            value="${category.id}"
+                        >
+                            ${escapeHtml(
+                                category.name
+                            )}
+                        </option>
 
-    categories.forEach(
-        category => {
-
-            const categoryId =
-                Number(category.id);
-
-
-            if (
-                !selectedInterests.includes(
-                    categoryId
+                    `
                 )
-            ) {
-
-                const option =
-                    document.createElement(
-                        "option"
-                    );
-
-
-                option.value =
-                    categoryId;
-
-
-                option.textContent =
-                    category.name;
-
-
-                interestSelect.appendChild(
-                    option
-                );
-
-            }
-
+                .join("")
         }
-    );
+
+    `;
 
 }
 
 
 // ==========================================================
-// ADD NEW INTEREST
+// ADD INTEREST
 // ==========================================================
 
 if (addInterestButton) {
@@ -822,6 +611,7 @@ if (addInterestButton) {
                 );
 
                 return;
+
             }
 
 
@@ -846,9 +636,6 @@ if (addInterestButton) {
 
             populateInterestSelect();
 
-
-            interestSelect.value = "";
-
         }
     );
 
@@ -856,14 +643,10 @@ if (addInterestButton) {
 
 
 // ==========================================================
-// SAVE PREFERENCES TO SUPABASE
+// SAVE TO SUPABASE
 // ==========================================================
 
 async function saveCurrentPreferences() {
-
-    // ------------------------------------------------------
-    // Check authentication
-    // ------------------------------------------------------
 
     if (!currentUser) {
 
@@ -872,12 +655,9 @@ async function saveCurrentPreferences() {
         );
 
         return false;
+
     }
 
-
-    // ------------------------------------------------------
-    // Require at least one interest
-    // ------------------------------------------------------
 
     if (
         selectedInterests.length === 0
@@ -888,117 +668,88 @@ async function saveCurrentPreferences() {
         );
 
         return false;
+
     }
 
 
-    try {
+    // ------------------------------------------------------
+    // Delete current preferences
+    // ------------------------------------------------------
 
-        // --------------------------------------------------
-        // Delete existing preferences
-        // --------------------------------------------------
-
-        const {
-            error: deleteError
-        } = await supabase
-            .from("user_preferences")
-            .delete()
-            .eq(
-                "user_id",
-                currentUser.id
-            );
-
-
-        if (deleteError) {
-
-            console.error(
-                "Error deleting old preferences:",
-                deleteError
-            );
-
-            alert(
-                "Unable to update your preferences."
-            );
-
-            return false;
-        }
-
-
-        // --------------------------------------------------
-        // Create new preference records
-        // --------------------------------------------------
-
-        const preferenceRows =
-            selectedInterests.map(
-                categoryId => ({
-
-                    user_id:
-                        currentUser.id,
-
-                    category_id:
-                        Number(categoryId)
-
-                })
-            );
-
-
-        // --------------------------------------------------
-        // Insert new preferences
-        // --------------------------------------------------
-
-        const {
-            error: insertError
-        } = await supabase
-            .from("user_preferences")
-            .insert(
-                preferenceRows
-            );
-
-
-        if (insertError) {
-
-            console.error(
-                "Error inserting preferences:",
-                insertError
-            );
-
-            alert(
-                "Unable to save your preferences."
-            );
-
-            return false;
-        }
-
-
-        // --------------------------------------------------
-        // Update original state
-        // --------------------------------------------------
-
-        originalInterests =
-            [...selectedInterests];
-
-
-        console.log(
-            "Preferences successfully saved:",
-            selectedInterests
+    const {
+        error:
+            deleteError
+    } = await supabase
+        .from("user_preferences")
+        .delete()
+        .eq(
+            "user_id",
+            currentUser.id
         );
 
 
-        return true;
-
-
-    } catch (error) {
+    if (deleteError) {
 
         console.error(
-            "Unexpected error saving preferences:",
-            error
+            "Unable to remove old preferences:",
+            deleteError
         );
 
-        alert(
-            "An unexpected error occurred while saving your preferences."
-        );
+        throw deleteError;
 
-        return false;
     }
+
+
+    // ------------------------------------------------------
+    // Prepare rows
+    // ------------------------------------------------------
+
+    const rows =
+        selectedInterests.map(
+            categoryId => ({
+
+                user_id:
+                    currentUser.id,
+
+                category_id:
+                    categoryId
+
+            })
+        );
+
+
+    // ------------------------------------------------------
+    // Insert new preferences
+    // ------------------------------------------------------
+
+    const {
+        error:
+            insertError
+    } = await supabase
+        .from("user_preferences")
+        .insert(
+            rows
+        );
+
+
+    if (insertError) {
+
+        console.error(
+            "Unable to save preferences:",
+            insertError
+        );
+
+        throw insertError;
+
+    }
+
+
+    originalInterests =
+        [...selectedInterests];
+
+
+    return true;
+
 }
 
 
@@ -1012,22 +763,38 @@ if (savePreferencesButton) {
         "click",
         async () => {
 
-            const success =
-                await saveCurrentPreferences();
+            try {
+
+                const saved =
+                    await saveCurrentPreferences();
 
 
-            if (!success) {
+                if (!saved) {
 
-                return;
+                    return;
+
+                }
+
+
+                alert(
+                    "Preferences saved successfully!"
+                );
+
+
+                showManagePage();
+
+            } catch (error) {
+
+                console.error(
+                    error
+                );
+
+
+                alert(
+                    "Unable to save preferences. Please try again."
+                );
+
             }
-
-
-            alert(
-                "Preferences saved successfully!"
-            );
-
-
-            showManagePage();
 
         }
     );
@@ -1036,7 +803,7 @@ if (savePreferencesButton) {
 
 
 // ==========================================================
-// SKIP FOR NOW
+// SKIP
 // ==========================================================
 
 if (skipPreferencesButton) {
@@ -1054,34 +821,6 @@ if (skipPreferencesButton) {
 
 
 // ==========================================================
-// SAVE MANAGED PREFERENCES
-// ==========================================================
-
-if (manageSaveButton) {
-
-    manageSaveButton.addEventListener(
-        "click",
-        async () => {
-
-            const success =
-                await saveCurrentPreferences();
-
-
-            if (!success) {
-
-                return;
-            }
-
-
-            showSuccessMessage();
-
-        }
-    );
-
-}
-
-
-// ==========================================================
 // SAVE CHANGES
 // ==========================================================
 
@@ -1091,17 +830,33 @@ if (saveChangesButton) {
         "click",
         async () => {
 
-            const success =
-                await saveCurrentPreferences();
+            try {
+
+                const saved =
+                    await saveCurrentPreferences();
 
 
-            if (!success) {
+                if (!saved) {
 
-                return;
+                    return;
+
+                }
+
+
+                showSuccessMessage();
+
+            } catch (error) {
+
+                console.error(
+                    error
+                );
+
+
+                alert(
+                    "Unable to save preferences. Please try again."
+                );
+
             }
-
-
-            showSuccessMessage();
 
         }
     );
@@ -1110,7 +865,7 @@ if (saveChangesButton) {
 
 
 // ==========================================================
-// CANCEL CHANGES
+// CANCEL
 // ==========================================================
 
 if (cancelButton) {
@@ -1138,7 +893,7 @@ if (cancelButton) {
 
 
 // ==========================================================
-// SHOW SUCCESS MESSAGE
+// SUCCESS MESSAGE
 // ==========================================================
 
 function showSuccessMessage() {
@@ -1146,6 +901,7 @@ function showSuccessMessage() {
     if (!successMessage) {
 
         return;
+
     }
 
 
@@ -1162,7 +918,7 @@ function showSuccessMessage() {
             );
 
         },
-        3000
+        2500
     );
 
 }
@@ -1202,30 +958,65 @@ function showManagePage() {
 
 
 // ==========================================================
-// SHOW SETUP PAGE
+// UPDATE USER LABEL
 // ==========================================================
 
-function showSetupPage() {
+function updateUserLabel() {
 
-    if (setupPage) {
+    if (!userLabel) {
 
-        setupPage.classList.remove(
-            "hidden"
-        );
+        return;
 
     }
 
 
-    if (managePage) {
+    if (currentUser) {
 
-        managePage.classList.add(
-            "hidden"
-        );
+        userLabel.textContent =
+            currentUser.email ??
+            "Account";
+
+    } else {
+
+        userLabel.textContent =
+            "Guest";
 
     }
 
+}
 
-    renderInterestCards();
+
+// ==========================================================
+// ESCAPE HTML
+// ==========================================================
+
+function escapeHtml(
+    value
+) {
+
+    return String(
+        value ?? ""
+    )
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
+        );
 
 }
 
@@ -1236,103 +1027,133 @@ function showSetupPage() {
 
 async function initialise() {
 
-    console.log(
-        "========================================"
-    );
+    try {
 
-    console.log(
-        "Feature 7 initialising..."
-    );
+        // ----------------------------------------------------
+        // Authentication
+        // ----------------------------------------------------
 
-    console.log(
-        "========================================"
-    );
+        currentUser =
+            await getCurrentUser();
 
 
-    // ------------------------------------------------------
-    // 1. Check authentication
-    // ------------------------------------------------------
-
-    await checkLoggedInUser();
+        updateUserLabel();
 
 
-    // ------------------------------------------------------
-    // 2. Load categories
-    // ------------------------------------------------------
+        if (!currentUser) {
 
-    const categoriesLoaded =
+            alert(
+                "Please log in before accessing your preferences."
+            );
+
+
+            window.location.href =
+                "login.html";
+
+
+            return;
+
+        }
+
+
+        console.log(
+            "Logged-in user:",
+            currentUser.id
+        );
+
+
+        // ----------------------------------------------------
+        // Load categories
+        // ----------------------------------------------------
+
         await loadCategories();
 
 
-    if (!categoriesLoaded) {
+        // ----------------------------------------------------
+        // Load saved preferences
+        // ----------------------------------------------------
+
+        selectedInterests =
+            await loadUserPreferences();
+
+
+        originalInterests =
+            [...selectedInterests];
+
+
+        // ----------------------------------------------------
+        // Render
+        // ----------------------------------------------------
+
+        renderInterestCards();
+
+        renderPreferenceList();
+
+        renderSelectedInterestTags();
+
+        populateInterestSelect();
+
+
+        // ----------------------------------------------------
+        // If user has preferences, show manage page
+        // Otherwise show setup page
+        // ----------------------------------------------------
+
+        if (
+            selectedInterests.length > 0
+        ) {
+
+            showManagePage();
+
+        } else {
+
+            if (setupPage) {
+
+                setupPage.classList.remove(
+                    "hidden"
+                );
+
+            }
+
+            if (managePage) {
+
+                managePage.classList.add(
+                    "hidden"
+                );
+
+            }
+
+        }
+
+
+    } catch (error) {
 
         console.error(
-            "Feature 7 could not load categories."
+            "Feature 7 initialisation failed:",
+            error
         );
 
-        return;
-    }
 
+        if (interestGrid) {
 
-    // ------------------------------------------------------
-    // 3. Load user preferences
-    // ------------------------------------------------------
+            interestGrid.innerHTML = `
 
-    await loadUserPreferences();
+                <p class="state-message is-error">
 
+                    Unable to load your preferences.
 
-    // ------------------------------------------------------
-    // 4. Render interface
-    // ------------------------------------------------------
+                    Please check your login and
+                    Supabase connection.
 
-    renderInterestCards();
+                </p>
 
-    renderPreferenceList();
+            `;
 
-    renderSelectedInterestTags();
-
-    populateInterestSelect();
-
-
-    // ------------------------------------------------------
-    // 5. Decide which page to display
-    // ------------------------------------------------------
-
-    if (
-        currentUser &&
-        selectedInterests.length > 0
-    ) {
-
-        // Logged in with saved preferences
-
-        showManagePage();
-
-    } else {
-
-        // Not logged in OR no saved preferences
-
-        showSetupPage();
+        }
 
     }
-
-
-    console.log(
-        "========================================"
-    );
-
-    console.log(
-        "Feature 7 initialisation complete."
-    );
-
-    console.log(
-        "========================================"
-    );
 
 }
 
-
-// ==========================================================
-// START FEATURE 7
-// ==========================================================
 
 initialise();

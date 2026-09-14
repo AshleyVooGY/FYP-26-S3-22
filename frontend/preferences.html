@@ -2,343 +2,579 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Preferences - News Release System</title>
+  <meta charset="UTF-8" />
 
-    <link rel="stylesheet" href="css/feature7.css">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <title>
+    Preferences — News Release System
+  </title>
+
+
+  <!-- Shared application shell -->
+
+  <link
+    rel="stylesheet"
+    href="css/shell.css"
+  />
+
+
+  <!-- Feature 7 styling -->
+
+  <link
+    rel="stylesheet"
+    href="css/feature7.css"
+  />
+
 </head>
+
 
 <body>
 
-    <!-- =========================
-         TOP NAVIGATION
-    ========================== -->
 
-    <header class="topbar">
+  <!-- =====================================================
+       TOP BAR
+  ====================================================== -->
 
-        <div class="brand">
-            <span class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="16" rx="1.5"/><path d="M17 8.5h4V18a2 2 0 0 1-2 2h-2"/><line x1="6.5" y1="8.5" x2="13.5" y2="8.5"/><line x1="6.5" y1="12" x2="13.5" y2="12"/><line x1="6.5" y1="15.5" x2="11" y2="15.5"/></svg></span>
-            <span>NEWS RELEASE SYSTEM</span>
-        </div>
+  <header class="topbar">
 
-        <nav class="top-nav">
 
-            <a href="index.html">Home</a>
+    <!-- Brand -->
 
-            <a href="#">
-                Categories <span>⌄</span>
-            </a>
+    <div class="topbar__brand">
 
-            <a href="#">
-                Trending
-            </a>
+      <span class="topbar__brand-icon">
+        📰
+      </span>
 
-            <a href="#">
-                Bookmarks
-            </a>
-
-        </nav>
-
-
-        <div class="top-actions">
-
-            <input
-                type="text"
-                class="search-box"
-                placeholder="Search news..."
-            >
-
-            <button class="notification">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 6.5-2.5 8.5-2.5 8.5h17S18 14.5 18 8z"/><path d="M13.7 20a2 2 0 0 1-3.4 0"/></svg>
-            </button>
-
-            <button class="publish-button">
-                + Publish
-            </button>
-
-            <div class="user-menu">
-                <span class="user-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-1.5A4.5 4.5 0 0 0 15.5 15h-7A4.5 4.5 0 0 0 4 19.5V21"/><circle cx="12" cy="7.5" r="4"/></svg></span>
-                <span>User Name</span>
-                <span>⌄</span>
-            </div>
-
-        </div>
-
-    </header>
-
-
-
-    <!-- =========================
-         PAGE
-    ========================== -->
-
-    <div class="page-container">
-
-
-        <!-- =========================
-             SIDEBAR
-        ========================== -->
-
-        <aside class="sidebar">
-
-            <a href="index.html">
-                <span class="side-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/></svg></span>
-                Dashboard
-            </a>
-
-            <a href="#">
-                <span class="side-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M15 2v5h5"/><path d="M8 13h8"/><path d="M8 17h8"/><path d="M8 9h3"/></svg></span>
-                My Articles
-            </a>
-
-            <a href="#">
-                <span class="side-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M14.5 8.5a1.5 1.5 0 0 1 2 2L10 17l-3 1 1-3z"/></svg></span>
-                Drafts
-            </a>
-
-            <a href="#">
-                <span class="side-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-5-7 5V4a1 1 0 0 1 1-1z"/></svg></span>
-                Bookmarks
-            </a>
-
-            <a href="#">
-                <span class="side-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3"/></svg></span>
-                History
-            </a>
-
-            <a
-                href="preferences.html"
-                class="active"
-            >
-                <span class="side-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="21" x2="5" y2="13"/><line x1="5" y1="9" x2="5" y2="3"/><line x1="12" y1="21" x2="12" y2="11"/><line x1="12" y1="7" x2="12" y2="3"/><line x1="19" y1="21" x2="19" y2="15"/><line x1="19" y1="11" x2="19" y2="3"/><circle cx="5" cy="11" r="2"/><circle cx="12" cy="9" r="2"/><circle cx="19" cy="13" r="2"/></svg></span>
-                Preferences
-            </a>
-
-            <a href="#">
-                <span class="side-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.9 2.9l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.9-2.9l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.9-2.9l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.9 2.9l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></span>
-                Settings
-            </a>
-
-            <a href="#" data-logout>
-                <span class="side-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 15 4 10 9 5"/><path d="M20 20v-6a4 4 0 0 0-4-4H4"/></svg></span>
-                Logout
-            </a>
-
-        </aside>
-
-
-
-        <!-- =========================
-             MAIN CONTENT
-        ========================== -->
-
-        <main class="main-content">
-
-
-            <!-- =========================================
-                 SECTION 1
-                 CHOOSE YOUR INTERESTS
-            ========================================== -->
-
-            <section id="setupPage" class="page-section">
-
-                <h1>
-                    Choose Your Interests
-                </h1>
-
-                <p class="subtitle">
-                    Select the news categories you enjoy to
-                    personalise your homepage and recommendations.
-                </p>
-
-
-                <div
-                    id="interestGrid"
-                    class="interest-grid"
-                >
-
-                    <!-- Cards generated by JavaScript -->
-
-                </div>
-
-
-                <div class="setup-actions">
-
-                    <button
-                        id="savePreferences"
-                        class="save-button"
-                    >
-                        Save Preferences
-                    </button>
-
-                    <button
-                        id="skipPreferences"
-                        class="skip-button"
-                    >
-                        Skip for now
-                    </button>
-
-                </div>
-
-            </section>
-
-
-
-            <!-- =========================================
-                 SECTION 2
-                 MANAGE PREFERENCES
-            ========================================== -->
-
-            <section
-                id="managePage"
-                class="page-section hidden"
-            >
-
-                <h1>
-                    Preferences
-                </h1>
-
-
-                <div class="preference-panel">
-
-                    <h2>
-                        Preferred Categories and Topics
-                    </h2>
-
-                    <p>
-                        Selecting categories below will personalise
-                        your homepage with highlighted and
-                        recommended news.
-                    </p>
-
-
-                    <div
-                        id="preferenceList"
-                        class="preference-list"
-                    >
-
-                        <!-- Generated by JavaScript -->
-
-                    </div>
-
-
-                    <div class="manage-actions">
-
-                        <button
-                            id="manageSaveButton"
-                            class="save-button"
-                        >
-                            Save
-                        </button>
-
-                        <button
-                            id="cancelButton"
-                            class="cancel-button"
-                        >
-                            Cancel
-                        </button>
-
-                    </div>
-
-                </div>
-
-
-
-                <!-- =====================================
-                     MANAGE INTERESTS
-                ====================================== -->
-
-                <div class="manage-interest-panel">
-
-                    <h2>
-                        My Interests
-                    </h2>
-
-                    <p>
-                        Add or remove categories to keep your
-                        recommendations relevant.
-                    </p>
-
-
-                    <div class="selected-section">
-
-                        <h3>
-                            Your Selected Interests
-                        </h3>
-
-                        <div
-                            id="selectedInterests"
-                            class="interest-tags"
-                        >
-                        </div>
-
-                    </div>
-
-
-                    <div class="add-section">
-
-                        <h3>
-                            Add New Interest
-                        </h3>
-
-                        <div class="add-controls">
-
-                            <select id="interestSelect">
-
-                                <option value="">
-                                    Choose a category
-                                </option>
-
-                            </select>
-
-
-                            <button
-                                id="addInterest"
-                                class="add-button"
-                            >
-                                Add Interest
-                            </button>
-
-                        </div>
-
-                    </div>
-
-
-                    <button
-                        id="saveChanges"
-                        class="save-button"
-                    >
-                        Save Changes
-                    </button>
-
-
-                    <div
-                        id="successMessage"
-                        class="success-message hidden"
-                    >
-                        ✓ Preferences updated successfully.
-                    </div>
-
-                </div>
-
-            </section>
-
-        </main>
+      <span>
+        NEWS RELEASE SYSTEM
+      </span>
 
     </div>
 
 
-    <script
-        type="module"
-        src="js/auth.js"
-    ></script>
+    <!-- Navigation -->
 
-    <script
-        type="module"
-        src="js/preferences.js"
-    ></script>
+    <nav class="topbar__nav">
+
+      <a href="index.html">
+        Home
+      </a>
+
+
+      <a
+        href="#"
+        class="is-disabled"
+        title="Coming soon"
+      >
+        Categories ▾
+      </a>
+
+
+      <a href="trending.html">
+        Trending
+      </a>
+
+
+      <a
+        href="#"
+        class="is-disabled"
+        title="Coming soon"
+      >
+        Bookmarks
+      </a>
+
+    </nav>
+
+
+    <!-- Right side -->
+
+    <div class="topbar__actions">
+
+
+      <input
+        class="topbar__search"
+        type="text"
+        placeholder="Search news..."
+        disabled
+        title="Coming soon"
+      />
+
+
+      <button
+        class="icon-btn"
+        type="button"
+        title="Coming soon"
+      >
+        🔔
+      </button>
+
+
+      <button
+        class="btn-publish"
+        type="button"
+        title="Coming soon"
+      >
+        + Publish
+      </button>
+
+
+      <div
+        class="user-chip"
+        id="user-chip"
+      >
+
+        <span class="user-chip__avatar">
+          👤
+        </span>
+
+
+        <span id="user-label">
+          Guest
+        </span>
+
+      </div>
+
+    </div>
+
+  </header>
+
+
+
+  <!-- =====================================================
+       MAIN APPLICATION LAYOUT
+  ====================================================== -->
+
+  <div class="layout">
+
+
+    <!-- ===================================================
+         SIDEBAR
+    ==================================================== -->
+
+    <aside class="sidebar">
+
+      <nav class="sidebar__nav">
+
+
+        <!-- Dashboard -->
+
+        <a href="index.html">
+
+          <span class="sidebar__icon">
+            📊
+          </span>
+
+          Dashboard
+
+        </a>
+
+
+        <!-- My Articles -->
+
+        <a
+          href="#"
+          class="is-disabled"
+          title="Coming soon"
+        >
+
+          <span class="sidebar__icon">
+            📰
+          </span>
+
+          My Articles
+
+        </a>
+
+
+        <!-- Drafts -->
+
+        <a
+          href="#"
+          class="is-disabled"
+          title="Coming soon"
+        >
+
+          <span class="sidebar__icon">
+            ✏️
+          </span>
+
+          Drafts
+
+        </a>
+
+
+        <!-- Bookmarks -->
+
+        <a
+          href="#"
+          class="is-disabled"
+          title="Coming soon"
+        >
+
+          <span class="sidebar__icon">
+            🔖
+          </span>
+
+          Bookmarks
+
+        </a>
+
+
+        <!-- History -->
+
+        <a
+          href="history.html"
+          class="is-disabled"
+          title="Coming soon"
+        >
+
+          <span class="sidebar__icon">
+            🕘
+          </span>
+
+          History
+
+        </a>
+
+
+        <!-- Preferences -->
+
+        <a
+          href="preferences.html"
+          class="is-active"
+        >
+
+          <span class="sidebar__icon">
+            ⚙️
+          </span>
+
+          Preferences
+
+        </a>
+
+
+        <!-- Settings -->
+
+        <a
+          href="#"
+          class="is-disabled"
+          title="Coming soon"
+        >
+
+          <span class="sidebar__icon">
+            🛠
+          </span>
+
+          Settings
+
+        </a>
+
+
+        <!-- Logout -->
+
+        <a
+          href="#"
+          class="is-disabled"
+          title="Coming soon"
+        >
+
+          <span class="sidebar__icon">
+            ↩
+          </span>
+
+          Logout
+
+        </a>
+
+      </nav>
+
+    </aside>
+
+
+
+    <!-- ===================================================
+         MAIN CONTENT
+    ==================================================== -->
+
+    <main class="content">
+
+
+      <!-- =================================================
+           FEATURE 7 — INITIAL SETUP
+      ================================================== -->
+
+      <section
+        id="setupPage"
+        class="feature7-page"
+      >
+
+
+        <div class="feature7-header">
+
+          <h1>
+            Choose Your Interests
+          </h1>
+
+
+          <p>
+            Select the news categories you enjoy to personalise
+            your homepage and recommendations.
+          </p>
+
+        </div>
+
+
+        <!-- Interest cards -->
+
+        <div
+          id="interestGrid"
+          class="interest-grid"
+        >
+
+          <p class="state-message">
+            Loading interests...
+          </p>
+
+        </div>
+
+
+        <!-- Buttons -->
+
+        <div class="feature7-actions">
+
+
+          <button
+            id="savePreferences"
+            class="feature7-button feature7-button--primary"
+            type="button"
+          >
+            Save Preferences
+          </button>
+
+
+          <button
+            id="skipPreferences"
+            class="feature7-button feature7-button--secondary"
+            type="button"
+          >
+            Skip for now
+          </button>
+
+        </div>
+
+      </section>
+
+
+
+      <!-- =================================================
+           FEATURE 7 — MANAGE
+      ================================================== -->
+
+      <section
+        id="managePage"
+        class="feature7-page hidden"
+      >
+
+
+        <div
+          class="feature7-header feature7-header--manage"
+        >
+
+          <h1>
+            Manage News Preferences
+          </h1>
+
+
+          <p>
+            Update the news categories used to personalise
+            your news experience.
+          </p>
+
+        </div>
+
+
+
+        <!-- =================================================
+             NEWS PREFERENCES
+        ================================================== -->
+
+        <section class="preference-panel">
+
+
+          <div class="preference-panel__header">
+
+            <h2>
+              News Preferences
+            </h2>
+
+
+            <p>
+              Select the categories you are interested in.
+            </p>
+
+          </div>
+
+
+          <div
+            id="preferenceList"
+            class="preference-list"
+          >
+
+            <p class="state-message">
+              Loading preferences...
+            </p>
+
+          </div>
+
+        </section>
+
+
+
+        <!-- =================================================
+             MANAGE INTERESTS
+        ================================================== -->
+
+        <section class="preference-panel">
+
+
+          <div class="preference-panel__header">
+
+            <h2>
+              Manage Interests
+            </h2>
+
+
+            <p>
+              Add or remove categories from your interests.
+            </p>
+
+          </div>
+
+
+          <!-- Selected interests -->
+
+          <div
+            id="selectedInterests"
+            class="selected-interests"
+          >
+
+            <!-- Generated by preferences.js -->
+
+          </div>
+
+
+          <!-- Add interest -->
+
+          <div class="add-interest-section">
+
+
+            <label
+              for="interestSelect"
+              class="add-interest-label"
+            >
+              Add Interest
+            </label>
+
+
+            <div class="add-interest-row">
+
+
+              <select
+                id="interestSelect"
+                class="interest-select"
+              >
+
+                <option value="">
+                  Choose a category
+                </option>
+
+              </select>
+
+
+              <button
+                id="addInterest"
+                class="feature7-button feature7-button--primary"
+                type="button"
+              >
+                Add
+              </button>
+
+            </div>
+
+          </div>
+
+        </section>
+
+
+
+        <!-- =================================================
+             ACTIONS
+        ================================================== -->
+
+        <div
+          class="feature7-actions feature7-actions--manage"
+        >
+
+
+          <button
+            id="cancelButton"
+            class="feature7-button feature7-button--secondary"
+            type="button"
+          >
+            Cancel
+          </button>
+
+
+          <button
+            id="saveChanges"
+            class="feature7-button feature7-button--primary"
+            type="button"
+          >
+            Save Changes
+          </button>
+
+        </div>
+
+
+
+        <!-- Success message -->
+
+        <div
+          id="successMessage"
+          class="feature7-success hidden"
+        >
+          Preferences saved successfully!
+        </div>
+
+      </section>
+
+    </main>
+
+  </div>
+
+
+
+  <!-- =====================================================
+       JAVASCRIPT
+  ====================================================== -->
+
+  <script
+    type="module"
+    src="js/auth.js"
+  ></script>
+
+
+  <script
+    type="module"
+    src="js/preferences.js"
+  ></script>
+
 
 </body>
 

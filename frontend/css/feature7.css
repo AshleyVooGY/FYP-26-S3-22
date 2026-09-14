@@ -1,383 +1,66 @@
 /* ==========================================================
-   FEATURE 7
-   USER PREFERENCE AND INTEREST MANAGEMENT
+   FEATURE 7: USER PREFERENCE AND INTEREST MANAGEMENT
 ========================================================== */
 
 
 /* ==========================================================
-   RESET
+   FEATURE 7 PAGE
 ========================================================== */
 
-* {
-    box-sizing: border-box;
-}
+.feature7-page {
 
-body {
-    margin: 0;
+    width: 100%;
 
-    font-family:
-        Arial,
-        Helvetica,
-        sans-serif;
+    max-width: 1050px;
 
-    color: #30343b;
+    padding: 10px 0 30px;
 
-    background: #ffffff;
-}
-
-button,
-input,
-select {
-    font-family: inherit;
-}
-
-button {
-    cursor: pointer;
-}
-
-.hidden {
-    display: none !important;
 }
 
 
 /* ==========================================================
-   TOP BAR
+   FEATURE 7 HEADER
 ========================================================== */
 
-.topbar {
+.feature7-header {
 
-    height: 70px;
+    margin-bottom: 28px;
 
-    display: flex;
-    align-items: center;
-
-    padding: 0 28px;
-
-    border-bottom: 1px solid #e7e9ed;
-
-    background: white;
 }
 
 
-.brand {
+.feature7-header h1 {
 
-    display: flex;
-    align-items: center;
+    margin: 0 0 8px;
 
-    gap: 8px;
-
-    min-width: 165px;
-
-    font-size: 11px;
-    font-weight: 700;
-}
-
-
-.brand-icon {
-
-    color: #7165ed;
-
-    font-size: 17px;
-}
-
-
-.brand-icon svg {
-
-    width: 20px;
-    height: 20px;
-
-    display: block;
-}
-
-
-.top-nav {
-
-    display: flex;
-
-    gap: 24px;
-
-    margin-left: 18px;
-}
-
-
-.top-nav a {
-
-    color: #42474f;
-
-    text-decoration: none;
-
-    font-size: 12px;
-}
-
-
-.top-nav a:hover {
-
-    color: #7165ed;
-}
-
-
-.top-actions {
-
-    margin-left: auto;
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 12px;
-}
-
-
-.search-box {
-
-    width: 220px;
-
-    height: 34px;
-
-    padding: 0 10px;
-
-    border: 1px solid #b7bdc5;
-
-    border-radius: 3px;
-
-    font-size: 12px;
-
-    outline: none;
-}
-
-
-.search-box:focus {
-
-    border-color: #7165ed;
-}
-
-
-.notification {
-
-    border: none;
-
-    background: transparent;
-
-    font-size: 17px;
-
-    color: #59616b;
-
-    display: flex;
-
-    align-items: center;
-}
-
-
-.notification svg {
-
-    width: 19px;
-    height: 19px;
-}
-
-
-.publish-button {
-
-    border: none;
-
-    border-radius: 3px;
-
-    padding: 9px 15px;
-
-    color: white;
-
-    background: #7165ed;
-
-    font-size: 12px;
-}
-
-
-.publish-button:hover {
-
-    background: #5e52dc;
-}
-
-
-.user-menu {
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 6px;
-
-    font-size: 12px;
-
-    color: #555c65;
-}
-
-
-.user-icon {
-
-    width: 25px;
-    height: 25px;
-
-    display: flex;
-
-    justify-content: center;
-    align-items: center;
-
-    border-radius: 50%;
-
-    color: #9ca3ad;
-
-    background: #e8ebef;
-}
-
-
-.user-icon svg {
-
-    width: 15px;
-    height: 15px;
-}
-
-
-/* ==========================================================
-   PAGE LAYOUT
-========================================================== */
-
-.page-container {
-
-    display: flex;
-
-    min-height: calc(100vh - 70px);
-}
-
-
-/* ==========================================================
-   SIDEBAR
-========================================================== */
-
-.sidebar {
-
-    width: 180px;
-
-    flex-shrink: 0;
-
-    padding: 20px 12px;
-
-    border-right: 1px solid #e7e9ed;
-
-    background: #ffffff;
-}
-
-
-.sidebar a {
-
-    height: 36px;
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 10px;
-
-    padding: 0 10px;
-
-    margin-bottom: 4px;
-
-    border-radius: 3px;
-
-    color: #555d67;
-
-    text-decoration: none;
-
-    font-size: 12px;
-}
-
-
-.sidebar a:hover {
-
-    background: #f1f1ff;
-
-    color: #7165ed;
-}
-
-
-.sidebar a.active {
-
-    color: #7165ed;
-
-    background: #f0efff;
-
-    font-weight: 600;
-}
-
-
-.side-icon {
-
-    width: 18px;
-    height: 18px;
-
-    display: flex;
-
-    justify-content: center;
-    align-items: center;
-
-    flex-shrink: 0;
-}
-
-
-.side-icon svg {
-
-    width: 17px;
-    height: 17px;
-}
-
-
-/* ==========================================================
-   MAIN CONTENT
-========================================================== */
-
-.main-content {
-
-    flex: 1;
-
-    min-width: 0;
-
-    padding: 28px 45px;
-
-    background: #f4f5f7;
-}
-
-
-.page-section {
-
-    max-width: 900px;
-
-    margin: 0 auto;
-
-    padding: 28px 35px 40px;
-
-    background: #f4f5f7;
-}
-
-
-.page-section h1 {
-
-    margin: 0;
-
-    text-align: center;
-
-    color: #3b4149;
+    color: var(--text-primary);
 
     font-size: 25px;
+
+    font-weight: 700;
+
 }
 
 
-.subtitle {
+.feature7-header p {
 
-    margin: 12px 0 25px;
+    margin: 0;
 
-    text-align: center;
+    max-width: 700px;
 
-    color: #737982;
+    color: var(--text-secondary);
 
-    font-size: 12px;
+    font-size: 14px;
+
+    line-height: 1.5;
+
+}
+
+
+.feature7-header--manage {
+
+    margin-bottom: 22px;
+
 }
 
 
@@ -390,228 +73,361 @@ button {
     display: grid;
 
     grid-template-columns:
-        repeat(3, 1fr);
+        repeat(3, minmax(0, 1fr));
 
     gap: 14px;
 
-    max-width: 650px;
-
-    margin: 0 auto;
 }
 
+
+/* ==========================================================
+   INTEREST CARD
+========================================================== */
 
 .interest-card {
 
     position: relative;
 
-    height: 105px;
+    min-height: 140px;
 
     display: flex;
 
     flex-direction: column;
 
-    justify-content: center;
-
     align-items: center;
 
-    gap: 8px;
+    justify-content: center;
 
-    border: 1px solid #eeeeef;
+    padding: 25px 20px;
 
-    background: #ffffff;
+    box-sizing: border-box;
+
+    background: var(--bg-panel);
+
+    border: 1px solid var(--border);
+
+    border-radius: var(--radius);
+
+    color: var(--text-primary);
+
+    cursor: pointer;
 
     transition:
-        background 0.15s,
-        border 0.15s,
-        transform 0.15s;
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
+
 }
 
 
 .interest-card:hover {
 
-    border-color: #bcb7fa;
+    background: var(--bg-panel-alt);
 
-    transform: translateY(-1px);
+    border-color: var(--accent);
+
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 5px 15px rgba(0, 0, 0, 0.2);
+
 }
 
+
+/* ==========================================================
+   SELECTED INTEREST CARD
+========================================================== */
 
 .interest-card.selected {
 
-    border-color: #d7d3ff;
+    background: rgba(108, 92, 231, 0.18);
 
-    background: #dfddfa;
+    border-color: var(--accent);
+
 }
 
 
+.interest-card.selected:hover {
+
+    background: rgba(108, 92, 231, 0.23);
+
+}
+
+
+/* ==========================================================
+   CHECK BOX
+========================================================== */
+
+.interest-card .check-box {
+
+    position: absolute;
+
+    top: 12px;
+
+    right: 12px;
+
+    width: 22px;
+
+    height: 22px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    box-sizing: border-box;
+
+    border: 1px solid #465262;
+
+    border-radius: 4px;
+
+    background: var(--bg-input);
+
+    color: transparent;
+
+    font-size: 13px;
+
+    font-weight: 700;
+
+}
+
+
+.interest-card.selected .check-box {
+
+    background: var(--accent);
+
+    border-color: var(--accent);
+
+    color: #ffffff;
+
+}
+
+
+/* ==========================================================
+   CATEGORY ICON
+========================================================== */
+
 .category-icon {
 
-    color: #6e7580;
+    width: 42px;
 
-    transition: color 0.15s;
+    height: 42px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    margin-bottom: 12px;
+
+    color: var(--text-secondary);
+
 }
 
 
 .category-icon svg {
 
-    width: 26px;
-    height: 26px;
+    width: 32px;
+
+    height: 32px;
 
     display: block;
+
 }
 
 
-.interest-card.selected
-.category-icon {
+.interest-card.selected .category-icon {
 
-    color: #7165ed;
+    color: var(--accent);
+
 }
 
+
+/* ==========================================================
+   CATEGORY NAME
+========================================================== */
 
 .category-name {
 
-    font-size: 12px;
+    color: var(--text-primary);
+
+    font-size: 15px;
 
     font-weight: 600;
 
-    color: #343a42;
+    text-align: center;
+
 }
 
 
-.check-box {
+.interest-card.selected .category-name {
 
-    position: absolute;
+    color: #ffffff;
 
-    top: 8px;
-
-    right: 8px;
-
-    width: 16px;
-    height: 16px;
-
-    display: flex;
-
-    justify-content: center;
-    align-items: center;
-
-    border: 1px solid #c7cdd4;
-
-    background: white;
-
-    color: transparent;
-
-    font-size: 10px;
-}
-
-
-.interest-card.selected
-.check-box {
-
-    border-color: #7165ed;
-
-    background: #7165ed;
-
-    color: white;
 }
 
 
 /* ==========================================================
-   SETUP BUTTONS
+   FEATURE 7 BUTTONS
 ========================================================== */
 
-.setup-actions {
+.feature7-actions {
 
     display: flex;
 
+    align-items: center;
+
     justify-content: center;
 
-    gap: 10px;
+    gap: 12px;
 
-    margin-top: 20px;
+    margin-top: 24px;
+
 }
 
 
-.save-button {
+.feature7-actions--manage {
 
-    border: none;
+    justify-content: flex-end;
 
-    border-radius: 3px;
+    margin-top: 20px;
+
+}
+
+
+.feature7-button {
+
+    min-height: 40px;
 
     padding: 9px 18px;
 
-    color: white;
+    border-radius: 6px;
 
-    background: #5eb6a7;
+    font-family: inherit;
 
-    font-size: 12px;
+    font-size: 13px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.15s ease;
+
 }
 
 
-.save-button:hover {
+.feature7-button:hover {
 
-    background: #4ca596;
-}
+    transform: translateY(-1px);
 
-
-.skip-button,
-.cancel-button {
-
-    padding: 8px 18px;
-
-    border: 1px solid #bfc5cc;
-
-    border-radius: 3px;
-
-    background: white;
-
-    color: #555d66;
-
-    font-size: 12px;
-}
-
-
-.skip-button:hover,
-.cancel-button:hover {
-
-    background: #f1f2f4;
 }
 
 
 /* ==========================================================
-   PREFERENCES PAGE
+   PRIMARY BUTTON
 ========================================================== */
 
-.preference-panel,
-.manage-interest-panel {
+.feature7-button--primary {
 
-    margin-top: 20px;
+    background: var(--accent);
 
-    padding: 25px;
+    border: 1px solid var(--accent);
 
-    background: white;
+    color: #ffffff;
 
-    border: 1px solid #e4e6e9;
 }
 
 
-.preference-panel h2,
-.manage-interest-panel h2 {
+.feature7-button--primary:hover {
 
-    margin: 0 0 10px;
+    background: var(--accent-hover);
 
-    font-size: 16px;
+    border-color: var(--accent-hover);
 
-    color: #3d434a;
 }
 
 
-.preference-panel p,
-.manage-interest-panel p {
+/* ==========================================================
+   SECONDARY BUTTON
+========================================================== */
 
-    margin: 0 0 20px;
+.feature7-button--secondary {
 
-    color: #707780;
+    background: var(--bg-panel);
 
-    font-size: 12px;
+    border: 1px solid var(--border);
+
+    color: var(--text-secondary);
+
+}
+
+
+.feature7-button--secondary:hover {
+
+    background: var(--bg-panel-alt);
+
+    border-color: #465262;
+
+    color: var(--text-primary);
+
+}
+
+
+/* ==========================================================
+   PREFERENCE PANEL
+========================================================== */
+
+.preference-panel {
+
+    margin-bottom: 16px;
+
+    padding: 20px;
+
+    background: var(--bg-panel);
+
+    border: 1px solid var(--border);
+
+    border-radius: var(--radius);
+
+}
+
+
+.preference-panel__header {
+
+    margin-bottom: 16px;
+
+}
+
+
+.preference-panel__header h2 {
+
+    margin: 0 0 6px;
+
+    color: var(--text-primary);
+
+    font-size: 17px;
+
+    font-weight: 700;
+
+}
+
+
+.preference-panel__header p {
+
+    margin: 0;
+
+    color: var(--text-secondary);
+
+    font-size: 13px;
+
+    line-height: 1.5;
+
 }
 
 
@@ -621,11 +437,13 @@ button {
 
 .preference-list {
 
-    display: flex;
+    display: grid;
 
-    flex-direction: column;
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
 
-    gap: 10px;
+    gap: 9px;
+
 }
 
 
@@ -637,93 +455,126 @@ button {
 
     gap: 10px;
 
+    min-height: 44px;
+
+    padding: 9px 12px;
+
+    box-sizing: border-box;
+
+    background: var(--bg-panel-alt);
+
+    border: 1px solid var(--border);
+
+    border-radius: 6px;
+
+    color: var(--text-secondary);
+
     font-size: 13px;
 
-    color: #454b53;
+    cursor: pointer;
+
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease;
+
 }
 
 
-.preference-item input {
+.preference-item:hover {
 
-    width: 15px;
-    height: 15px;
+    border-color: var(--accent);
 
-    accent-color: #7165ed;
+    color: var(--text-primary);
+
 }
 
 
-.pref-icon {
+.preference-item.is-checked {
 
-    display: flex;
+    background: rgba(108, 92, 231, 0.16);
 
-    color: #6e7580;
+    border-color: rgba(108, 92, 231, 0.55);
 
-    transition: color 0.15s;
-}
+    color: var(--text-primary);
 
-
-.pref-icon svg {
-
-    width: 16px;
-    height: 16px;
-}
-
-
-.preference-item.is-checked
-.pref-icon {
-
-    color: #7165ed;
-}
-
-
-.manage-actions {
-
-    display: flex;
-
-    gap: 10px;
-
-    margin-top: 25px;
 }
 
 
 /* ==========================================================
-   MANAGE INTERESTS
+   PREFERENCE CHECKBOX
 ========================================================== */
 
-.manage-interest-panel {
+.preference-item input[type="checkbox"] {
 
-    margin-top: 20px;
+    width: 16px;
+
+    height: 16px;
+
+    margin: 0;
+
+    accent-color: var(--accent);
+
+    cursor: pointer;
+
 }
 
 
-.selected-section {
+.pref-icon {
 
-    padding-bottom: 18px;
+    width: 24px;
 
-    border-bottom: 1px solid #dfe2e6;
+    height: 24px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    color: var(--text-secondary);
+
 }
 
 
-.selected-section h3,
-.add-section h3 {
+.preference-item.is-checked .pref-icon {
 
-    margin: 0 0 12px;
+    color: var(--accent);
 
-    font-size: 13px;
-
-    color: #454b52;
 }
 
 
-.interest-tags {
+/* ==========================================================
+   SELECTED INTERESTS
+========================================================== */
+
+.selected-interests {
 
     display: flex;
 
     flex-wrap: wrap;
 
-    gap: 7px;
+    gap: 8px;
+
+    min-height: 34px;
+
+    margin-bottom: 18px;
+
 }
 
+
+.selected-interests > span {
+
+    color: var(--text-muted);
+
+    font-size: 13px;
+
+}
+
+
+/* ==========================================================
+   INTEREST TAG
+========================================================== */
 
 .interest-tag {
 
@@ -733,35 +584,64 @@ button {
 
     gap: 7px;
 
-    padding: 6px 9px;
+    min-height: 32px;
 
-    border-radius: 2px;
+    padding: 5px 7px 5px 12px;
 
-    background: #dedcfa;
+    box-sizing: border-box;
 
-    color: #4b4b73;
+    border: 1px solid rgba(108, 92, 231, 0.4);
 
-    font-size: 11px;
+    border-radius: 18px;
+
+    background: rgba(108, 92, 231, 0.16);
+
+    color: #b8afff;
+
+    font-size: 12px;
+
+    font-weight: 600;
+
 }
 
 
-.remove-interest {
+.interest-tag .remove-interest {
 
-    border: none;
+    width: 20px;
+
+    height: 20px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
 
     padding: 0;
 
+    border: none;
+
+    border-radius: 50%;
+
     background: transparent;
 
-    color: #666a76;
+    color: #aaa0ed;
 
-    font-size: 13px;
+    font-size: 15px;
+
+    line-height: 1;
+
+    cursor: pointer;
+
 }
 
 
-.remove-interest:hover {
+.interest-tag .remove-interest:hover {
 
-    color: #d34d5d;
+    background: rgba(255, 255, 255, 0.1);
+
+    color: #ffffff;
+
 }
 
 
@@ -769,66 +649,88 @@ button {
    ADD INTEREST
 ========================================================== */
 
-.add-section {
+.add-interest-section {
 
-    padding: 18px 0;
+    margin-top: 4px;
 
-    border-bottom: 1px solid #dfe2e6;
 }
 
 
-.add-controls {
+.add-interest-label {
+
+    display: block;
+
+    margin-bottom: 7px;
+
+    color: var(--text-secondary);
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+}
+
+
+.add-interest-row {
 
     display: flex;
 
-    gap: 8px;
+    align-items: center;
+
+    gap: 9px;
+
 }
 
 
-.add-controls select {
+.interest-select {
 
-    width: 260px;
+    flex: 1;
 
-    height: 34px;
+    min-height: 40px;
 
-    padding: 0 8px;
+    padding: 8px 11px;
 
-    border: 1px solid #bcc2ca;
+    border: 1px solid var(--border);
 
-    background: white;
+    border-radius: 6px;
 
-    color: #50565e;
+    outline: none;
 
-    font-size: 12px;
+    background: var(--bg-input);
+
+    color: var(--text-primary);
+
+    font-family: inherit;
+
+    font-size: 13px;
+
 }
 
 
-.add-button {
+.interest-select:focus {
 
-    border: none;
+    border-color: var(--accent);
 
-    border-radius: 3px;
+    box-shadow:
+        0 0 0 2px rgba(108, 92, 231, 0.15);
 
-    padding: 0 16px;
-
-    background: #7165ed;
-
-    color: white;
-
-    font-size: 12px;
 }
 
 
-.add-button:hover {
+.interest-select option {
 
-    background: #5e52dc;
+    background: var(--bg-panel);
+
+    color: var(--text-primary);
+
 }
 
 
-.manage-interest-panel
-> .save-button {
+.add-interest-row
+.feature7-button {
 
-    margin-top: 18px;
+    min-width: 70px;
+
 }
 
 
@@ -836,19 +738,37 @@ button {
    SUCCESS MESSAGE
 ========================================================== */
 
-.success-message {
-
-    width: fit-content;
+.feature7-success {
 
     margin-top: 14px;
 
-    padding: 9px 13px;
+    padding: 11px 15px;
 
-    background: #dff2ee;
+    border: 1px solid #27685f;
 
-    color: #47897d;
+    border-radius: 6px;
 
-    font-size: 11px;
+    background: rgba(39, 104, 95, 0.18);
+
+    color: #7dd5c7;
+
+    text-align: center;
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+}
+
+
+/* ==========================================================
+   HIDDEN
+========================================================== */
+
+.hidden {
+
+    display: none !important;
+
 }
 
 
@@ -858,24 +778,19 @@ button {
 
 @media (max-width: 900px) {
 
-    .top-navigation {
+    .interest-grid {
 
-        display: none;
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+
     }
 
-    .search-box {
 
-        width: 150px;
-    }
+    .preference-list {
 
-    .sidebar {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
 
-        width: 150px;
-    }
-
-    .main-content {
-
-        padding: 20px;
     }
 
 }
@@ -883,56 +798,57 @@ button {
 
 @media (max-width: 650px) {
 
-    .topbar {
-
-        padding: 0 15px;
-    }
-
-    .brand {
-
-        min-width: auto;
-    }
-
-    .brand span:last-child {
-
-        display: none;
-    }
-
-    .user-menu {
-
-        display: none;
-    }
-
-    .search-box {
-
-        width: 120px;
-    }
-
-    .sidebar {
-
-        width: 60px;
-    }
-
-    .sidebar a {
-
-        justify-content: center;
-
-        padding: 0;
-    }
-
-    .sidebar a {
-
-        font-size: 0;
-    }
-
-    .side-icon {
-
-        font-size: 16px;
-    }
-
     .interest-grid {
 
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr;
+
+    }
+
+
+    .preference-list {
+
+        grid-template-columns: 1fr;
+
+    }
+
+
+    .feature7-actions {
+
+        justify-content: stretch;
+
+        flex-direction: column;
+
+    }
+
+
+    .feature7-actions--manage {
+
+        flex-direction: column-reverse;
+
+    }
+
+
+    .feature7-button {
+
+        width: 100%;
+
+    }
+
+
+    .add-interest-row {
+
+        flex-direction: column;
+
+        align-items: stretch;
+
+    }
+
+
+    .add-interest-row
+    .feature7-button {
+
+        width: 100%;
+
     }
 
 }

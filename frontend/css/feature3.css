@@ -1,0 +1,259 @@
+/* ==========================================================
+   FEATURE 3
+   BOOKMARK AND READING HISTORY
+========================================================== */
+
+
+/* ==========================================================
+   BOOKMARK BUTTON
+========================================================== */
+
+.article-action {
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease;
+}
+
+
+.article-action.is-bookmarked {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: #ffffff;
+}
+
+
+.article-action.is-bookmarked:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+}
+
+
+/* ==========================================================
+   BOOKMARK CONFIRMATION MODAL
+========================================================== */
+
+.bookmark-modal {
+    position: fixed;
+    inset: 0;
+
+    z-index: 1000;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+}
+
+
+/* Dark background */
+
+.bookmark-modal__overlay {
+    position: absolute;
+
+    inset: 0;
+
+    background: rgba(0, 0, 0, 0.65);
+}
+
+
+/* Modal box */
+
+.bookmark-modal__content {
+    position: relative;
+
+    z-index: 1;
+
+    width: min(
+        420px,
+        calc(100vw - 40px)
+    );
+
+    padding: 26px;
+
+    border: 1px solid var(--border);
+
+    border-radius: 10px;
+
+    background: var(--bg-panel);
+
+    box-shadow:
+        0 20px 50px rgba(0, 0, 0, 0.35);
+
+    text-align: center;
+}
+
+
+/* Modal title */
+
+.bookmark-modal__content h2 {
+    margin: 0 0 12px;
+
+    color: var(--text-primary);
+
+    font-size: 19px;
+
+    font-weight: 700;
+}
+
+
+/* Modal text */
+
+.bookmark-modal__content p {
+    margin: 0;
+
+    color: var(--text-secondary);
+
+    font-size: 14px;
+
+    line-height: 1.6;
+}
+
+
+/* Modal buttons */
+
+.bookmark-modal__actions {
+    display: flex;
+
+    justify-content: center;
+
+    gap: 10px;
+
+    margin-top: 24px;
+}
+
+
+/* Common button */
+
+.bookmark-modal__button {
+    min-width: 80px;
+
+    padding: 9px 18px;
+
+    border-radius: 6px;
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease;
+}
+
+
+/* No */
+
+.bookmark-modal__button--cancel {
+    border: 1px solid var(--border);
+
+    background: var(--bg-input);
+
+    color: var(--text-secondary);
+}
+
+
+.bookmark-modal__button--cancel:hover {
+    background: var(--bg-panel-alt);
+
+    color: var(--text-primary);
+}
+
+
+/* Yes */
+
+.bookmark-modal__button--confirm {
+    border: 1px solid var(--accent);
+
+    background: var(--accent);
+
+    color: #ffffff;
+}
+
+
+.bookmark-modal__button--confirm:hover {
+    background: var(--accent-hover);
+
+    border-color: var(--accent-hover);
+}
+
+
+/* ==========================================================
+   SUCCESS / ERROR MESSAGE
+========================================================== */
+
+.bookmark-message {
+    position: fixed;
+
+    left: 50%;
+
+    bottom: 28px;
+
+    z-index: 1100;
+
+    transform: translateX(-50%);
+
+    padding: 11px 18px;
+
+    border: 1px solid var(--border);
+
+    border-radius: 7px;
+
+    background: var(--bg-panel);
+
+    color: var(--text-primary);
+
+    font-size: 13px;
+
+    box-shadow:
+        0 8px 25px rgba(0, 0, 0, 0.25);
+
+    transition:
+        opacity 0.25s ease,
+        transform 0.25s ease;
+}
+
+
+/* Error message */
+
+.bookmark-message--error {
+    border-color: #7d403d;
+
+    color: #f28b82;
+}
+
+
+/* Hide animation */
+
+.bookmark-message--hide {
+    opacity: 0;
+
+    transform:
+        translateX(-50%)
+        translateY(8px);
+}
+
+
+/* ==========================================================
+   MOBILE
+========================================================== */
+
+@media (max-width: 600px) {
+
+    .bookmark-modal__content {
+        padding: 22px;
+    }
+
+
+    .bookmark-modal__actions {
+        flex-direction: column-reverse;
+    }
+
+
+    .bookmark-modal__button {
+        width: 100%;
+    }
+
+}

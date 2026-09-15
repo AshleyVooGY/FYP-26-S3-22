@@ -1,5 +1,6 @@
 import { getTrendingArticles, getPopularArticles } from "../../services/feature5Service.js";
-import { formatCount, formatRelativeTime, escapeHtml } from "./format.js";
+import { formatCount, formatRelativeTime, escapeHtml, thumbHtml } from "./format.js";
+import { renderPagination as renderPaginationControl } from "./pagination.js";
 
 const PAGE_SIZE = 5;
 const FETCH_LIMIT = 50;
@@ -75,55 +76,23 @@ function renderTabs() {
 }
 
 function renderPagination(totalItems) {
-  const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
-  const pag = document.getElementById("pagination");
-
-  if (totalPages <= 1) {
-    pag.innerHTML = "";
-    return;
-  }
-
-  const buttons = [];
-  buttons.push(`<button data-page="${state.page - 1}" ${state.page === 1 ? "disabled" : ""}>← Prev</button>`);
-
-  const pageNumbers = new Set([1, totalPages, state.page]);
-  const sorted = [...pageNumbers].filter((p) => p >= 1 && p <= totalPages).sort((a, b) => a - b);
-
-  let prev = 0;
-  for (const p of sorted) {
-    if (prev && p - prev > 1) {
-      buttons.push(`<span class="pagination__ellipsis">…</span>`);
-    }
-    buttons.push(
-      `<button data-page="${p}" class="${p === state.page ? "is-active" : ""}">${p}</button>`
-    );
-    prev = p;
-  }
-
-  buttons.push(
-    `<button data-page="${state.page + 1}" ${state.page === totalPages ? "disabled" : ""}>Next →</button>`
-  );
-
-  pag.innerHTML = buttons.join("");
-
-  pag.querySelectorAll("button[data-page]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      state.page = Number(btn.dataset.page);
+  renderPaginationControl(document.getElementById("pagination"), {
+    page: state.page,
+    totalItems,
+    pageSize: PAGE_SIZE,
+    onPageChange: (page) => {
+      state.page = page;
       renderRows();
       renderPagination(totalItems);
-    });
+    }
   });
 }
 
 function rowHtml(article, rank) {
-  const thumb = article.featured_image_url
-    ? `<img src="${escapeHtml(article.featured_image_url)}" alt="" />`
-    : "🖼";
-
   return `
     <a class="rank-row" href="article.html?id=${article.id}">
       <span class="rank-row__num">${rank}</span>
-      <div class="thumb">${thumb}</div>
+      <div class="thumb">${thumbHtml(article)}</div>
       <div class="rank-row__body">
         <span class="badge">${escapeHtml(article.category)}</span>
         <p class="rank-row__title">${escapeHtml(article.title)}</p>

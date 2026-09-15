@@ -42,6 +42,29 @@ export async function requireAuth(redirectTo = "login.html") {
   return user;
 }
 
+// Checks whether the signed-in user is a System Admin (server-verified
+// via the is_system_admin() function Feature 1 defined for RLS).
+export async function isSystemAdmin() {
+  const { data, error } = await supabase.rpc("is_system_admin");
+  if (error) {
+    return false;
+  }
+  return data === true;
+}
+
+// Guards pages restricted to System Admins. Redirects guests to
+// redirectTo like requireAuth(), but a signed-in non-admin simply
+// gets null back so the page can render its own restricted-access
+// state instead of being redirected away.
+export async function requireAdmin(redirectTo = "login.html") {
+  const user = await requireAuth(redirectTo);
+  if (!user) {
+    return null;
+  }
+  const admin = await isSystemAdmin();
+  return admin ? user : null;
+}
+
 // ==========================================================
 // APP SHELL WIRING
 // Any page that imports this module gets a working user-chip

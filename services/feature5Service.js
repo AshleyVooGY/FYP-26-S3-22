@@ -46,7 +46,10 @@ export async function getPopularArticles(limit = 10) {
 export async function getArticleById(articleId) {
   const { data, error } = await supabase
     .from("articles")
-    .select("id, title, category:categories!articles_category_id_fkey(name), featured_image_url, view_count, published_at")
+    .select(
+      `id, title, content, featured_image_url, view_count, reaction_count,
+       published_at, category:categories!articles_category_id_fkey(name), author:profiles(display_name)`
+    )
     .eq("id", articleId)
     .eq("status", "published")
     .single();

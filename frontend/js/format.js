@@ -46,3 +46,19 @@ export function escapeHtml(value) {
   div.textContent = value ?? "";
   return div.innerHTML;
 }
+
+export function thumbHtml(article) {
+  if (article.featured_image_url) {
+    return `<img src="${escapeHtml(article.featured_image_url)}" alt="" />`;
+  }
+  return "🖼";
+}
+
+export function forbiddenStateHtml() {
+  return `
+    <div class="forbidden-state">
+      <p class="forbidden-state__title">Restricted to System Admins</p>
+      <p>This page shows analytics for the whole platform and is only available to System Admin accounts.</p>
+    </div>
+  `;
+}

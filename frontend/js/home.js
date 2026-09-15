@@ -3,14 +3,7 @@ import {
   getPopularArticles,
   getLatestArticles
 } from "../../services/feature5Service.js";
-import { formatCount, formatRelativeTime, escapeHtml } from "./format.js";
-
-function thumbHtml(article) {
-  if (article.featured_image_url) {
-    return `<img src="${escapeHtml(article.featured_image_url)}" alt="" />`;
-  }
-  return "🖼";
-}
+import { formatCount, formatRelativeTime, escapeHtml, thumbHtml } from "./format.js";
 
 function renderFeatured(article) {
   const slot = document.getElementById("featured-slot");

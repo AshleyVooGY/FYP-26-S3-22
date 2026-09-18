@@ -1,0 +1,217 @@
+/* Feature 6: News Analytics and View Tracking — page-specific styles.
+   Reuses shell.css tokens/.state-message and feature5.css's .badge
+   and .pagination rather than redefining them. */
+
+.forbidden-state {
+  max-width: 480px;
+  margin: 60px auto;
+  text-align: center;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px 28px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.forbidden-state__title {
+  color: var(--text-primary);
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0 0 10px;
+}
+
+/* ---- Summary cards ---- */
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.summary-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+}
+
+.summary-card__label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0 0 8px;
+}
+
+.summary-card__value {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+}
+
+/* ---- Panels + section headers ---- */
+
+.analytics-panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin-bottom: 24px;
+}
+
+.analytics-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.analytics-panel__head h2 {
+  margin: 0;
+}
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+/* ---- Data table ---- */
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.data-table th {
+  text-align: left;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 12px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.data-table td {
+  padding: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.data-table tr:last-child td {
+  border-bottom: none;
+}
+
+.data-table a {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.data-table a:hover {
+  color: var(--accent);
+}
+
+.data-table td.is-numeric,
+.data-table th.is-numeric {
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ---- Category popularity bar ---- */
+
+.category-bar-track {
+  background: var(--bg-input);
+  border-radius: 4px;
+  height: 8px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.category-bar-fill {
+  background: var(--accent);
+  height: 100%;
+  border-radius: 4px;
+}
+
+/* ---- List toolbar (search / filter / sort) ---- */
+
+.list-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.list-toolbar input,
+.list-toolbar select {
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.list-toolbar input {
+  flex: 1;
+  min-width: 180px;
+}
+
+/* ---- Article analytics detail ---- */
+
+.article-analytics-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.article-analytics-head h1 {
+  font-size: 20px;
+  margin: 8px 0 6px;
+}
+
+/* ---- Simple CSS bar chart for the view trend ---- */
+
+.trend-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 160px;
+  padding-top: 10px;
+}
+
+.trend-chart__bar {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  gap: 6px;
+}
+
+.trend-chart__col {
+  width: 100%;
+  background: var(--accent);
+  border-radius: 3px 3px 0 0;
+  min-height: 2px;
+}
+
+.trend-chart__label {
+  font-size: 10px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .summary-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .analytics-grid {
+    grid-template-columns: 1fr;
+  }
+}

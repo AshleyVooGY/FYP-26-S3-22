@@ -1,0 +1,62 @@
+/* Feature 8: Article Media Management — page-specific styles.
+   Reuses shell.css tokens plus feature5.css's .badge/.article-action
+   and feature6.css's .analytics-panel/.data-table rather than
+   redefining them. */
+
+.media-thumb {
+  width: 64px;
+  height: 44px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--bg-input);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--text-muted);
+}
+
+.media-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.media-meta {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.media-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.media-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.media-upload-btn:hover {
+  background: var(--accent-hover);
+}
+
+.media-row-status {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  min-height: 14px;
+}
+
+.media-row-status.is-error {
+  color: #e57373;
+}

@@ -1,0 +1,142 @@
+/* Feature 8: Article Media and Draft Management — page-specific styles.
+   Reuses shell.css tokens plus feature5.css's .badge/.article-action
+   and feature6.css's .analytics-panel/.data-table rather than
+   redefining them. */
+
+.media-thumb {
+  width: 64px;
+  height: 44px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--bg-input);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--text-muted);
+}
+
+.media-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.media-meta {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.media-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.media-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.media-upload-btn:hover {
+  background: var(--accent-hover);
+}
+
+.media-row-status {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  min-height: 14px;
+}
+
+.media-row-status.is-error {
+  color: #e57373;
+}
+
+/* ---- Article editor form ---- */
+
+.article-editor {
+  max-width: 720px;
+}
+
+.article-editor__field {
+  display: block;
+  margin-bottom: 18px;
+}
+
+.article-editor__field > span {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.article-editor__field input[type="text"],
+.article-editor__field select,
+.article-editor__field textarea {
+  width: 100%;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.article-editor__field textarea {
+  resize: vertical;
+}
+
+.article-editor__thumb {
+  width: 160px;
+  height: 100px;
+  margin-bottom: 10px;
+  font-size: 28px;
+}
+
+.article-editor__actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.article-editor__btn {
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.article-editor__btn:hover {
+  border-color: var(--accent);
+}
+
+.article-editor__btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.article-editor__btn--primary:hover {
+  background: var(--accent-hover);
+}
+
+.article-editor__btn--danger {
+  color: #e57373;
+}

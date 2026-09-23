@@ -973,7 +973,8 @@ function updateUserLabel() {
     if (currentUser) {
 
         userLabel.textContent =
-            currentUser.email ??
+            currentUser.user_metadata?.display_name ||
+            currentUser.email ||
             "Account";
 
     } else {

@@ -1,31 +1,351 @@
 /* ==========================================================
    FEATURE 3
-   BOOKMARK AND READING HISTORY
+   BOOKMARKS + READING HISTORY
 ========================================================== */
 
 
 /* ==========================================================
-   BOOKMARK BUTTON
+   GENERAL
 ========================================================== */
 
-.article-action {
+.hidden {
+    display: none !important;
+}
+
+
+/* ==========================================================
+   BOOKMARK GRID
+========================================================== */
+
+.bookmark-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+    gap: 16px;
+
+    width: 100%;
+}
+
+
+/* ==========================================================
+   BOOKMARK CARD
+========================================================== */
+
+.bookmark-card {
+    display: flex;
+
+    flex-direction: column;
+
+    min-width: 0;
+
+    overflow: hidden;
+
+    background: var(--bg-panel);
+
+    border: 1px solid var(--border);
+
+    border-radius: var(--radius);
+
+    transition:
+        transform 0.15s ease,
+        border-color 0.15s ease;
+}
+
+
+.bookmark-card:hover {
+    transform: translateY(-2px);
+
+    border-color: var(--accent);
+}
+
+
+/* ==========================================================
+   BOOKMARK CARD IMAGE
+========================================================== */
+
+.bookmark-card__image {
+    display: block;
+
+    width: 100%;
+    height: 145px;
+
+    overflow: hidden;
+
+    background: var(--bg-input);
+
+    text-decoration: none;
+}
+
+
+.bookmark-card__image img {
+    display: block;
+
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+}
+
+
+/* ==========================================================
+   BOOKMARK IMAGE PLACEHOLDER
+========================================================== */
+
+.bookmark-card__placeholder {
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    width: 100%;
+    height: 100%;
+
+    color: var(--text-muted);
+}
+
+
+.bookmark-card__placeholder svg {
+    display: block;
+
+    width: 34px !important;
+    height: 34px !important;
+
+    max-width: 34px;
+    max-height: 34px;
+}
+
+
+/* ==========================================================
+   BOOKMARK CARD BODY
+========================================================== */
+
+.bookmark-card__body {
+    display: flex;
+
+    flex-direction: column;
+
+    min-width: 0;
+
+    padding: 10px;
+}
+
+
+/* ==========================================================
+   CATEGORY BADGE
+========================================================== */
+
+.bookmark-card__body .badge {
+    align-self: flex-start;
+
+    margin-bottom: 6px;
+
+    padding: 4px 8px;
+
+    border-radius: 12px;
+
+    background: var(--accent);
+
+    color: #ffffff;
+
+    font-size: 10px;
+
+    font-weight: 600;
+}
+
+
+/* ==========================================================
+   BOOKMARK TITLE
+========================================================== */
+
+.bookmark-card__title {
+    margin: 0 0 8px;
+
+    font-size: 14px;
+
+    line-height: 1.35;
+
+    font-weight: 600;
+}
+
+
+.bookmark-card__title a {
+    display: -webkit-box;
+
+    overflow: hidden;
+
+    color: var(--text-primary);
+
+    text-decoration: none;
+
+    -webkit-box-orient: vertical;
+
+    -webkit-line-clamp: 2;
+}
+
+
+.bookmark-card__title a:hover {
+    color: var(--accent);
+}
+
+
+/* ==========================================================
+   BOOKMARK META
+========================================================== */
+
+.bookmark-card__meta {
+    display: flex;
+
+    align-items: center;
+
+    flex-wrap: wrap;
+
+    gap: 9px;
+
+    color: var(--text-secondary);
+
+    font-size: 11px;
+}
+
+
+.bookmark-card__meta span {
+    white-space: nowrap;
+}
+
+
+/* ==========================================================
+   EMPTY BOOKMARK STATE
+========================================================== */
+
+.bookmark-empty {
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    min-height: 300px;
+
+    width: 100%;
+
+    padding: 30px;
+
+    background: var(--bg-panel);
+
+    border: 1px dashed var(--border);
+
+    border-radius: var(--radius);
+
+    text-align: center;
+}
+
+
+/* ==========================================================
+   EMPTY BOOKMARK ICON
+========================================================== */
+
+.bookmark-empty__icon {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    width: 50px;
+    height: 50px;
+
+    margin-bottom: 12px;
+
+    color: var(--text-muted);
+}
+
+
+.bookmark-empty__icon svg {
+    display: block;
+
+    width: 38px !important;
+    height: 38px !important;
+
+    max-width: 38px;
+    max-height: 38px;
+}
+
+
+/* ==========================================================
+   EMPTY BOOKMARK TITLE
+========================================================== */
+
+.bookmark-empty h2 {
+    margin: 0 0 7px;
+
+    color: var(--text-primary);
+
+    font-size: 18px;
+
+    font-weight: 700;
+}
+
+
+/* ==========================================================
+   EMPTY BOOKMARK DESCRIPTION
+========================================================== */
+
+.bookmark-empty p {
+    margin: 0;
+
+    color: var(--text-secondary);
+
+    font-size: 13px;
+
+    line-height: 1.5;
+}
+
+
+/* ==========================================================
+   BROWSE TRENDING BUTTON
+========================================================== */
+
+.bookmark-empty__button {
+    display: inline-block;
+
+    margin-top: 18px;
+
+    padding: 9px 16px;
+
+    border-radius: 6px;
+
+    background: var(--accent);
+
+    color: #ffffff;
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+    text-decoration: none;
+
     transition:
         background 0.15s ease,
-        border-color 0.15s ease,
-        color 0.15s ease;
+        transform 0.15s ease;
 }
 
 
-.article-action.is-bookmarked {
-    border-color: var(--accent);
-    background: var(--accent);
-    color: #ffffff;
-}
-
-
-.article-action.is-bookmarked:hover {
+.bookmark-empty__button:hover {
     background: var(--accent-hover);
-    border-color: var(--accent-hover);
+
+    transform: translateY(-1px);
+}
+
+
+/* ==========================================================
+   ERROR MESSAGE
+========================================================== */
+
+.state-message.is-error {
+    color: #f28b82;
 }
 
 
@@ -33,108 +353,126 @@
    BOOKMARK CONFIRMATION MODAL
 ========================================================== */
 
+/*
+   The modal covers the entire browser viewport.
+*/
+
 .bookmark-modal {
     position: fixed;
-    inset: 0;
 
-    z-index: 1000;
+    inset: 0;
 
     display: flex;
 
     align-items: center;
     justify-content: center;
-}
 
+    width: 100vw;
+    height: 100vh;
 
-/* Dark background */
-
-.bookmark-modal__overlay {
-    position: absolute;
-
-    inset: 0;
+    padding: 20px;
 
     background: rgba(0, 0, 0, 0.65);
+
+    z-index: 9999;
+
+    box-sizing: border-box;
 }
 
 
-/* Modal box */
+/* ==========================================================
+   MODAL CONTENT BOX
+========================================================== */
 
 .bookmark-modal__content {
     position: relative;
 
-    z-index: 1;
-
-    width: min(
-        420px,
-        calc(100vw - 40px)
-    );
+    width: min(420px, 90vw);
 
     padding: 26px;
+
+    background: var(--bg-panel);
 
     border: 1px solid var(--border);
 
     border-radius: 10px;
 
-    background: var(--bg-panel);
-
     box-shadow:
-        0 20px 50px rgba(0, 0, 0, 0.35);
+        0 20px 50px rgba(0, 0, 0, 0.45);
+
+    box-sizing: border-box;
 
     text-align: center;
 }
 
 
-/* Modal title */
+/* ==========================================================
+   MODAL TITLE
+========================================================== */
 
 .bookmark-modal__content h2 {
-    margin: 0 0 12px;
+    margin: 0 0 14px;
 
     color: var(--text-primary);
 
-    font-size: 19px;
+    font-size: 20px;
+
+    line-height: 1.3;
 
     font-weight: 700;
 }
 
 
-/* Modal text */
+/* ==========================================================
+   MODAL MESSAGE
+========================================================== */
 
 .bookmark-modal__content p {
-    margin: 0;
+    margin: 0 0 22px;
 
     color: var(--text-secondary);
 
     font-size: 14px;
 
-    line-height: 1.6;
+    line-height: 1.5;
 }
 
 
-/* Modal buttons */
+/* ==========================================================
+   MODAL BUTTON CONTAINER
+========================================================== */
 
 .bookmark-modal__actions {
     display: flex;
 
+    align-items: center;
+
     justify-content: center;
 
     gap: 10px;
-
-    margin-top: 24px;
 }
 
 
-/* Common button */
+/* ==========================================================
+   MODAL CANCEL BUTTON
+========================================================== */
 
-.bookmark-modal__button {
-    min-width: 80px;
+.bookmark-modal__cancel {
+    min-width: 75px;
 
-    padding: 9px 18px;
+    padding: 9px 20px;
+
+    border: 1px solid var(--border);
 
     border-radius: 6px;
 
+    background: var(--bg-input);
+
+    color: var(--text-primary);
+
     font-size: 13px;
 
-    font-weight: 600;
+    font-weight: 500;
 
     cursor: pointer;
 
@@ -144,116 +482,339 @@
 }
 
 
-/* No */
-
-.bookmark-modal__button--cancel {
-    border: 1px solid var(--border);
-
-    background: var(--bg-input);
-
-    color: var(--text-secondary);
-}
-
-
-.bookmark-modal__button--cancel:hover {
+.bookmark-modal__cancel:hover {
     background: var(--bg-panel-alt);
 
-    color: var(--text-primary);
+    border-color: var(--text-muted);
 }
 
 
-/* Yes */
+/* ==========================================================
+   MODAL CONFIRM BUTTON
+========================================================== */
 
-.bookmark-modal__button--confirm {
-    border: 1px solid var(--accent);
+.bookmark-modal__confirm {
+    min-width: 75px;
+
+    padding: 9px 20px;
+
+    border: none;
+
+    border-radius: 6px;
 
     background: var(--accent);
 
     color: #ffffff;
-}
-
-
-.bookmark-modal__button--confirm:hover {
-    background: var(--accent-hover);
-
-    border-color: var(--accent-hover);
-}
-
-
-/* ==========================================================
-   SUCCESS / ERROR MESSAGE
-========================================================== */
-
-.bookmark-message {
-    position: fixed;
-
-    left: 50%;
-
-    bottom: 28px;
-
-    z-index: 1100;
-
-    transform: translateX(-50%);
-
-    padding: 11px 18px;
-
-    border: 1px solid var(--border);
-
-    border-radius: 7px;
-
-    background: var(--bg-panel);
-
-    color: var(--text-primary);
 
     font-size: 13px;
 
-    box-shadow:
-        0 8px 25px rgba(0, 0, 0, 0.25);
+    font-weight: 600;
+
+    cursor: pointer;
 
     transition:
-        opacity 0.25s ease,
-        transform 0.25s ease;
+        background 0.15s ease,
+        transform 0.15s ease;
 }
 
 
-/* Error message */
+.bookmark-modal__confirm:hover {
+    background: var(--accent-hover);
 
-.bookmark-message--error {
-    border-color: #7d403d;
-
-    color: #f28b82;
-}
-
-
-/* Hide animation */
-
-.bookmark-message--hide {
-    opacity: 0;
-
-    transform:
-        translateX(-50%)
-        translateY(8px);
+    transform: translateY(-1px);
 }
 
 
 /* ==========================================================
-   MOBILE
+   MODAL HIDDEN STATE
 ========================================================== */
 
-@media (max-width: 600px) {
+.bookmark-modal.hidden {
+    display: none !important;
+}
+
+
+/* ==========================================================
+   MODAL FADE-IN
+========================================================== */
+
+.bookmark-modal {
+    animation: bookmarkModalFadeIn 0.15s ease-out;
+}
+
+
+@keyframes bookmarkModalFadeIn {
+
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+
+}
+
+
+/* ==========================================================
+   MODAL BOX ANIMATION
+========================================================== */
+
+.bookmark-modal__content {
+    animation: bookmarkModalScaleIn 0.15s ease-out;
+}
+
+
+@keyframes bookmarkModalScaleIn {
+
+    from {
+        opacity: 0;
+
+        transform: scale(0.96);
+    }
+
+    to {
+        opacity: 1;
+
+        transform: scale(1);
+    }
+
+}
+
+
+/* ==========================================================
+   READING HISTORY
+========================================================== */
+
+.history-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+    gap: 16px;
+
+    width: 100%;
+}
+
+
+/* ==========================================================
+   HISTORY CARD
+========================================================== */
+
+.history-card {
+    display: flex;
+
+    flex-direction: column;
+
+    min-width: 0;
+
+    overflow: hidden;
+
+    background: var(--bg-panel);
+
+    border: 1px solid var(--border);
+
+    border-radius: var(--radius);
+
+    transition:
+        transform 0.15s ease,
+        border-color 0.15s ease;
+}
+
+
+.history-card:hover {
+    transform: translateY(-2px);
+
+    border-color: var(--accent);
+}
+
+
+/* ==========================================================
+   HISTORY IMAGE
+========================================================== */
+
+.history-card__image {
+    display: block;
+
+    width: 100%;
+    height: 145px;
+
+    overflow: hidden;
+
+    background: var(--bg-input);
+
+    text-decoration: none;
+}
+
+
+.history-card__image img {
+    display: block;
+
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+}
+
+
+/* ==========================================================
+   HISTORY IMAGE PLACEHOLDER
+========================================================== */
+
+.history-card__placeholder {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    width: 100%;
+    height: 100%;
+
+    color: var(--text-muted);
+}
+
+
+.history-card__placeholder svg {
+    width: 34px !important;
+    height: 34px !important;
+
+    max-width: 34px;
+    max-height: 34px;
+}
+
+
+/* ==========================================================
+   HISTORY BODY
+========================================================== */
+
+.history-card__body {
+    display: flex;
+
+    flex-direction: column;
+
+    padding: 10px;
+}
+
+
+/* ==========================================================
+   HISTORY TITLE
+========================================================== */
+
+.history-card__title {
+    margin: 0 0 8px;
+
+    font-size: 14px;
+
+    line-height: 1.35;
+
+    font-weight: 600;
+}
+
+
+.history-card__title a {
+    display: -webkit-box;
+
+    overflow: hidden;
+
+    color: var(--text-primary);
+
+    text-decoration: none;
+
+    -webkit-box-orient: vertical;
+
+    -webkit-line-clamp: 2;
+}
+
+
+.history-card__title a:hover {
+    color: var(--accent);
+}
+
+
+/* ==========================================================
+   HISTORY META
+========================================================== */
+
+.history-card__meta {
+    display: flex;
+
+    align-items: center;
+
+    flex-wrap: wrap;
+
+    gap: 9px;
+
+    color: var(--text-secondary);
+
+    font-size: 11px;
+}
+
+
+/* ==========================================================
+   RESPONSIVE
+========================================================== */
+
+@media (max-width: 1100px) {
+
+    .bookmark-grid,
+    .history-grid {
+
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+
+    }
+
+}
+
+
+@media (max-width: 700px) {
+
+    .bookmark-grid,
+    .history-grid {
+
+        grid-template-columns: 1fr;
+
+    }
+
+
+    .bookmark-card__image,
+    .history-card__image {
+
+        height: 180px;
+
+    }
+
+
+    .bookmark-modal {
+
+        padding: 16px;
+
+    }
+
 
     .bookmark-modal__content {
+
+        width: 100%;
+
         padding: 22px;
+
     }
 
 
     .bookmark-modal__actions {
-        flex-direction: column-reverse;
+
+        width: 100%;
+
     }
 
 
-    .bookmark-modal__button {
-        width: 100%;
+    .bookmark-modal__cancel,
+    .bookmark-modal__confirm {
+
+        flex: 1;
+
     }
 
 }

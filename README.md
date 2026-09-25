@@ -93,20 +93,6 @@ Never commit:
 * Supabase `service_role` keys
 * User login credentials
 
-## Current Backend Implementation
-
-The Supabase backend currently contains the database structures required for Trending and Popular News and Preference and Interest Management.
-
-Feature 5 provides the following database functions:
-
-| Function                                                | Purpose                                                        |
-| ------------------------------------------------------- | -------------------------------------------------------------- |
-| `get_trending_articles(result_limit)`                   | Retrieves ranked published articles from the trending period   |
-| `get_popular_articles(result_limit)`                    | Retrieves ranked published articles across all available dates |
-| `record_article_view(p_article_id, p_guest_session_id)` | Records valid article views and limits repeated counting       |
-
-Database access is controlled using Row Level Security policies.
-
 ## Development Workflow
 
 All development should be completed in feature branches. Changes must be reviewed and tested before being merged into `main` from sprint 3.

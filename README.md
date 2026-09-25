@@ -7,12 +7,6 @@ A web-based news platform developed as part of the FYP-26-S3-22 Final Year Proje
 
 This project is currently under development.
 
-The present implementation phase covers:
-
-* Feature 5: Trending and Popular News
-* Feature 7: User Preference and Interest Management
-
-The remaining approved features form part of the complete system scope and will be implemented progressively.
 
 ## System Features
 
@@ -115,7 +109,7 @@ Database access is controlled using Row Level Security policies.
 
 ## Development Workflow
 
-All development should be completed in feature branches. Changes must be reviewed and tested before being merged into `main`.
+All development should be completed in feature branches. Changes must be reviewed and tested before being merged into `main` from sprint 3.
 
 Recommended branch naming:
 
@@ -147,6 +141,10 @@ The project’s requirements, designs, wireframes and technical decisions are ma
 ## Contributors
 
 Developed by the FYP-26-S3-22 project team. Team-member names, responsibilities and contribution details will be added during development.
+
+## License
+
+Not to be distributed or reused without the teams' permission. All Rights Reserved
 
 ## Academic Use
 

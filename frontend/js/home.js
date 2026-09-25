@@ -1,9 +1,14 @@
 import {
   getTrendingArticles,
   getPopularArticles,
-  getLatestArticles
+  getLatestArticles,
 } from "../../services/feature5Service.js";
-import { formatCount, formatRelativeTime, escapeHtml, thumbHtml } from "./format.js";
+import {
+  formatCount,
+  formatRelativeTime,
+  escapeHtml,
+  thumbHtml,
+} from "./format.js";
 
 function renderFeatured(article) {
   const slot = document.getElementById("featured-slot");
@@ -54,7 +59,7 @@ function renderLatest(articles) {
           </span>
         </div>
       </a>
-    `
+    `,
     )
     .join("");
 }
@@ -63,7 +68,8 @@ function renderTrendingGrid(articles) {
   const grid = document.getElementById("trending-grid");
 
   if (!articles || articles.length === 0) {
-    grid.innerHTML = '<p class="state-message">Nothing trending in the last 7 days yet.</p>';
+    grid.innerHTML =
+      '<p class="state-message">Nothing trending in the last 7 days yet.</p>';
     return;
   }
 
@@ -82,7 +88,7 @@ function renderTrendingGrid(articles) {
           </div>
         </div>
       </a>
-    `
+    `,
     )
     .join("");
 }

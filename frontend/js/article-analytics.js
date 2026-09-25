@@ -1,6 +1,14 @@
 import { requireAdmin } from "./auth.js";
-import { getArticleAnalyticsSummary, getArticleViewTrend } from "../../services/feature6Service.js";
-import { formatCount, formatRelativeTime, escapeHtml, forbiddenStateHtml } from "./format.js";
+import {
+  getArticleAnalyticsSummary,
+  getArticleViewTrend,
+} from "../../services/feature6Service.js";
+import {
+  formatCount,
+  formatRelativeTime,
+  escapeHtml,
+  forbiddenStateHtml,
+} from "./format.js";
 
 const params = new URLSearchParams(window.location.search);
 const articleId = params.get("id");
@@ -13,7 +21,7 @@ function trendChartHtml(trend) {
       const heightPct = Math.round((Number(d.view_count) / max) * 100);
       const label = new Date(d.view_date).toLocaleDateString(undefined, {
         month: "numeric",
-        day: "numeric"
+        day: "numeric",
       });
       return `
         <div class="trend-chart__bar" title="${escapeHtml(label)}: ${d.view_count} views">
@@ -34,7 +42,7 @@ function renderArticleAnalytics(summary, trend) {
     ["Total Views", formatCount(summary.view_count)],
     ["Registered Views", formatCount(summary.registered_views)],
     ["Guest Views", formatCount(summary.guest_views)],
-    ["Reactions", formatCount(summary.reaction_count)]
+    ["Reactions", formatCount(summary.reaction_count)],
   ];
 
   slot.innerHTML = `
@@ -54,7 +62,7 @@ function renderArticleAnalytics(summary, trend) {
             <p class="summary-card__label">${label}</p>
             <p class="summary-card__value">${value}</p>
           </div>
-        `
+        `,
         )
         .join("")}
     </div>
@@ -78,7 +86,8 @@ async function init() {
   }
 
   if (!articleId) {
-    slot.innerHTML = '<p class="state-message is-error">No article was specified.</p>';
+    slot.innerHTML =
+      '<p class="state-message is-error">No article was specified.</p>';
     return;
   }
 
@@ -87,11 +96,12 @@ async function init() {
   try {
     const [summary, trend] = await Promise.all([
       getArticleAnalyticsSummary(articleId),
-      getArticleViewTrend(articleId, 14)
+      getArticleViewTrend(articleId, 14),
     ]);
 
     if (!summary) {
-      slot.innerHTML = '<p class="state-message is-error">This article is unavailable.</p>';
+      slot.innerHTML =
+        '<p class="state-message is-error">This article is unavailable.</p>';
       return;
     }
 

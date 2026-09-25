@@ -1,5 +1,8 @@
 import { requireAdmin } from "./auth.js";
-import { getAllProfiles, setUserRole } from "../../services/userManagementService.js";
+import {
+  getAllProfiles,
+  setUserRole,
+} from "../../services/userManagementService.js";
 import { escapeHtml, forbiddenStateHtml } from "./format.js";
 
 let currentAdminId = null;
@@ -13,7 +16,7 @@ function rowHtml(p) {
       <td>${escapeHtml(p.display_name)}${isSelf ? " (you)" : ""}</td>
       <td><span class="badge">${isAdmin ? "System Admin" : "Registered User"}</span></td>
       <td>
-        <button class="article-action is-live" data-id="${p.id}" data-next-role="${isAdmin ? "registered_user" : "system_admin"}" ${isSelf ? "disabled title=\"Can't change your own role\"" : ""}>
+        <button class="article-action is-live" data-id="${p.id}" data-next-role="${isAdmin ? "registered_user" : "system_admin"}" ${isSelf ? 'disabled title="Can\'t change your own role"' : ""}>
           ${isAdmin ? "Demote to User" : "Promote to Admin"}
         </button>
       </td>

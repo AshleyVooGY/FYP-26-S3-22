@@ -1,333 +1,174 @@
-import {
-    supabase
-} from "../../config/supabaseClient.js";
+import { supabase } from "../../config/supabaseClient.js";
 
-import {
-    getArticleById
-} from "../../services/feature5Service.js";
+import { getArticleById } from "../../services/feature5Service.js";
 
-import {
-    formatCount,
-    formatRelativeTime,
-    escapeHtml
-} from "./format.js";
-
+import { formatCount, formatRelativeTime, escapeHtml } from "./format.js";
 
 // ==========================================================
 // DOM ELEMENTS
 // ==========================================================
 
-const loadingElement =
-    document.getElementById(
-        "bookmark-loading"
-    );
+const loadingElement = document.getElementById("bookmark-loading");
 
-const errorElement =
-    document.getElementById(
-        "bookmark-error"
-    );
+const errorElement = document.getElementById("bookmark-error");
 
-const emptyElement =
-    document.getElementById(
-        "bookmark-empty"
-    );
+const emptyElement = document.getElementById("bookmark-empty");
 
-const gridElement =
-    document.getElementById(
-        "bookmark-grid"
-    );
-
+const gridElement = document.getElementById("bookmark-grid");
 
 // ==========================================================
 // GET CURRENT USER
 // ==========================================================
 
 async function getCurrentUser() {
+  const { data, error } = await supabase.auth.getUser();
 
-    const {
-        data,
-        error
-    } = await supabase.auth.getUser();
+  if (error) {
+    console.error("Error getting current user:", error);
 
+    return null;
+  }
 
-    if (error) {
-
-        console.error(
-            "Error getting current user:",
-            error
-        );
-
-        return null;
-    }
-
-
-    return data?.user ?? null;
-
+  return data?.user ?? null;
 }
-
 
 // ==========================================================
 // UPDATE USER LABEL
 // ==========================================================
 
-async function updateUserLabel(
-    user
-) {
+async function updateUserLabel(user) {
+  const label = document.getElementById("user-label");
 
-    const label =
-        document.getElementById(
-            "user-label"
-        );
+  const chip = document.getElementById("user-chip");
 
-    const chip =
-        document.getElementById(
-            "user-chip"
-        );
+  if (!label) {
+    return;
+  }
 
+  if (user) {
+    label.textContent = user.email ?? "Account";
 
-    if (!label) {
-
-        return;
+    if (chip) {
+      chip.href = "#";
     }
-
-
-    if (user) {
-
-        label.textContent =
-            user.email ?? "Account";
-
-
-        if (chip) {
-
-            chip.href = "#";
-
-        }
-
-    } else {
-
-        label.textContent =
-            "Guest";
-
-    }
-
+  } else {
+    label.textContent = "Guest";
+  }
 }
-
 
 // ==========================================================
 // SHOW ERROR
 // ==========================================================
 
-function showError(
-    message
-) {
+function showError(message) {
+  loadingElement.classList.add("hidden");
 
-    loadingElement.classList.add(
-        "hidden"
-    );
+  emptyElement.classList.add("hidden");
 
-    emptyElement.classList.add(
-        "hidden"
-    );
+  gridElement.innerHTML = "";
 
-    gridElement.innerHTML = "";
+  errorElement.textContent = message;
 
-
-    errorElement.textContent =
-        message;
-
-
-    errorElement.classList.remove(
-        "hidden"
-    );
-
+  errorElement.classList.remove("hidden");
 }
-
 
 // ==========================================================
 // SHOW EMPTY STATE
 // ==========================================================
 
 function showEmpty() {
+  loadingElement.classList.add("hidden");
 
-    loadingElement.classList.add(
-        "hidden"
-    );
+  errorElement.classList.add("hidden");
 
-    errorElement.classList.add(
-        "hidden"
-    );
+  gridElement.innerHTML = "";
 
-    gridElement.innerHTML = "";
-
-
-    emptyElement.classList.remove(
-        "hidden"
-    );
-
+  emptyElement.classList.remove("hidden");
 }
-
 
 // ==========================================================
 // LOAD USER BOOKMARKS
 // ==========================================================
 
-async function loadBookmarks(
-    userId
-) {
+async function loadBookmarks(userId) {
+  const { data, error } = await supabase
 
-    const {
-        data,
-        error
-    } = await supabase
+    .from("bookmarks")
 
-        .from("bookmarks")
+    .select("article_id, created_at")
 
-        .select(
-            "article_id, created_at"
-        )
+    .eq("user_id", userId)
 
-        .eq(
-            "user_id",
-            userId
-        )
+    .order("created_at", {
+      ascending: false,
+    });
 
-        .order(
-            "created_at",
-            {
-                ascending: false
-            }
-        );
+  if (error) {
+    console.error("Error loading bookmarks:", error);
 
+    showError("Unable to load your bookmarks.");
 
-    if (error) {
+    return;
+  }
 
-        console.error(
-            "Error loading bookmarks:",
-            error
-        );
+  if (!data || data.length === 0) {
+    showEmpty();
 
+    return;
+  }
 
-        showError(
-            "Unable to load your bookmarks."
-        );
+  // ======================================================
+  // GET ARTICLE INFORMATION
+  // ======================================================
 
+  const articles = [];
 
-        return;
+  for (const bookmark of data) {
+    try {
+      const article = await getArticleById(bookmark.article_id);
+
+      if (article) {
+        articles.push({
+          ...article,
+
+          bookmarked_at: bookmark.created_at,
+        });
+      }
+    } catch (error) {
+      console.error("Could not load article:", bookmark.article_id, error);
     }
+  }
 
+  if (articles.length === 0) {
+    showEmpty();
 
-    if (
-        !data ||
-        data.length === 0
-    ) {
+    return;
+  }
 
-        showEmpty();
+  loadingElement.classList.add("hidden");
 
-        return;
-    }
+  emptyElement.classList.add("hidden");
 
+  errorElement.classList.add("hidden");
 
-    // ======================================================
-    // GET ARTICLE INFORMATION
-    // ======================================================
-
-    const articles = [];
-
-
-    for (
-        const bookmark of data
-    ) {
-
-        try {
-
-            const article =
-                await getArticleById(
-                    bookmark.article_id
-                );
-
-
-            if (article) {
-
-                articles.push({
-
-                    ...article,
-
-                    bookmarked_at:
-                        bookmark.created_at
-
-                });
-
-            }
-
-
-        } catch (error) {
-
-            console.error(
-                "Could not load article:",
-                bookmark.article_id,
-                error
-            );
-
-        }
-
-    }
-
-
-    if (
-        articles.length === 0
-    ) {
-
-        showEmpty();
-
-        return;
-    }
-
-
-    loadingElement.classList.add(
-        "hidden"
-    );
-
-    emptyElement.classList.add(
-        "hidden"
-    );
-
-    errorElement.classList.add(
-        "hidden"
-    );
-
-
-    renderBookmarks(
-        articles
-    );
-
+  renderBookmarks(articles);
 }
-
 
 // ==========================================================
 // IMAGE HTML
 // ==========================================================
 
-function getImageHtml(
-    article
-) {
-
-    if (
-        article.featured_image_url
-    ) {
-
-        return `
+function getImageHtml(article) {
+  if (article.featured_image_url) {
+    return `
             <img
-                src="${escapeHtml(
-                    article.featured_image_url
-                )}"
+                src="${escapeHtml(article.featured_image_url)}"
                 alt=""
             >
         `;
+  }
 
-    }
-
-
-    return `
+  return `
         <div class="bookmark-card__placeholder">
 
             <svg
@@ -361,47 +202,24 @@ function getImageHtml(
 
         </div>
     `;
-
 }
-
 
 // ==========================================================
 // RENDER BOOKMARK CARDS
 // ==========================================================
 
-function renderBookmarks(
-    articles
-) {
+function renderBookmarks(articles) {
+  gridElement.innerHTML = articles
+    .map((article) => {
+      const category = article.category?.name ?? "News";
 
-    gridElement.innerHTML =
-        articles
-            .map(
-                article => {
+      const publishedTime = formatRelativeTime(article.published_at);
 
-                    const category =
-                        article.category?.name ??
-                        "News";
+      const views = formatCount(article.view_count);
 
+      const reactions = formatCount(article.reaction_count);
 
-                    const publishedTime =
-                        formatRelativeTime(
-                            article.published_at
-                        );
-
-
-                    const views =
-                        formatCount(
-                            article.view_count
-                        );
-
-
-                    const reactions =
-                        formatCount(
-                            article.reaction_count
-                        );
-
-
-                    return `
+      return `
 
                         <article
                             class="bookmark-card"
@@ -415,9 +233,7 @@ function renderBookmarks(
                                 class="bookmark-card__image"
                             >
 
-                                ${getImageHtml(
-                                    article
-                                )}
+                                ${getImageHtml(article)}
 
                             </a>
 
@@ -433,9 +249,7 @@ function renderBookmarks(
 
                                 <span class="badge">
 
-                                    ${escapeHtml(
-                                        category
-                                    )}
+                                    ${escapeHtml(category)}
 
                                 </span>
 
@@ -450,9 +264,7 @@ function renderBookmarks(
                                         href="article.html?id=${article.id}"
                                     >
 
-                                        ${escapeHtml(
-                                            article.title
-                                        )}
+                                        ${escapeHtml(article.title)}
 
                                     </a>
 
@@ -487,72 +299,43 @@ function renderBookmarks(
                         </article>
 
                     `;
-
-                }
-            )
-            .join("");
-
+    })
+    .join("");
 }
-
 
 // ==========================================================
 // INITIALISE
 // ==========================================================
 
 async function init() {
+  try {
+    const user = await getCurrentUser();
 
-    try {
+    // Update top-right user name
 
-        const user =
-            await getCurrentUser();
+    await updateUserLabel(user);
 
+    // --------------------------------------------------
+    // User not logged in
+    // --------------------------------------------------
 
-        // Update top-right user name
+    if (!user) {
+      showError("Please log in to view your bookmarks.");
 
-        await updateUserLabel(
-            user
-        );
-
-
-        // --------------------------------------------------
-        // User not logged in
-        // --------------------------------------------------
-
-        if (!user) {
-
-            showError(
-                "Please log in to view your bookmarks."
-            );
-
-            return;
-        }
-
-
-        // --------------------------------------------------
-        // Load bookmarks
-        // --------------------------------------------------
-
-        await loadBookmarks(
-            user.id
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "Bookmark page error:",
-            error
-        );
-
-
-        showError(
-            "Something went wrong while loading your bookmarks."
-        );
-
+      return;
     }
 
-}
+    // --------------------------------------------------
+    // Load bookmarks
+    // --------------------------------------------------
 
+    await loadBookmarks(user.id);
+  } catch (error) {
+    console.error("Bookmark page error:", error);
+
+    showError("Something went wrong while loading your bookmarks.");
+  }
+}
 
 // ==========================================================
 // START

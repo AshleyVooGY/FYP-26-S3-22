@@ -11,8 +11,8 @@ export async function signUp(email, password, displayName) {
     password,
     options: {
       data: { display_name: displayName },
-      emailRedirectTo: new URL("login.html", window.location.href).href
-    }
+      emailRedirectTo: new URL("login.html", window.location.href).href,
+    },
   });
 }
 
@@ -90,7 +90,8 @@ async function renderUserChip() {
     const user = await getCurrentUser();
 
     if (user) {
-      label.textContent = user.user_metadata?.display_name || user.email || "Account";
+      label.textContent =
+        user.user_metadata?.display_name || user.email || "Account";
       if (chip) {
         chip.href = "#";
         chip.setAttribute("data-logout", "");

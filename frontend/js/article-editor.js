@@ -7,7 +7,7 @@ import {
   publishArticle,
   deleteArticle,
   uploadArticleImage,
-  removeArticleImage
+  removeArticleImage,
 } from "../../services/feature8Service.js";
 import { escapeHtml, thumbHtml } from "./format.js";
 
@@ -31,7 +31,7 @@ function readForm() {
   return {
     title: document.getElementById("field-title").value,
     content: document.getElementById("field-content").value,
-    categoryId: document.getElementById("field-category").value || null
+    categoryId: document.getElementById("field-category").value || null,
   };
 }
 
@@ -54,7 +54,7 @@ function render() {
           ${categories
             .map(
               (c) =>
-                `<option value="${c.id}" ${String(c.id) === String(article?.category_id) ? "selected" : ""}>${escapeHtml(c.name)}</option>`
+                `<option value="${c.id}" ${String(c.id) === String(article?.category_id) ? "selected" : ""}>${escapeHtml(c.name)}</option>`,
             )
             .join("")}
         </select>
@@ -97,7 +97,9 @@ function render() {
     </div>
   `;
 
-  document.getElementById("save-draft-btn").addEventListener("click", handleSaveDraft);
+  document
+    .getElementById("save-draft-btn")
+    .addEventListener("click", handleSaveDraft);
   const publishBtn = document.getElementById("publish-btn");
   if (publishBtn) publishBtn.addEventListener("click", handlePublish);
   const deleteBtn = document.getElementById("delete-btn");
@@ -126,7 +128,11 @@ async function handleSaveDraft() {
   try {
     if (!articleId) {
       articleId = await createArticle({ ...values, publish: false });
-      window.history.replaceState(null, "", `article-editor.html?id=${articleId}`);
+      window.history.replaceState(
+        null,
+        "",
+        `article-editor.html?id=${articleId}`,
+      );
       await reloadArticle();
       setStatus("Draft saved.");
     } else {
@@ -160,7 +166,8 @@ async function handleDelete() {
   }
   try {
     await deleteArticle(articleId);
-    window.location.href = article.status === "published" ? "my-articles.html" : "drafts.html";
+    window.location.href =
+      article.status === "published" ? "my-articles.html" : "drafts.html";
   } catch (err) {
     setStatus(err.message, true);
   }
@@ -172,7 +179,11 @@ async function handleImageUpload(event) {
 
   setStatus("Uploading…");
   try {
-    await uploadArticleImage(articleId, file, article?.featured_image_url ?? null);
+    await uploadArticleImage(
+      articleId,
+      file,
+      article?.featured_image_url ?? null,
+    );
     await reloadArticle();
     setStatus("Image updated.");
   } catch (err) {

@@ -1,43 +1,65 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Log In — News Release System</title>
-  <link rel="stylesheet" href="css/shell.css" />
-  <link rel="stylesheet" href="css/auth.css" />
-</head>
-<body>
-  <div class="auth-page">
-    <div class="auth-card">
-      <div class="auth-brand">
-        <span class="auth-brand-icon">📰</span>
-        <span>NEWS RELEASE SYSTEM</span>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Log In — News Release System</title>
+    <link rel="stylesheet" href="css/shell.css" />
+    <link rel="stylesheet" href="css/auth.css" />
+  </head>
+  <body>
+    <div class="auth-page">
+      <div class="auth-card">
+        <div class="auth-brand">
+          <span class="auth-brand-icon">📰</span>
+          <span>NEWS RELEASE SYSTEM</span>
+        </div>
+
+        <h1 class="auth-title">Welcome back</h1>
+        <p class="auth-subtitle">
+          Log in to access your bookmarks, preferences and drafts.
+        </p>
+
+        <div id="form-message"></div>
+
+        <form id="login-form">
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input
+              class="form-input"
+              type="email"
+              id="email"
+              name="email"
+              placeholder="you@example.com"
+              required
+              autocomplete="email"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input
+              class="form-input"
+              type="password"
+              id="password"
+              name="password"
+              placeholder="••••••••"
+              required
+              autocomplete="current-password"
+            />
+          </div>
+
+          <button class="auth-submit" type="submit" id="submit-btn">
+            Log In
+          </button>
+        </form>
+
+        <p class="auth-footer">
+          Don't have an account? <a href="signup.html">Sign up</a>
+        </p>
       </div>
-
-      <h1 class="auth-title">Welcome back</h1>
-      <p class="auth-subtitle">Log in to access your bookmarks, preferences and drafts.</p>
-
-      <div id="form-message"></div>
-
-      <form id="login-form">
-        <div class="form-group">
-          <label for="email">Email</label>
-          <input class="form-input" type="email" id="email" name="email" placeholder="you@example.com" required autocomplete="email" />
-        </div>
-
-        <div class="form-group">
-          <label for="password">Password</label>
-          <input class="form-input" type="password" id="password" name="password" placeholder="••••••••" required autocomplete="current-password" />
-        </div>
-
-        <button class="auth-submit" type="submit" id="submit-btn">Log In</button>
-      </form>
-
-      <p class="auth-footer">Don't have an account? <a href="signup.html">Sign up</a></p>
     </div>
-  </div>
 
-  <script type="module" src="js/login.js"></script>
-</body>
+    <script type="module" src="js/login.js"></script>
+  </body>
 </html>

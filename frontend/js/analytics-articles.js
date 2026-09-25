@@ -1,6 +1,11 @@
 import { requireAdmin } from "./auth.js";
 import { getArticleViewStats } from "../../services/feature6Service.js";
-import { formatCount, formatRelativeTime, escapeHtml, forbiddenStateHtml } from "./format.js";
+import {
+  formatCount,
+  formatRelativeTime,
+  escapeHtml,
+  forbiddenStateHtml,
+} from "./format.js";
 import { renderPagination } from "./pagination.js";
 
 const PAGE_SIZE = 10;
@@ -10,7 +15,7 @@ const state = {
   search: "",
   categoryId: "",
   sort: "views_desc",
-  page: 1
+  page: 1,
 };
 
 function applyFilters() {
@@ -29,7 +34,9 @@ function applyFilters() {
 }
 
 function renderToolbar() {
-  const categories = [...new Map(state.all.map((a) => [a.category_id, a.category])).entries()];
+  const categories = [
+    ...new Map(state.all.map((a) => [a.category_id, a.category])).entries(),
+  ];
 
   document.getElementById("toolbar-slot").innerHTML = `
     <div class="list-toolbar">
@@ -37,7 +44,10 @@ function renderToolbar() {
       <select id="category-select">
         <option value="">All categories</option>
         ${categories
-          .map(([id, name]) => `<option value="${id}" ${String(id) === state.categoryId ? "selected" : ""}>${escapeHtml(name)}</option>`)
+          .map(
+            ([id, name]) =>
+              `<option value="${id}" ${String(id) === state.categoryId ? "selected" : ""}>${escapeHtml(name)}</option>`,
+          )
           .join("")}
       </select>
       <select id="sort-select">
@@ -61,11 +71,13 @@ function renderToolbar() {
     renderTable();
   });
 
-  document.getElementById("sort-select").addEventListener("change", async (e) => {
-    state.sort = e.target.value;
-    state.page = 1;
-    await reload();
-  });
+  document
+    .getElementById("sort-select")
+    .addEventListener("change", async (e) => {
+      state.sort = e.target.value;
+      state.page = 1;
+      await reload();
+    });
 }
 
 function renderTable() {
@@ -75,7 +87,8 @@ function renderTable() {
   const tableSlot = document.getElementById("table-slot");
 
   if (pageItems.length === 0) {
-    tableSlot.innerHTML = '<p class="state-message">No articles match your filters.</p>';
+    tableSlot.innerHTML =
+      '<p class="state-message">No articles match your filters.</p>';
     document.getElementById("pagination").innerHTML = "";
     return;
   }
@@ -102,7 +115,7 @@ function renderTable() {
             <td class="is-numeric">${formatCount(a.view_count)}</td>
             <td class="is-numeric">${formatCount(a.reaction_count)}</td>
           </tr>
-        `
+        `,
           )
           .join("")}
       </tbody>
@@ -116,7 +129,7 @@ function renderTable() {
     onPageChange: (page) => {
       state.page = page;
       renderTable();
-    }
+    },
   });
 }
 

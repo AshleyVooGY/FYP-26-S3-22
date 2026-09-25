@@ -29,7 +29,10 @@ form.addEventListener("submit", async (event) => {
 
   // With email confirmation enabled, Supabase returns no session yet.
   if (!data.session) {
-    showMessage("Account created. Check your email to confirm before logging in.", false);
+    showMessage(
+      "Account created. Check your email to confirm before logging in.",
+      false,
+    );
     form.reset();
     return;
   }

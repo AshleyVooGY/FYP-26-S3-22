@@ -1,46 +1,95 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Article Analytics — News Release System</title>
-  <link rel="stylesheet" href="css/shell.css" />
-  <link rel="stylesheet" href="css/feature5.css" />
-  <link rel="stylesheet" href="css/feature6.css" />
-</head>
-<body>
-  <header class="topbar">
-    <div class="topbar__brand">
-      <span class="topbar__brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="16" rx="1.5"/><path d="M17 8.5h4V18a2 2 0 0 1-2 2h-2"/><line x1="6.5" y1="8.5" x2="13.5" y2="8.5"/><line x1="6.5" y1="12" x2="13.5" y2="12"/><line x1="6.5" y1="15.5" x2="11" y2="15.5"/></svg></span>
-      <span>NEWS RELEASE SYSTEM</span>
-    </div>
-    <nav class="topbar__nav">
-      <a href="index.html">Home</a>
-      <a href="#" class="is-disabled" title="Coming soon">Categories ▾</a>
-      <a href="trending.html">Trending</a>
-      <a href="#" class="is-disabled" title="Coming soon">Bookmarks</a>
-    </nav>
-    <div class="topbar__actions">
-      <input class="topbar__search" type="text" placeholder="Search news..." disabled title="Coming soon" />
-      <button class="icon-btn" title="Coming soon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 6.5-2.5 8.5-2.5 8.5h17S18 14.5 18 8z"/><path d="M13.7 20a2 2 0 0 1-3.4 0"/></svg></button>
-      <a class="btn-publish is-live" href="article-editor.html">+ Publish</a>
-      <a href="login.html" class="user-chip" id="user-chip">
-        <span class="user-chip__avatar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-1.5A4.5 4.5 0 0 0 15.5 15h-7A4.5 4.5 0 0 0 4 19.5V21"/><circle cx="12" cy="7.5" r="4"/></svg></span>
-        <span id="user-label">Guest</span>
-      </a>
-    </div>
-  </header>
-
-  <div class="layout layout--full">
-    <main class="content content--article">
-      <a class="back-link" href="analytics-articles.html">← Back to Article Views</a>
-      <div id="article-analytics-slot">
-        <p class="state-message">Checking access…</p>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Article Analytics — News Release System</title>
+    <link rel="stylesheet" href="css/shell.css" />
+    <link rel="stylesheet" href="css/feature5.css" />
+    <link rel="stylesheet" href="css/feature6.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar__brand">
+        <span class="topbar__brand-icon"
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="3" y="4" width="14" height="16" rx="1.5" />
+            <path d="M17 8.5h4V18a2 2 0 0 1-2 2h-2" />
+            <line x1="6.5" y1="8.5" x2="13.5" y2="8.5" />
+            <line x1="6.5" y1="12" x2="13.5" y2="12" />
+            <line x1="6.5" y1="15.5" x2="11" y2="15.5" /></svg
+        ></span>
+        <span>NEWS RELEASE SYSTEM</span>
       </div>
-    </main>
-  </div>
+      <nav class="topbar__nav">
+        <a href="index.html">Home</a>
+        <a href="#" class="is-disabled" title="Coming soon">Categories ▾</a>
+        <a href="trending.html">Trending</a>
+        <a href="#" class="is-disabled" title="Coming soon">Bookmarks</a>
+      </nav>
+      <div class="topbar__actions">
+        <input
+          class="topbar__search"
+          type="text"
+          placeholder="Search news..."
+          disabled
+          title="Coming soon"
+        />
+        <button class="icon-btn" title="Coming soon">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="M18 8a6 6 0 0 0-12 0c0 6.5-2.5 8.5-2.5 8.5h17S18 14.5 18 8z"
+            />
+            <path d="M13.7 20a2 2 0 0 1-3.4 0" />
+          </svg>
+        </button>
+        <a class="btn-publish is-live" href="article-editor.html">+ Publish</a>
+        <a href="login.html" class="user-chip" id="user-chip">
+          <span class="user-chip__avatar"
+            ><svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M20 21v-1.5A4.5 4.5 0 0 0 15.5 15h-7A4.5 4.5 0 0 0 4 19.5V21"
+              />
+              <circle cx="12" cy="7.5" r="4" /></svg
+          ></span>
+          <span id="user-label">Guest</span>
+        </a>
+      </div>
+    </header>
 
-  <script type="module" src="js/auth.js"></script>
-  <script type="module" src="js/article-analytics.js"></script>
-</body>
+    <div class="layout layout--full">
+      <main class="content content--article">
+        <a class="back-link" href="analytics-articles.html"
+          >← Back to Article Views</a
+        >
+        <div id="article-analytics-slot">
+          <p class="state-message">Checking access…</p>
+        </div>
+      </main>
+    </div>
+
+    <script type="module" src="js/auth.js"></script>
+    <script type="module" src="js/article-analytics.js"></script>
+  </body>
 </html>

@@ -1,326 +1,146 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
 
-<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <meta charset="UTF-8" />
+    <title>Reading History — News Release System</title>
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  />
+    <link rel="stylesheet" href="css/shell.css" />
 
-  <title>
-    Reading History — News Release System
-  </title>
+    <link rel="stylesheet" href="css/feature5.css" />
 
+    <link rel="stylesheet" href="css/feature3.css" />
+  </head>
 
-  <link
-    rel="stylesheet"
-    href="css/shell.css"
-  />
-
-  <link
-    rel="stylesheet"
-    href="css/feature5.css"
-  />
-
-  <link
-    rel="stylesheet"
-    href="css/feature3.css"
-  />
-
-</head>
-
-
-<body>
-
-
-  <!-- =====================================================
+  <body>
+    <!-- =====================================================
      TOP BAR
   ====================================================== -->
 
-  <header class="topbar">
+    <header class="topbar">
+      <div class="topbar__brand">
+        <span class="topbar__brand-icon"> 📰 </span>
 
-    <div class="topbar__brand">
+        <span> NEWS RELEASE SYSTEM </span>
+      </div>
 
-      <span class="topbar__brand-icon">
-        📰
-      </span>
+      <nav class="topbar__nav">
+        <a href="index.html"> Home </a>
 
-      <span>
-        NEWS RELEASE SYSTEM
-      </span>
+        <a href="#" class="is-disabled" title="Coming soon"> Categories ▾ </a>
 
-    </div>
+        <a href="trending.html"> Trending </a>
 
+        <a href="#" class="is-disabled" title="Coming soon"> Bookmarks </a>
+      </nav>
 
-    <nav class="topbar__nav">
+      <div class="topbar__actions">
+        <input
+          class="topbar__search"
+          type="text"
+          placeholder="Search news..."
+          disabled
+          title="Coming soon"
+        />
 
-      <a href="index.html">
-        Home
-      </a>
+        <button class="icon-btn" title="Coming soon">🔔</button>
 
-      <a
-        href="#"
-        class="is-disabled"
-        title="Coming soon"
-      >
-        Categories ▾
-      </a>
+        <button class="btn-publish" title="Coming soon">+ Publish</button>
 
-      <a href="trending.html">
-        Trending
-      </a>
+        <a href="login.html" class="user-chip" id="user-chip">
+          <span class="user-chip__avatar"> 👤 </span>
 
-      <a
-        href="#"
-        class="is-disabled"
-        title="Coming soon"
-      >
-        Bookmarks
-      </a>
+          <span id="user-label"> Guest </span>
+        </a>
+      </div>
+    </header>
 
-    </nav>
-
-
-    <div class="topbar__actions">
-
-      <input
-        class="topbar__search"
-        type="text"
-        placeholder="Search news..."
-        disabled
-        title="Coming soon"
-      />
-
-
-      <button
-        class="icon-btn"
-        title="Coming soon"
-      >
-        🔔
-      </button>
-
-
-      <button
-        class="btn-publish"
-        title="Coming soon"
-      >
-        + Publish
-      </button>
-
-
-      <a
-        href="login.html"
-        class="user-chip"
-        id="user-chip"
-      >
-
-        <span class="user-chip__avatar">
-          👤
-        </span>
-
-        <span id="user-label">
-          Guest
-        </span>
-
-      </a>
-
-    </div>
-
-  </header>
-
-
-
-  <!-- =====================================================
+    <!-- =====================================================
        PAGE LAYOUT
   ====================================================== -->
 
-  <div class="layout">
-
-
-    <!-- ===================================================
+    <div class="layout">
+      <!-- ===================================================
         SIDEBAR
     ==================================================== -->
 
-    <aside class="sidebar">
+      <aside class="sidebar">
+        <nav class="sidebar__nav">
+          <a href="index.html">
+            <span class="sidebar__icon"> 📊 </span>
 
-      <nav class="sidebar__nav">
+            Dashboard
+          </a>
 
-        <a href="index.html">
+          <a href="#" class="is-disabled" title="Coming soon">
+            <span class="sidebar__icon"> 📰 </span>
 
-          <span class="sidebar__icon">
-            📊
-          </span>
+            My Articles
+          </a>
 
-          Dashboard
+          <a href="#" class="is-disabled" title="Coming soon">
+            <span class="sidebar__icon"> ✏️ </span>
 
-        </a>
+            Drafts
+          </a>
 
+          <a href="#" class="is-disabled" title="Coming soon">
+            <span class="sidebar__icon"> 🔖 </span>
 
-        <a
-          href="#"
-          class="is-disabled"
-          title="Coming soon"
-        >
+            Bookmarks
+          </a>
 
-          <span class="sidebar__icon">
-            📰
-          </span>
+          <a href="history.html" class="is-active">
+            <span class="sidebar__icon"> 🕘 </span>
 
-          My Articles
+            History
+          </a>
 
-        </a>
+          <a href="preferences.html">
+            <span class="sidebar__icon"> ⚙️ </span>
 
+            Preferences
+          </a>
 
-        <a
-          href="#"
-          class="is-disabled"
-          title="Coming soon"
-        >
+          <a href="#" class="is-disabled" title="Coming soon">
+            <span class="sidebar__icon"> 🛠 </span>
 
-          <span class="sidebar__icon">
-            ✏️
-          </span>
+            Settings
+          </a>
 
-          Drafts
+          <a href="#" class="is-disabled" title="Coming soon">
+            <span class="sidebar__icon"> ↩ </span>
 
-        </a>
+            Logout
+          </a>
+        </nav>
+      </aside>
 
-
-        <a
-          href="#"
-          class="is-disabled"
-          title="Coming soon"
-        >
-
-          <span class="sidebar__icon">
-            🔖
-          </span>
-
-          Bookmarks
-
-        </a>
-
-
-        <a
-          href="history.html"
-          class="is-active"
-        >
-
-          <span class="sidebar__icon">
-            🕘
-          </span>
-
-          History
-
-        </a>
-
-
-        <a href="preferences.html">
-
-          <span class="sidebar__icon">
-            ⚙️
-          </span>
-
-          Preferences
-
-        </a>
-
-
-        <a
-          href="#"
-          class="is-disabled"
-          title="Coming soon"
-        >
-
-          <span class="sidebar__icon">
-            🛠
-          </span>
-
-          Settings
-
-        </a>
-
-
-        <a
-          href="#"
-          class="is-disabled"
-          title="Coming soon"
-        >
-
-          <span class="sidebar__icon">
-            ↩
-          </span>
-
-          Logout
-
-        </a>
-
-      </nav>
-
-    </aside>
-
-
-
-    <!-- ===================================================
+      <!-- ===================================================
          MAIN CONTENT
     ==================================================== -->
 
-    <main class="content">
+      <main class="content">
+        <section class="history-page">
+          <h1 class="history-title">Reading History</h1>
 
+          <p class="history-subtitle">Articles you have previously viewed</p>
 
-      <section class="history-page">
+          <div id="historyGrid" class="history-grid">
+            <p class="state-message">Loading reading history…</p>
+          </div>
+        </section>
+      </main>
+    </div>
 
-
-        <h1 class="history-title">
-          Reading History
-        </h1>
-
-
-        <p class="history-subtitle">
-          Articles you have previously viewed
-        </p>
-
-
-        <div
-          id="historyGrid"
-          class="history-grid"
-        >
-
-          <p class="state-message">
-            Loading reading history…
-          </p>
-
-        </div>
-
-
-      </section>
-
-
-    </main>
-
-  </div>
-
-
-
-  <!-- =====================================================
+    <!-- =====================================================
        SCRIPTS
   ====================================================== -->
 
-  <script
-    type="module"
-    src="js/auth.js"
-  ></script>
+    <script type="module" src="js/auth.js"></script>
 
-
-  <script
-    type="module"
-    src="js/history.js"
-  ></script>
-
-
-</body>
-
+    <script type="module" src="js/history.js"></script>
+  </body>
 </html>

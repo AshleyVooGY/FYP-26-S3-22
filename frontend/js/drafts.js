@@ -1,5 +1,9 @@
 import { requireAuth } from "./auth.js";
-import { getMyArticles, deleteArticle, publishArticle } from "../../services/feature8Service.js";
+import {
+  getMyArticles,
+  deleteArticle,
+  publishArticle,
+} from "../../services/feature8Service.js";
 import { escapeHtml, formatRelativeTime, thumbHtml } from "./format.js";
 
 function rowHtml(article) {

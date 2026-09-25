@@ -2,33 +2,29 @@ import { supabase } from "../../config/supabaseClient.js";
 
 import { ICONS } from "./icons.js";
 
-
 // ==========================================================
 // CATEGORY ICONS
 // ==========================================================
 
 const categoryIcons = {
+  Technology: ICONS.cpu,
 
-    Technology: ICONS.cpu,
+  Business: ICONS.building,
 
-    Business: ICONS.building,
+  Sports: ICONS.runner,
 
-    Sports: ICONS.runner,
+  Politics: ICONS.government,
 
-    Politics: ICONS.government,
+  Entertainment: ICONS.play,
 
-    Entertainment: ICONS.play,
+  Science: ICONS.shareHub,
 
-    Science: ICONS.shareHub,
+  Health: ICONS.heartPulse,
 
-    Health: ICONS.heartPulse,
+  Lifestyle: ICONS.pencilSquare,
 
-    Lifestyle: ICONS.pencilSquare,
-
-    Environment: ICONS.mountain
-
+  Environment: ICONS.mountain,
 };
-
 
 // ==========================================================
 // STATE
@@ -42,194 +38,111 @@ let originalInterests = [];
 
 let currentUser = null;
 
-
 // ==========================================================
 // ELEMENTS
 // ==========================================================
 
-const setupPage =
-    document.getElementById("setupPage");
+const setupPage = document.getElementById("setupPage");
 
-const managePage =
-    document.getElementById("managePage");
+const managePage = document.getElementById("managePage");
 
-const interestGrid =
-    document.getElementById("interestGrid");
+const interestGrid = document.getElementById("interestGrid");
 
-const preferenceList =
-    document.getElementById("preferenceList");
+const preferenceList = document.getElementById("preferenceList");
 
-const selectedInterestsContainer =
-    document.getElementById("selectedInterests");
+const selectedInterestsContainer = document.getElementById("selectedInterests");
 
-const interestSelect =
-    document.getElementById("interestSelect");
+const interestSelect = document.getElementById("interestSelect");
 
-const savePreferencesButton =
-    document.getElementById("savePreferences");
+const savePreferencesButton = document.getElementById("savePreferences");
 
-const skipPreferencesButton =
-    document.getElementById("skipPreferences");
+const skipPreferencesButton = document.getElementById("skipPreferences");
 
-const cancelButton =
-    document.getElementById("cancelButton");
+const cancelButton = document.getElementById("cancelButton");
 
-const addInterestButton =
-    document.getElementById("addInterest");
+const addInterestButton = document.getElementById("addInterest");
 
-const saveChangesButton =
-    document.getElementById("saveChanges");
+const saveChangesButton = document.getElementById("saveChanges");
 
-const successMessage =
-    document.getElementById("successMessage");
+const successMessage = document.getElementById("successMessage");
 
-const userLabel =
-    document.getElementById("user-label");
-
+const userLabel = document.getElementById("user-label");
 
 // ==========================================================
 // AUTHENTICATION
 // ==========================================================
 
 async function getCurrentUser() {
+  const { data, error } = await supabase.auth.getUser();
 
-    const {
-        data,
-        error
-    } = await supabase.auth.getUser();
+  if (error) {
+    console.error("Unable to get current user:", error);
 
+    return null;
+  }
 
-    if (error) {
-
-        console.error(
-            "Unable to get current user:",
-            error
-        );
-
-        return null;
-
-    }
-
-
-    return data?.user ?? null;
-
+  return data?.user ?? null;
 }
-
 
 // ==========================================================
 // LOAD CATEGORIES
 // ==========================================================
 
 async function loadCategories() {
+  const { data, error } = await supabase
+    .from("categories")
+    .select("id, name")
+    .order("id");
 
-    const {
-        data,
-        error
-    } = await supabase
-        .from("categories")
-        .select("id, name")
-        .order("id");
+  if (error) {
+    console.error("Unable to load categories:", error);
 
+    throw error;
+  }
 
-    if (error) {
+  categories = (data || []).map((category) => ({
+    id: category.id,
 
-        console.error(
-            "Unable to load categories:",
-            error
-        );
+    name: category.name,
 
-        throw error;
-
-    }
-
-
-    categories =
-        (data || []).map(
-            category => ({
-
-                id:
-                    category.id,
-
-                name:
-                    category.name,
-
-                icon:
-                    categoryIcons[
-                        category.name
-                    ] ??
-                    "<span>●</span>"
-
-            })
-        );
-
+    icon: categoryIcons[category.name] ?? "<span>●</span>",
+  }));
 }
-
 
 // ==========================================================
 // LOAD USER PREFERENCES
 // ==========================================================
 
 async function loadUserPreferences() {
+  if (!currentUser) {
+    return [];
+  }
 
-    if (!currentUser) {
+  const { data, error } = await supabase
+    .from("user_preferences")
+    .select("category_id")
+    .eq("user_id", currentUser.id);
 
-        return [];
+  if (error) {
+    console.error("Unable to load user preferences:", error);
 
-    }
+    throw error;
+  }
 
-
-    const {
-        data,
-        error
-    } = await supabase
-        .from("user_preferences")
-        .select("category_id")
-        .eq(
-            "user_id",
-            currentUser.id
-        );
-
-
-    if (error) {
-
-        console.error(
-            "Unable to load user preferences:",
-            error
-        );
-
-        throw error;
-
-    }
-
-
-    return (
-        data || []
-    ).map(
-        row =>
-            Number(
-                row.category_id
-            )
-    );
-
+  return (data || []).map((row) => Number(row.category_id));
 }
-
 
 // ==========================================================
 // RENDER INTEREST CARDS
 // ==========================================================
 
 function renderInterestCards() {
+  if (!interestGrid) {
+    return;
+  }
 
-    if (!interestGrid) {
-
-        return;
-
-    }
-
-
-    if (categories.length === 0) {
-
-        interestGrid.innerHTML = `
+  if (categories.length === 0) {
+    interestGrid.innerHTML = `
 
             <p class="state-message">
                 No categories available.
@@ -237,23 +150,14 @@ function renderInterestCards() {
 
         `;
 
-        return;
+    return;
+  }
 
-    }
+  interestGrid.innerHTML = categories
+    .map((category) => {
+      const selected = selectedInterests.includes(category.id);
 
-
-    interestGrid.innerHTML =
-        categories
-            .map(
-                category => {
-
-                    const selected =
-                        selectedInterests.includes(
-                            category.id
-                        );
-
-
-                    return `
+      return `
 
                         <div
                             class="interest-card
@@ -272,111 +176,56 @@ function renderInterestCards() {
 
 
                             <div class="category-name">
-                                ${escapeHtml(
-                                    category.name
-                                )}
+                                ${escapeHtml(category.name)}
                             </div>
 
                         </div>
 
                     `;
+    })
+    .join("");
 
-                }
-            )
-            .join("");
-
-
-    document
-        .querySelectorAll(
-            ".interest-card"
-        )
-        .forEach(
-            card => {
-
-                card.addEventListener(
-                    "click",
-                    () => {
-
-                        toggleInterest(
-                            Number(
-                                card.dataset.categoryId
-                            )
-                        );
-
-                    }
-                );
-
-            }
-        );
-
+  document.querySelectorAll(".interest-card").forEach((card) => {
+    card.addEventListener("click", () => {
+      toggleInterest(Number(card.dataset.categoryId));
+    });
+  });
 }
-
 
 // ==========================================================
 // TOGGLE INTEREST
 // ==========================================================
 
-function toggleInterest(
-    categoryId
-) {
+function toggleInterest(categoryId) {
+  if (selectedInterests.includes(categoryId)) {
+    selectedInterests = selectedInterests.filter((id) => id !== categoryId);
+  } else {
+    selectedInterests.push(categoryId);
+  }
 
-    if (
-        selectedInterests.includes(
-            categoryId
-        )
-    ) {
+  renderInterestCards();
 
-        selectedInterests =
-            selectedInterests.filter(
-                id =>
-                    id !== categoryId
-            );
+  renderPreferenceList();
 
-    } else {
+  renderSelectedInterestTags();
 
-        selectedInterests.push(
-            categoryId
-        );
-
-    }
-
-
-    renderInterestCards();
-
-    renderPreferenceList();
-
-    renderSelectedInterestTags();
-
-    populateInterestSelect();
-
+  populateInterestSelect();
 }
-
 
 // ==========================================================
 // RENDER PREFERENCE LIST
 // ==========================================================
 
 function renderPreferenceList() {
+  if (!preferenceList) {
+    return;
+  }
 
-    if (!preferenceList) {
+  preferenceList.innerHTML = categories
+    .map((category) => {
+      const checked = selectedInterests.includes(category.id);
 
-        return;
-
-    }
-
-
-    preferenceList.innerHTML =
-        categories
-            .map(
-                category => {
-
-                    const checked =
-                        selectedInterests.includes(
-                            category.id
-                        );
-
-
-                    return `
+      return `
 
                         <label
                             class="preference-item
@@ -396,77 +245,41 @@ function renderPreferenceList() {
 
 
                             <span>
-                                ${escapeHtml(
-                                    category.name
-                                )}
+                                ${escapeHtml(category.name)}
                             </span>
 
                         </label>
 
                     `;
+    })
+    .join("");
 
-                }
-            )
-            .join("");
+  preferenceList
+    .querySelectorAll('input[type="checkbox"]')
+    .forEach((checkbox) => {
+      checkbox.addEventListener("change", (event) => {
+        const categoryId = Number(event.target.value);
 
-
-    preferenceList
-        .querySelectorAll(
-            'input[type="checkbox"]'
-        )
-        .forEach(
-            checkbox => {
-
-                checkbox.addEventListener(
-                    "change",
-                    event => {
-
-                        const categoryId =
-                            Number(
-                                event.target.value
-                            );
-
-
-                        toggleInterest(
-                            categoryId
-                        );
-
-                    }
-                );
-
-            }
-        );
-
+        toggleInterest(categoryId);
+      });
+    });
 }
-
 
 // ==========================================================
 // RENDER SELECTED INTEREST TAGS
 // ==========================================================
 
 function renderSelectedInterestTags() {
+  if (!selectedInterestsContainer) {
+    return;
+  }
 
-    if (!selectedInterestsContainer) {
+  const selectedCategories = categories.filter((category) =>
+    selectedInterests.includes(category.id),
+  );
 
-        return;
-
-    }
-
-
-    const selectedCategories =
-        categories.filter(
-            category =>
-                selectedInterests.includes(
-                    category.id
-                )
-        );
-
-
-    if (
-        selectedCategories.length === 0
-    ) {
-
-        selectedInterestsContainer.innerHTML = `
+  if (selectedCategories.length === 0) {
+    selectedInterestsContainer.innerHTML = `
 
             <span>
                 No interests selected.
@@ -474,479 +287,351 @@ function renderSelectedInterestTags() {
 
         `;
 
-        return;
+    return;
+  }
 
-    }
-
-
-    selectedInterestsContainer.innerHTML =
-        selectedCategories
-            .map(
-                category => `
+  selectedInterestsContainer.innerHTML = selectedCategories
+    .map(
+      (category) => `
 
                     <span class="interest-tag">
 
-                        ${escapeHtml(
-                            category.name
-                        )}
+                        ${escapeHtml(category.name)}
 
                         <button
                             class="remove-interest"
                             type="button"
                             data-category-id="${category.id}"
-                            aria-label="Remove ${escapeHtml(
-                                category.name
-                            )}"
+                            aria-label="Remove ${escapeHtml(category.name)}"
                         >
                             ×
                         </button>
 
                     </span>
 
-                `
-            )
-            .join("");
+                `,
+    )
+    .join("");
 
+  selectedInterestsContainer
+    .querySelectorAll(".remove-interest")
+    .forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
 
-    selectedInterestsContainer
-        .querySelectorAll(
-            ".remove-interest"
-        )
-        .forEach(
-            button => {
-
-                button.addEventListener(
-                    "click",
-                    event => {
-
-                        event.stopPropagation();
-
-
-                        toggleInterest(
-                            Number(
-                                button.dataset.categoryId
-                            )
-                        );
-
-                    }
-                );
-
-            }
-        );
-
+        toggleInterest(Number(button.dataset.categoryId));
+      });
+    });
 }
-
 
 // ==========================================================
 // POPULATE SELECT
 // ==========================================================
 
 function populateInterestSelect() {
+  if (!interestSelect) {
+    return;
+  }
 
-    if (!interestSelect) {
+  const available = categories.filter(
+    (category) => !selectedInterests.includes(category.id),
+  );
 
-        return;
-
-    }
-
-
-    const available =
-        categories.filter(
-            category =>
-                !selectedInterests.includes(
-                    category.id
-                )
-        );
-
-
-    interestSelect.innerHTML = `
+  interestSelect.innerHTML = `
 
         <option value="">
             Choose a category
         </option>
 
-        ${
-            available
-                .map(
-                    category => `
+        ${available
+          .map(
+            (category) => `
 
                         <option
                             value="${category.id}"
                         >
-                            ${escapeHtml(
-                                category.name
-                            )}
+                            ${escapeHtml(category.name)}
                         </option>
 
-                    `
-                )
-                .join("")
-        }
+                    `,
+          )
+          .join("")}
 
     `;
-
 }
-
 
 // ==========================================================
 // ADD INTEREST
 // ==========================================================
 
 if (addInterestButton) {
+  addInterestButton.addEventListener("click", () => {
+    const categoryId = Number(interestSelect.value);
 
-    addInterestButton.addEventListener(
-        "click",
-        () => {
+    if (!categoryId) {
+      alert("Please choose a category.");
 
-            const categoryId =
-                Number(
-                    interestSelect.value
-                );
+      return;
+    }
 
+    if (!selectedInterests.includes(categoryId)) {
+      selectedInterests.push(categoryId);
+    }
 
-            if (!categoryId) {
+    renderInterestCards();
 
-                alert(
-                    "Please choose a category."
-                );
+    renderPreferenceList();
 
-                return;
+    renderSelectedInterestTags();
 
-            }
-
-
-            if (
-                !selectedInterests.includes(
-                    categoryId
-                )
-            ) {
-
-                selectedInterests.push(
-                    categoryId
-                );
-
-            }
-
-
-            renderInterestCards();
-
-            renderPreferenceList();
-
-            renderSelectedInterestTags();
-
-            populateInterestSelect();
-
-        }
-    );
-
+    populateInterestSelect();
+  });
 }
-
 
 // ==========================================================
 // SAVE TO SUPABASE
 // ==========================================================
 
 async function saveCurrentPreferences() {
+  if (!currentUser) {
+    alert("Please log in before saving your preferences.");
 
-    if (!currentUser) {
+    return false;
+  }
 
-        alert(
-            "Please log in before saving your preferences."
-        );
+  if (selectedInterests.length === 0) {
+    alert("Please select at least one interest.");
 
-        return false;
+    return false;
+  }
 
-    }
+  // ------------------------------------------------------
+  // Delete current preferences
+  // ------------------------------------------------------
 
+  const { error: deleteError } = await supabase
+    .from("user_preferences")
+    .delete()
+    .eq("user_id", currentUser.id);
 
-    if (
-        selectedInterests.length === 0
-    ) {
+  if (deleteError) {
+    console.error("Unable to remove old preferences:", deleteError);
 
-        alert(
-            "Please select at least one interest."
-        );
+    throw deleteError;
+  }
 
-        return false;
+  // ------------------------------------------------------
+  // Prepare rows
+  // ------------------------------------------------------
 
-    }
+  const rows = selectedInterests.map((categoryId) => ({
+    user_id: currentUser.id,
 
+    category_id: categoryId,
+  }));
 
-    // ------------------------------------------------------
-    // Delete current preferences
-    // ------------------------------------------------------
+  // ------------------------------------------------------
+  // Insert new preferences
+  // ------------------------------------------------------
 
-    const {
-        error:
-            deleteError
-    } = await supabase
-        .from("user_preferences")
-        .delete()
-        .eq(
-            "user_id",
-            currentUser.id
-        );
+  const { error: insertError } = await supabase
+    .from("user_preferences")
+    .insert(rows);
 
+  if (insertError) {
+    console.error("Unable to save preferences:", insertError);
 
-    if (deleteError) {
+    throw insertError;
+  }
 
-        console.error(
-            "Unable to remove old preferences:",
-            deleteError
-        );
+  originalInterests = [...selectedInterests];
 
-        throw deleteError;
-
-    }
-
-
-    // ------------------------------------------------------
-    // Prepare rows
-    // ------------------------------------------------------
-
-    const rows =
-        selectedInterests.map(
-            categoryId => ({
-
-                user_id:
-                    currentUser.id,
-
-                category_id:
-                    categoryId
-
-            })
-        );
-
-
-    // ------------------------------------------------------
-    // Insert new preferences
-    // ------------------------------------------------------
-
-    const {
-        error:
-            insertError
-    } = await supabase
-        .from("user_preferences")
-        .insert(
-            rows
-        );
-
-
-    if (insertError) {
-
-        console.error(
-            "Unable to save preferences:",
-            insertError
-        );
-
-        throw insertError;
-
-    }
-
-
-    originalInterests =
-        [...selectedInterests];
-
-
-    return true;
-
+  return true;
 }
-
 
 // ==========================================================
 // SAVE INITIAL PREFERENCES
 // ==========================================================
 
 if (savePreferencesButton) {
+  savePreferencesButton.addEventListener("click", async () => {
+    try {
+      const saved = await saveCurrentPreferences();
 
-    savePreferencesButton.addEventListener(
-        "click",
-        async () => {
+      if (!saved) {
+        return;
+      }
 
-            try {
+      alert("Preferences saved successfully!");
 
-                const saved =
-                    await saveCurrentPreferences();
+      showManagePage();
+    } catch (error) {
+      console.error(error);
 
-
-                if (!saved) {
-
-                    return;
-
-                }
-
-
-                alert(
-                    "Preferences saved successfully!"
-                );
-
-
-                showManagePage();
-
-            } catch (error) {
-
-                console.error(
-                    error
-                );
-
-
-                alert(
-                    "Unable to save preferences. Please try again."
-                );
-
-            }
-
-        }
-    );
-
+      alert("Unable to save preferences. Please try again.");
+    }
+  });
 }
-
 
 // ==========================================================
 // SKIP
 // ==========================================================
 
 if (skipPreferencesButton) {
-
-    skipPreferencesButton.addEventListener(
-        "click",
-        () => {
-
-            showManagePage();
-
-        }
-    );
-
+  skipPreferencesButton.addEventListener("click", () => {
+    showManagePage();
+  });
 }
-
 
 // ==========================================================
 // SAVE CHANGES
 // ==========================================================
 
 if (saveChangesButton) {
+  saveChangesButton.addEventListener("click", async () => {
+    try {
+      const saved = await saveCurrentPreferences();
 
-    saveChangesButton.addEventListener(
-        "click",
-        async () => {
+      if (!saved) {
+        return;
+      }
 
-            try {
+      showSuccessMessage();
+    } catch (error) {
+      console.error(error);
 
-                const saved =
-                    await saveCurrentPreferences();
-
-
-                if (!saved) {
-
-                    return;
-
-                }
-
-
-                showSuccessMessage();
-
-            } catch (error) {
-
-                console.error(
-                    error
-                );
-
-
-                alert(
-                    "Unable to save preferences. Please try again."
-                );
-
-            }
-
-        }
-    );
-
+      alert("Unable to save preferences. Please try again.");
+    }
+  });
 }
-
 
 // ==========================================================
 // CANCEL
 // ==========================================================
 
 if (cancelButton) {
+  cancelButton.addEventListener("click", () => {
+    selectedInterests = [...originalInterests];
 
-    cancelButton.addEventListener(
-        "click",
-        () => {
+    renderInterestCards();
 
-            selectedInterests =
-                [...originalInterests];
+    renderPreferenceList();
 
+    renderSelectedInterestTags();
 
-            renderInterestCards();
-
-            renderPreferenceList();
-
-            renderSelectedInterestTags();
-
-            populateInterestSelect();
-
-        }
-    );
-
+    populateInterestSelect();
+  });
 }
-
 
 // ==========================================================
 // SUCCESS MESSAGE
 // ==========================================================
 
 function showSuccessMessage() {
+  if (!successMessage) {
+    return;
+  }
 
-    if (!successMessage) {
+  successMessage.classList.remove("hidden");
 
-        return;
-
-    }
-
-
-    successMessage.classList.remove(
-        "hidden"
-    );
-
-
-    setTimeout(
-        () => {
-
-            successMessage.classList.add(
-                "hidden"
-            );
-
-        },
-        2500
-    );
-
+  setTimeout(() => {
+    successMessage.classList.add("hidden");
+  }, 2500);
 }
-
 
 // ==========================================================
 // SHOW MANAGE PAGE
 // ==========================================================
 
 function showManagePage() {
+  if (setupPage) {
+    setupPage.classList.add("hidden");
+  }
 
-    if (setupPage) {
+  if (managePage) {
+    managePage.classList.remove("hidden");
+  }
 
-        setupPage.classList.add(
-            "hidden"
-        );
+  renderPreferenceList();
 
+  renderSelectedInterestTags();
+
+  populateInterestSelect();
+}
+
+// ==========================================================
+// UPDATE USER LABEL
+// ==========================================================
+
+function updateUserLabel() {
+  if (!userLabel) {
+    return;
+  }
+
+  if (currentUser) {
+    userLabel.textContent =
+      currentUser.user_metadata?.display_name || currentUser.email || "Account";
+  } else {
+    userLabel.textContent = "Guest";
+  }
+}
+
+// ==========================================================
+// ESCAPE HTML
+// ==========================================================
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+// ==========================================================
+// INITIALISE
+// ==========================================================
+
+async function initialise() {
+  try {
+    // ----------------------------------------------------
+    // Authentication
+    // ----------------------------------------------------
+
+    currentUser = await getCurrentUser();
+
+    updateUserLabel();
+
+    if (!currentUser) {
+      alert("Please log in before accessing your preferences.");
+
+      window.location.href = "login.html";
+
+      return;
     }
 
+    console.log("Logged-in user:", currentUser.id);
 
-    if (managePage) {
+    // ----------------------------------------------------
+    // Load categories
+    // ----------------------------------------------------
 
-        managePage.classList.remove(
-            "hidden"
-        );
+    await loadCategories();
 
-    }
+    // ----------------------------------------------------
+    // Load saved preferences
+    // ----------------------------------------------------
 
+    selectedInterests = await loadUserPreferences();
+
+    originalInterests = [...selectedInterests];
+
+    // ----------------------------------------------------
+    // Render
+    // ----------------------------------------------------
+
+    renderInterestCards();
 
     renderPreferenceList();
 
@@ -954,190 +639,27 @@ function showManagePage() {
 
     populateInterestSelect();
 
-}
+    // ----------------------------------------------------
+    // If user has preferences, show manage page
+    // Otherwise show setup page
+    // ----------------------------------------------------
 
-
-// ==========================================================
-// UPDATE USER LABEL
-// ==========================================================
-
-function updateUserLabel() {
-
-    if (!userLabel) {
-
-        return;
-
-    }
-
-
-    if (currentUser) {
-
-        userLabel.textContent =
-            currentUser.user_metadata?.display_name ||
-            currentUser.email ||
-            "Account";
-
+    if (selectedInterests.length > 0) {
+      showManagePage();
     } else {
+      if (setupPage) {
+        setupPage.classList.remove("hidden");
+      }
 
-        userLabel.textContent =
-            "Guest";
-
+      if (managePage) {
+        managePage.classList.add("hidden");
+      }
     }
+  } catch (error) {
+    console.error("Feature 7 initialisation failed:", error);
 
-}
-
-
-// ==========================================================
-// ESCAPE HTML
-// ==========================================================
-
-function escapeHtml(
-    value
-) {
-
-    return String(
-        value ?? ""
-    )
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-        .replace(
-            /</g,
-            "&lt;"
-        )
-        .replace(
-            />/g,
-            "&gt;"
-        )
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-        .replace(
-            /'/g,
-            "&#039;"
-        );
-
-}
-
-
-// ==========================================================
-// INITIALISE
-// ==========================================================
-
-async function initialise() {
-
-    try {
-
-        // ----------------------------------------------------
-        // Authentication
-        // ----------------------------------------------------
-
-        currentUser =
-            await getCurrentUser();
-
-
-        updateUserLabel();
-
-
-        if (!currentUser) {
-
-            alert(
-                "Please log in before accessing your preferences."
-            );
-
-
-            window.location.href =
-                "login.html";
-
-
-            return;
-
-        }
-
-
-        console.log(
-            "Logged-in user:",
-            currentUser.id
-        );
-
-
-        // ----------------------------------------------------
-        // Load categories
-        // ----------------------------------------------------
-
-        await loadCategories();
-
-
-        // ----------------------------------------------------
-        // Load saved preferences
-        // ----------------------------------------------------
-
-        selectedInterests =
-            await loadUserPreferences();
-
-
-        originalInterests =
-            [...selectedInterests];
-
-
-        // ----------------------------------------------------
-        // Render
-        // ----------------------------------------------------
-
-        renderInterestCards();
-
-        renderPreferenceList();
-
-        renderSelectedInterestTags();
-
-        populateInterestSelect();
-
-
-        // ----------------------------------------------------
-        // If user has preferences, show manage page
-        // Otherwise show setup page
-        // ----------------------------------------------------
-
-        if (
-            selectedInterests.length > 0
-        ) {
-
-            showManagePage();
-
-        } else {
-
-            if (setupPage) {
-
-                setupPage.classList.remove(
-                    "hidden"
-                );
-
-            }
-
-            if (managePage) {
-
-                managePage.classList.add(
-                    "hidden"
-                );
-
-            }
-
-        }
-
-
-    } catch (error) {
-
-        console.error(
-            "Feature 7 initialisation failed:",
-            error
-        );
-
-
-        if (interestGrid) {
-
-            interestGrid.innerHTML = `
+    if (interestGrid) {
+      interestGrid.innerHTML = `
 
                 <p class="state-message is-error">
 
@@ -1149,12 +671,8 @@ async function initialise() {
                 </p>
 
             `;
-
-        }
-
     }
-
+  }
 }
-
 
 initialise();

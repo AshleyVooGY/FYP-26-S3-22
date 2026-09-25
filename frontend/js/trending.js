@@ -1,5 +1,13 @@
-import { getTrendingArticles, getPopularArticles } from "../../services/feature5Service.js";
-import { formatCount, formatRelativeTime, escapeHtml, thumbHtml } from "./format.js";
+import {
+  getTrendingArticles,
+  getPopularArticles,
+} from "../../services/feature5Service.js";
+import {
+  formatCount,
+  formatRelativeTime,
+  escapeHtml,
+  thumbHtml,
+} from "./format.js";
 import { renderPagination as renderPaginationControl } from "./pagination.js";
 
 const PAGE_SIZE = 5;
@@ -10,33 +18,33 @@ const TABS = [
     key: "trending",
     label: "Trending Now",
     fetch: () => getTrendingArticles(FETCH_LIMIT),
-    note: "Ranked from articles published in the last 7 days."
+    note: "Ranked from articles published in the last 7 days.",
   },
   {
     key: "popular-today",
     label: "Popular Today",
     fetch: () => getPopularArticles(FETCH_LIMIT),
-    note: "Ranked by overall popularity across all published articles."
+    note: "Ranked by overall popularity across all published articles.",
   },
   {
     key: "popular-week",
     label: "This Week",
     fetch: () => getPopularArticles(FETCH_LIMIT),
-    note: "Ranked by overall popularity across all published articles."
+    note: "Ranked by overall popularity across all published articles.",
   },
   {
     key: "popular-month",
     label: "This Month",
     fetch: () => getPopularArticles(FETCH_LIMIT),
-    note: "Ranked by overall popularity across all published articles."
-  }
+    note: "Ranked by overall popularity across all published articles.",
+  },
 ];
 
 const state = {
   tabKey: TABS[0].key,
   sort: "popularity",
   page: 1,
-  cache: {}
+  cache: {},
 };
 
 function sortArticles(articles, sort) {
@@ -59,7 +67,7 @@ function renderTabs() {
       <button class="tab ${tab.key === state.tabKey ? "is-active" : ""}" data-tab="${tab.key}">
         ${escapeHtml(tab.label)}
       </button>
-    `
+    `,
   ).join("");
 
   tabsEl.querySelectorAll(".tab").forEach((btn) => {
@@ -84,7 +92,7 @@ function renderPagination(totalItems) {
       state.page = page;
       renderRows();
       renderPagination(totalItems);
-    }
+    },
   });
 }
 

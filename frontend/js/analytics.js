@@ -2,7 +2,7 @@ import { requireAdmin } from "./auth.js";
 import {
   getAnalyticsOverview,
   getArticleViewStats,
-  getCategoryPopularity
+  getCategoryPopularity,
 } from "../../services/feature6Service.js";
 import { formatCount, escapeHtml, forbiddenStateHtml } from "./format.js";
 
@@ -13,7 +13,7 @@ function renderDashboard(overview, topArticles, topCategories) {
     ["Total Views", formatCount(overview.total_views)],
     ["Published Articles", formatCount(overview.total_articles)],
     ["Avg Views / Article", formatCount(overview.avg_views_per_article)],
-    ["Categories", formatCount(overview.total_categories)]
+    ["Categories", formatCount(overview.total_categories)],
   ];
 
   const articleRows = topArticles
@@ -25,7 +25,7 @@ function renderDashboard(overview, topArticles, topCategories) {
         <td><span class="badge">${escapeHtml(a.category)}</span></td>
         <td class="is-numeric">${formatCount(a.view_count)}</td>
       </tr>
-    `
+    `,
     )
     .join("");
 
@@ -39,7 +39,7 @@ function renderDashboard(overview, topArticles, topCategories) {
         <td class="is-numeric">${formatCount(c.article_count)}</td>
         <td class="is-numeric">${formatCount(c.total_views)}</td>
       </tr>
-    `
+    `,
     )
     .join("");
 
@@ -52,7 +52,7 @@ function renderDashboard(overview, topArticles, topCategories) {
             <p class="summary-card__label">${label}</p>
             <p class="summary-card__value">${value}</p>
           </div>
-        `
+        `,
         )
         .join("")}
     </div>
@@ -106,7 +106,7 @@ async function init() {
     const [overview, topArticles, topCategories] = await Promise.all([
       getAnalyticsOverview(),
       getArticleViewStats({ sort: "views_desc", limit: 5 }),
-      getCategoryPopularity()
+      getCategoryPopularity(),
     ]);
 
     renderDashboard(overview, topArticles, topCategories);

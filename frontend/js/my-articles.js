@@ -1,6 +1,14 @@
 import { requireAuth } from "./auth.js";
-import { getMyArticles, deleteArticle } from "../../services/feature8Service.js";
-import { escapeHtml, formatCount, formatRelativeTime, thumbHtml } from "./format.js";
+import {
+  getMyArticles,
+  deleteArticle,
+} from "../../services/feature8Service.js";
+import {
+  escapeHtml,
+  formatCount,
+  formatRelativeTime,
+  thumbHtml,
+} from "./format.js";
 
 function rowHtml(article) {
   return `
@@ -28,7 +36,8 @@ async function render(articles) {
   const slot = document.getElementById("my-articles-slot");
 
   if (articles.length === 0) {
-    slot.innerHTML = '<p class="state-message">You haven\'t published any articles yet.</p>';
+    slot.innerHTML =
+      '<p class="state-message">You haven\'t published any articles yet.</p>';
     return;
   }
 

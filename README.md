@@ -130,10 +130,4 @@ Developed by the FYP-26-S3-22 project team. Team-member names, responsibilities 
 
 ## License
 
-Not to be distributed or reused without the teams' permission. All Rights Reserved
-
-## Academic Use
-
 This repository was created for an academic Final Year Project. Project materials and source code should not be copied, redistributed or reused without permission from the project team.
-
-

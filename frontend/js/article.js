@@ -143,7 +143,7 @@ async function isArticleBookmarked(articleId) {
         .from("bookmarks")
         .select("article_id")
         .eq("user_id", user.id)
-        .eq("article_id", articleId)
+        .eq("article_id", Number(articleId))
         .maybeSingle();
 
 
@@ -163,17 +163,18 @@ async function isArticleBookmarked(articleId) {
 
 
 /* ==========================================================
-   CREATE BOOKMARK CONFIRMATION MODAL
+   SHOW BOOKMARK / UNBOOKMARK CONFIRMATION MODAL
 ========================================================== */
 
 function showBookmarkModal(
     articleId,
-    bookmarkButton
+    bookmarkButton,
+    isCurrentlyBookmarked
 ) {
 
-    /*
-       Prevent multiple modals from being created.
-    */
+    /* ------------------------------------------------------
+       PREVENT MULTIPLE MODALS
+    ------------------------------------------------------ */
 
     const existingModal =
         document.querySelector(
@@ -184,6 +185,34 @@ function showBookmarkModal(
     if (existingModal) {
         return;
     }
+
+
+    /* ------------------------------------------------------
+       DETERMINE ACTION
+    ------------------------------------------------------ */
+
+    const action =
+        isCurrentlyBookmarked
+            ? "remove"
+            : "add";
+
+
+    const modalTitle =
+        action === "remove"
+            ? "Remove Bookmark"
+            : "Bookmark Article";
+
+
+    const modalMessage =
+        action === "remove"
+            ? "Are you sure you want to remove this bookmark?"
+            : "Are you sure you want to bookmark this article?";
+
+
+    const confirmText =
+        action === "remove"
+            ? "Remove"
+            : "Yes";
 
 
     /* ------------------------------------------------------
@@ -204,13 +233,12 @@ function showBookmarkModal(
         >
 
             <h2>
-                Bookmark Article
+                ${modalTitle}
             </h2>
 
 
             <p>
-                Are you sure you want to
-                bookmark this article?
+                ${modalMessage}
             </p>
 
 
@@ -230,7 +258,7 @@ function showBookmarkModal(
                     type="button"
                     class="bookmark-modal__confirm"
                 >
-                    Yes
+                    ${confirmText}
                 </button>
 
             </div>
@@ -264,7 +292,7 @@ function showBookmarkModal(
 
 
     /* ------------------------------------------------------
-       YES BUTTON
+       CONFIRM BUTTON
     ------------------------------------------------------ */
 
     const confirmButton =
@@ -277,12 +305,25 @@ function showBookmarkModal(
         "click",
         async () => {
 
-            await saveBookmark(
-                articleId,
-                bookmarkButton,
-                modal,
-                confirmButton
-            );
+            if (action === "remove") {
+
+                await removeBookmark(
+                    articleId,
+                    bookmarkButton,
+                    modal,
+                    confirmButton
+                );
+
+            } else {
+
+                await saveBookmark(
+                    articleId,
+                    bookmarkButton,
+                    modal,
+                    confirmButton
+                );
+
+            }
 
         }
     );
@@ -397,12 +438,15 @@ async function saveBookmark(
             "is-bookmarked"
         );
 
+        bookmarkButton.title =
+            "Remove bookmark";
+
         return;
     }
 
 
     /* ------------------------------------------------------
-       DISABLE BUTTON WHILE SAVING
+       DISABLE CONFIRM BUTTON
     ------------------------------------------------------ */
 
     confirmButton.disabled = true;
@@ -473,7 +517,118 @@ async function saveBookmark(
 
 
     bookmarkButton.title =
-        "Article bookmarked";
+        "Remove bookmark";
+
+}
+
+
+/* ==========================================================
+   REMOVE BOOKMARK
+========================================================== */
+
+async function removeBookmark(
+    articleId,
+    bookmarkButton,
+    modal,
+    confirmButton
+) {
+
+    /* ------------------------------------------------------
+       GET CURRENT USER
+    ------------------------------------------------------ */
+
+    const {
+        data: {
+            user
+        }
+    } = await supabase.auth.getUser();
+
+
+    if (!user) {
+
+        modal.remove();
+
+        alert(
+            "Please log in to manage your bookmarks."
+        );
+
+        window.location.href =
+            "login.html";
+
+        return;
+    }
+
+
+    /* ------------------------------------------------------
+       DISABLE CONFIRM BUTTON
+    ------------------------------------------------------ */
+
+    confirmButton.disabled = true;
+
+    confirmButton.textContent =
+        "Removing...";
+
+
+    /* ------------------------------------------------------
+       DELETE BOOKMARK
+    ------------------------------------------------------ */
+
+    const {
+        error
+    } = await supabase
+        .from("bookmarks")
+        .delete()
+        .eq("user_id", user.id)
+        .eq(
+            "article_id",
+            Number(articleId)
+        );
+
+
+    /* ------------------------------------------------------
+       HANDLE ERROR
+    ------------------------------------------------------ */
+
+    if (error) {
+
+        console.error(
+            "Error removing bookmark:",
+            error
+        );
+
+
+        confirmButton.disabled = false;
+
+        confirmButton.textContent =
+            "Remove";
+
+
+        alert(
+            "Unable to remove this bookmark. Please try again."
+        );
+
+        return;
+    }
+
+
+    /* ------------------------------------------------------
+       SUCCESS
+    ------------------------------------------------------ */
+
+    modal.remove();
+
+
+    bookmarkButton.textContent =
+        "🔖 Bookmark";
+
+
+    bookmarkButton.classList.remove(
+        "is-bookmarked"
+    );
+
+
+    bookmarkButton.title =
+        "Bookmark this article";
 
 }
 
@@ -532,11 +687,70 @@ async function setupBookmarkButton(
        CHECK EXISTING BOOKMARK
     ------------------------------------------------------ */
 
-    const bookmarked =
+    let bookmarked =
         await isArticleBookmarked(
             articleId
         );
 
+
+    /* ------------------------------------------------------
+       UPDATE INITIAL BUTTON STATE
+    ------------------------------------------------------ */
+
+    updateBookmarkButton(
+        bookmarkButton,
+        bookmarked
+    );
+
+
+    /* ------------------------------------------------------
+       CLICK EVENT
+    ------------------------------------------------------ */
+
+    bookmarkButton.addEventListener(
+        "click",
+        async () => {
+
+            /*
+               Re-check the database before
+               showing the confirmation modal.
+
+               This prevents the button state
+               from becoming outdated.
+            */
+
+            bookmarked =
+                await isArticleBookmarked(
+                    articleId
+                );
+
+
+            updateBookmarkButton(
+                bookmarkButton,
+                bookmarked
+            );
+
+
+            showBookmarkModal(
+                articleId,
+                bookmarkButton,
+                bookmarked
+            );
+
+        }
+    );
+
+}
+
+
+/* ==========================================================
+   UPDATE BOOKMARK BUTTON
+========================================================== */
+
+function updateBookmarkButton(
+    bookmarkButton,
+    bookmarked
+) {
 
     if (bookmarked) {
 
@@ -548,42 +762,21 @@ async function setupBookmarkButton(
         );
 
         bookmarkButton.title =
-            "Article bookmarked";
+            "Remove bookmark";
+
+    } else {
+
+        bookmarkButton.textContent =
+            "🔖 Bookmark";
+
+        bookmarkButton.classList.remove(
+            "is-bookmarked"
+        );
+
+        bookmarkButton.title =
+            "Bookmark this article";
 
     }
-
-
-    /* ------------------------------------------------------
-       CLICK EVENT
-    ------------------------------------------------------ */
-
-    bookmarkButton.addEventListener(
-        "click",
-        () => {
-
-            /*
-               If already bookmarked,
-               don't create another bookmark.
-            */
-
-            if (
-                bookmarkButton.classList.contains(
-                    "is-bookmarked"
-                )
-            ) {
-
-                return;
-
-            }
-
-
-            showBookmarkModal(
-                articleId,
-                bookmarkButton
-            );
-
-        }
-    );
 
 }
 

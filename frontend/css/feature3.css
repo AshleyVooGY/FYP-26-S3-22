@@ -251,7 +251,6 @@
     display: flex;
 
     align-items: center;
-
     justify-content: center;
 
     width: 50px;
@@ -353,10 +352,6 @@
    BOOKMARK CONFIRMATION MODAL
 ========================================================== */
 
-/*
-   The modal covers the entire browser viewport.
-*/
-
 .bookmark-modal {
     position: fixed;
 
@@ -377,6 +372,8 @@
     z-index: 9999;
 
     box-sizing: border-box;
+
+    animation: bookmarkModalFadeIn 0.15s ease-out;
 }
 
 
@@ -403,6 +400,8 @@
     box-sizing: border-box;
 
     text-align: center;
+
+    animation: bookmarkModalScaleIn 0.15s ease-out;
 }
 
 
@@ -535,13 +534,8 @@
 
 
 /* ==========================================================
-   MODAL FADE-IN
+   MODAL ANIMATIONS
 ========================================================== */
-
-.bookmark-modal {
-    animation: bookmarkModalFadeIn 0.15s ease-out;
-}
-
 
 @keyframes bookmarkModalFadeIn {
 
@@ -553,15 +547,6 @@
         opacity: 1;
     }
 
-}
-
-
-/* ==========================================================
-   MODAL BOX ANIMATION
-========================================================== */
-
-.bookmark-modal__content {
-    animation: bookmarkModalScaleIn 0.15s ease-out;
 }
 
 
@@ -666,7 +651,6 @@
     display: flex;
 
     align-items: center;
-
     justify-content: center;
 
     width: 100%;
@@ -677,6 +661,8 @@
 
 
 .history-card__placeholder svg {
+    display: block;
+
     width: 34px !important;
     height: 34px !important;
 
@@ -749,6 +735,43 @@
     color: var(--text-secondary);
 
     font-size: 11px;
+}
+
+
+.history-card__meta span {
+    white-space: nowrap;
+}
+
+
+/* ==========================================================
+   BOOKMARK BUTTON
+========================================================== */
+
+#bookmark-btn {
+    cursor: pointer;
+}
+
+
+#bookmark-btn.is-bookmarked {
+    cursor: pointer;
+}
+
+
+/* ==========================================================
+   DISABLED MODAL BUTTONS
+========================================================== */
+
+.bookmark-modal__confirm:disabled {
+    cursor: wait;
+
+    opacity: 0.7;
+}
+
+
+.bookmark-modal__cancel:disabled {
+    cursor: not-allowed;
+
+    opacity: 0.7;
 }
 
 

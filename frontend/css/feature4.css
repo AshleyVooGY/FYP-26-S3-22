@@ -1,0 +1,231 @@
+/* ==========================================================
+   FEATURE 4
+   NEWS REACTION MANAGEMENT
+========================================================== */
+
+
+/* ==========================================================
+   REACTION SECTION
+========================================================== */
+
+.reaction-section {
+    width: 100%;
+
+    margin-top: 24px;
+
+    padding-top: 18px;
+
+    border-top: 1px solid var(--border);
+}
+
+
+/* ==========================================================
+   REACTION TITLE
+========================================================== */
+
+.reaction-section__title {
+    margin: 0 0 10px;
+
+    color: var(--text-primary);
+
+    font-size: 13px;
+
+    font-weight: 600;
+}
+
+
+/* ==========================================================
+   REACTION BUTTON BAR
+========================================================== */
+
+.reaction-bar {
+    display: flex;
+
+    align-items: center;
+
+    flex-wrap: wrap;
+
+    gap: 8px;
+
+    width: 100%;
+}
+
+
+/* ==========================================================
+   REACTION BUTTON
+========================================================== */
+
+.reaction-btn {
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 5px;
+
+    min-width: 75px;
+
+    padding: 7px 11px;
+
+    border: 1px solid var(--border);
+
+    border-radius: 6px;
+
+    background: var(--bg-input);
+
+    color: var(--text-primary);
+
+    font-family: inherit;
+
+    font-size: 12px;
+
+    font-weight: 500;
+
+    cursor: pointer;
+
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease,
+        transform 0.15s ease;
+}
+
+
+.reaction-btn:hover {
+    border-color: var(--accent);
+
+    transform: translateY(-1px);
+}
+
+
+/* ==========================================================
+   SELECTED REACTION
+========================================================== */
+
+.reaction-btn.is-selected {
+    background: var(--accent);
+
+    border-color: var(--accent);
+
+    color: #ffffff;
+
+    font-weight: 600;
+}
+
+
+.reaction-btn.is-selected:hover {
+    background: var(--accent-hover);
+
+    border-color: var(--accent-hover);
+}
+
+
+/* ==========================================================
+   REACTION BUTTON DISABLED
+========================================================== */
+
+.reaction-btn:disabled {
+    cursor: wait;
+
+    opacity: 0.65;
+
+    transform: none;
+}
+
+
+/* ==========================================================
+   REACTION COUNTS
+========================================================== */
+
+.reaction-counts {
+    display: flex;
+
+    align-items: center;
+
+    flex-wrap: wrap;
+
+    gap: 14px;
+
+    margin-top: 12px;
+
+    color: var(--text-secondary);
+
+    font-size: 11px;
+}
+
+
+/* ==========================================================
+   INDIVIDUAL REACTION COUNT
+========================================================== */
+
+.reaction-count {
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 4px;
+
+    white-space: nowrap;
+}
+
+
+/* ==========================================================
+   REACTION COUNT NUMBER
+========================================================== */
+
+.reaction-count__number {
+    color: var(--text-primary);
+
+    font-weight: 600;
+}
+
+
+/* ==========================================================
+   LOADING STATE
+========================================================== */
+
+.reaction-counts.is-loading {
+    opacity: 0.65;
+}
+
+
+/* ==========================================================
+   ERROR STATE
+========================================================== */
+
+.reaction-error {
+    margin-top: 8px;
+
+    color: #f28b82;
+
+    font-size: 11px;
+}
+
+
+/* ==========================================================
+   MOBILE
+========================================================== */
+
+@media (max-width: 700px) {
+
+    .reaction-bar {
+        display: grid;
+
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+
+        gap: 8px;
+    }
+
+
+    .reaction-btn {
+        width: 100%;
+    }
+
+
+    .reaction-counts {
+        gap: 10px;
+    }
+
+}

@@ -9,13 +9,13 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="topbar__brand" href="#browse" aria-label="Feature home">
+    <a class="topbar__brand" href="../index.html" aria-label="News Release System home">
       <span class="topbar__brand-icon" aria-hidden="true">▣</span>
       <span>NEWS RELEASE SYSTEM</span>
     </a>
 
     <nav class="topbar__nav" aria-label="Primary navigation">
-      <a href="#browse" data-nav="browse">Home</a>
+      <a href="../index.html">Home</a>
       <div class="category-menu">
         <button id="category-menu-button" class="category-menu__button" type="button" aria-expanded="false">
           Categories <span aria-hidden="true">⌄</span>
@@ -25,8 +25,8 @@
           <button type="button" data-open-manage>Manage categories &amp; tags</button>
         </div>
       </div>
-      <span class="nav-placeholder">Trending</span>
-      <span class="nav-placeholder">Bookmarks</span>
+      <a href="../trending.html">Trending</a>
+      <a href="../bookmarks.html">Bookmarks</a>
     </nav>
 
     <div class="topbar__actions">
@@ -35,24 +35,24 @@
         <button class="sr-only" type="submit">Submit search</button>
       </form>
       <button class="icon-btn" type="button" aria-label="Notifications">♧</button>
-      <span class="btn-publish">+ Publish</span>
-      <span class="user-chip">
+      <a class="btn-publish" href="../article-editor.html">+ Publish</a>
+      <a class="user-chip" href="../login.html">
         <span class="user-chip__avatar" aria-hidden="true">●</span>
         <span id="user-label">Guest</span>
-      </span>
+      </a>
     </div>
   </header>
 
   <div class="layout">
     <aside class="sidebar">
       <nav class="sidebar__nav" aria-label="Account navigation">
-        <a href="#browse" data-side="browse"><span class="sidebar__icon">▦</span>Dashboard</a>
-        <span class="sidebar-link is-disabled"><span class="sidebar__icon">◇</span>My Articles</span>
-        <span class="sidebar-link is-disabled"><span class="sidebar__icon">✎</span>Drafts</span>
-        <span class="sidebar-link is-disabled"><span class="sidebar__icon">▱</span>Bookmarks</span>
-        <span class="sidebar-link is-disabled"><span class="sidebar__icon">◉</span>History</span>
-        <span class="sidebar-link is-disabled"><span class="sidebar__icon">⌘</span>Preferences</span>
-        <span class="sidebar-link is-disabled"><span class="sidebar__icon">⚙</span>Settings</span>
+        <a href="../index.html"><span class="sidebar__icon">▦</span>Dashboard</a>
+        <a href="../my-articles.html"><span class="sidebar__icon">◇</span>My Articles</a>
+        <a href="../drafts.html"><span class="sidebar__icon">✎</span>Drafts</a>
+        <a href="../bookmarks.html"><span class="sidebar__icon">▱</span>Bookmarks</a>
+        <a href="../history.html"><span class="sidebar__icon">◉</span>History</a>
+        <a href="../preferences.html"><span class="sidebar__icon">⌘</span>Preferences</a>
+        <a href="../login.html"><span class="sidebar__icon">⚙</span>Account</a>
       </nav>
     </aside>
 

@@ -1,3 +1,4 @@
+import { requireAuth } from "./auth.js";
 import {
   getTrendingArticles,
   getPopularArticles,
@@ -88,6 +89,9 @@ function renderTrendingGrid(articles) {
 }
 
 async function init() {
+  const user = await requireAuth("welcome.html");
+  if (!user) return;
+
   try {
     const popular = await getPopularArticles(1);
     renderFeatured(popular[0] ?? null);

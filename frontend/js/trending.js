@@ -1,3 +1,4 @@
+import { requireAuth } from "./auth.js";
 import { getTrendingArticles, getPopularArticles } from "../../services/feature5Service.js";
 import { formatCount, formatRelativeTime, escapeHtml, thumbHtml } from "./format.js";
 import { renderPagination as renderPaginationControl } from "./pagination.js";
@@ -148,5 +149,12 @@ document.getElementById("sort-select").addEventListener("change", (e) => {
   renderRows();
 });
 
-renderTabs();
-renderList();
+async function init() {
+  const user = await requireAuth("welcome.html");
+  if (!user) return;
+
+  renderTabs();
+  renderList();
+}
+
+init();

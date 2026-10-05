@@ -107,6 +107,7 @@
   align-items: flex-start;
   gap: 4px;
   min-width: 0;
+  flex: 1;
 }
 
 .latest-item__title {
@@ -116,6 +117,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  align-self: stretch;
+  min-width: 0;
 }
 
 .trending-panel__head {
@@ -266,6 +269,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  align-self: stretch;
+  min-width: 0;
 }
 
 .rank-row__meta {

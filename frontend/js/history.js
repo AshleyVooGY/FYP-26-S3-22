@@ -447,41 +447,8 @@ async function init() {
 
   if (!currentUser) {
 
-    const grid =
-      document.getElementById(
-        "historyGrid"
-      );
-
-
-    if (grid) {
-
-      grid.innerHTML = `
-
-        <div class="history-empty">
-
-          <h3>
-            Please Log In
-          </h3>
-
-          <p>
-            You must be logged in to view your reading history.
-          </p>
-
-          <br>
-
-          <a
-            href="login.html"
-            class="save-button"
-          >
-            Log In
-          </a>
-
-        </div>
-
-      `;
-
-    }
-
+    window.location.href =
+      "welcome.html";
 
     return;
 

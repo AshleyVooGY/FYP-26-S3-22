@@ -109,4 +109,21 @@ async function renderUserChip() {
   wireLogoutLinks();
 }
 
+// Hides sidebar/nav items marked [data-role="admin"] from anyone who
+// isn't a System Admin, so the left-hand column only ever shows links
+// a given role can actually use — not just a "System Admin only" hint
+// on a link anyone could still click.
+async function applyRoleVisibility() {
+  const adminOnlyEls = document.querySelectorAll('[data-role="admin"]');
+  if (adminOnlyEls.length === 0) {
+    return;
+  }
+
+  const admin = await isSystemAdmin();
+  adminOnlyEls.forEach((el) => {
+    el.hidden = !admin;
+  });
+}
+
 renderUserChip();
+applyRoleVisibility();

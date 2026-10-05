@@ -1,0 +1,223 @@
+/* Guest landing page — marketing-only, no app nav/sidebar. */
+
+.welcome-nav-link {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  margin-right: 16px;
+}
+
+.welcome-nav-link:hover {
+  color: var(--text-primary);
+}
+
+.welcome {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 56px 24px 80px;
+}
+
+.eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  margin: 0 0 10px;
+}
+
+/* ---- Hero ---- */
+
+.welcome-hero {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 40px;
+  align-items: start;
+  margin-bottom: 72px;
+}
+
+.welcome-hero__text {
+  text-align: center;
+}
+
+.welcome-hero__text h1 {
+  font-size: 40px;
+  line-height: 1.15;
+  margin: 0 0 16px;
+}
+
+.welcome-hero__sub {
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0 auto 26px;
+  max-width: 480px;
+}
+
+.welcome-hero__actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.welcome-headline-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  cursor: default;
+}
+
+.welcome-headline-card__label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin: 0 0 14px;
+}
+
+.welcome-headline-card__cta {
+  margin: 16px 0 0;
+  font-size: 12.5px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+#headline-slot {
+  display: flex;
+  flex-direction: column;
+}
+
+.welcome-headline {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+
+.welcome-headline:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+.welcome-headline__title {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.welcome-headline__views {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ---- Video ---- */
+
+.welcome-video {
+  margin-bottom: 72px;
+}
+
+.welcome-video__placeholder {
+  background: var(--bg-panel);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--text-muted);
+}
+
+.welcome-video__icon {
+  font-size: 32px;
+}
+
+/* ---- Testimonials ---- */
+
+.welcome-testimonials {
+  margin-bottom: 72px;
+}
+
+.welcome-testimonials__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.testimonial-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin: 0;
+}
+
+.testimonial-card__rating {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.testimonial-card__stars {
+  color: #f5b63f;
+  font-size: 15px;
+  letter-spacing: 1px;
+}
+
+.testimonial-card__score {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.testimonial-card p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  margin: 0 0 14px;
+}
+
+.testimonial-card footer {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+/* ---- Closing CTA ---- */
+
+.welcome-cta {
+  text-align: center;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 44px 24px;
+}
+
+.welcome-cta h2 {
+  margin: 0 0 10px;
+  font-size: 22px;
+}
+
+.welcome-cta p {
+  color: var(--text-secondary);
+  margin: 0 0 22px;
+}
+
+.welcome-cta__button {
+  display: inline-block;
+}
+
+@media (max-width: 760px) {
+  .welcome-hero {
+    grid-template-columns: 1fr;
+  }
+  .welcome-testimonials__grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,4 +1,8 @@
 import {
+    requireAuth
+} from "./auth.js";
+
+import {
     getArticleById,
     getTrendingArticles,
     recordArticleView
@@ -1042,6 +1046,18 @@ function renderArticle(
 // ==========================================================
 
 async function init() {
+
+
+    // ------------------------------------------------------
+    // Guests are redirected to the marketing landing page
+    // ------------------------------------------------------
+
+    const user = await requireAuth("welcome.html");
+
+    if (!user) {
+
+        return;
+    }
 
 
     // ------------------------------------------------------

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>News Release System — Stay Ahead of the Story</title>
+  <link rel="stylesheet" href="css/shell.css" />
+  <link rel="stylesheet" href="css/feature5.css" />
+  <link rel="stylesheet" href="css/welcome.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar__brand">
+      <span class="topbar__brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="16" rx="1.5"/><path d="M17 8.5h4V18a2 2 0 0 1-2 2h-2"/><line x1="6.5" y1="8.5" x2="13.5" y2="8.5"/><line x1="6.5" y1="12" x2="13.5" y2="12"/><line x1="6.5" y1="15.5" x2="11" y2="15.5"/></svg></span>
+      <span>NEWS RELEASE SYSTEM</span>
+    </div>
+    <div class="topbar__actions">
+      <a href="login.html" class="welcome-nav-link">Log In</a>
+      <a href="signup.html" class="btn-publish is-live">Sign Up Free</a>
+    </div>
+  </header>
+
+  <main class="welcome">
+    <section class="welcome-hero">
+      <div class="welcome-hero__text">
+        <p class="eyebrow">NEWS, ORGANISED FOR YOU</p>
+        <h1>Stay ahead of the story.</h1>
+        <p class="welcome-hero__sub">
+          Categorised, searchable, trending news — plus bookmarks, reading history and
+          personalised recommendations once you create a free account.
+        </p>
+        <div class="welcome-hero__actions">
+          <a href="signup.html" class="btn-publish is-live">Create Free Account</a>
+          <a href="login.html" class="welcome-nav-link">I already have an account</a>
+        </div>
+      </div>
+
+      <div class="welcome-headline-card" id="headline-card">
+        <p class="welcome-headline-card__label">Trending Right Now</p>
+        <div id="headline-slot">
+          <p class="state-message">Loading today's top stories…</p>
+        </div>
+        <p class="welcome-headline-card__cta">Sign up to read the full story →</p>
+      </div>
+    </section>
+
+    <section class="welcome-video">
+      <h2 class="section-title">See It In Action</h2>
+      <div class="welcome-video__placeholder">
+        <span class="welcome-video__icon">🎬</span>
+        <p>Marketing video coming soon</p>
+      </div>
+    </section>
+
+    <section class="welcome-testimonials">
+      <h2 class="section-title">What Readers Are Saying</h2>
+      <div class="welcome-testimonials__grid">
+        <blockquote class="testimonial-card">
+          <div class="testimonial-card__rating" aria-label="Rated 5 out of 5 stars">
+            <span class="testimonial-card__stars" aria-hidden="true">★★★★★</span>
+            <span class="testimonial-card__score">5/5</span>
+          </div>
+          <p>"I finally stopped missing stories in categories I actually care about. The trending page alone is worth signing up for."</p>
+        </blockquote>
+        <blockquote class="testimonial-card">
+          <div class="testimonial-card__rating" aria-label="Rated 4 out of 5 stars">
+            <span class="testimonial-card__stars" aria-hidden="true">★★★★☆</span>
+            <span class="testimonial-card__score">4/5</span>
+          </div>
+          <p>"Being able to bookmark articles and pick up my reading history later made this my daily news habit."</p>
+        </blockquote>
+        <blockquote class="testimonial-card">
+          <div class="testimonial-card__rating" aria-label="Rated 5 out of 5 stars">
+            <span class="testimonial-card__stars" aria-hidden="true">★★★★★</span>
+            <span class="testimonial-card__score">5/5</span>
+          </div>
+          <p>"Clean, fast, and the recommendations actually match what I read. No clutter, no noise."</p>
+        </blockquote>
+      </div>
+    </section>
+
+    <section class="welcome-cta">
+      <h2>Ready to read the full story?</h2>
+      <p>Create a free account to unlock search, trending, bookmarks, reading history and more.</p>
+      <a href="signup.html" class="btn-publish is-live welcome-cta__button">Create Free Account</a>
+    </section>
+  </main>
+
+  <script type="module" src="js/auth.js"></script>
+  <script type="module" src="js/welcome.js"></script>
+</body>
+</html>

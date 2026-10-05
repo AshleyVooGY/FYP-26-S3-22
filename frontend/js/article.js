@@ -1,3 +1,5 @@
+import { supabase } from "../../config/supabaseClient.js";
+
 import {
     requireAuth
 } from "./auth.js";
@@ -15,681 +17,28 @@ import {
 } from "./format.js";
 
 import {
-    supabase
-} from "../../config/supabaseClient.js";
+    setupReactions
+} from "./reactions.js";
 
+import {
+    getRecommendations
+} from "../features-01-02-10/featureService.js";
 
-// ==========================================================
-// GET ARTICLE ID
-// ==========================================================
 
-const params =
-    new URLSearchParams(
-        window.location.search
-    );
+/* ==========================================================
+   GET ARTICLE ID FROM URL
+========================================================== */
 
-const articleId =
-    params.get("id");
+const params = new URLSearchParams(
+    window.location.search
+);
 
+const articleId = params.get("id");
 
-// ==========================================================
-// CURRENT USER
-// ==========================================================
 
-let currentUser = null;
-
-
-// ==========================================================
-// GET CURRENT USER
-// ==========================================================
-
-async function getCurrentUser() {
-
-    try {
-
-        const {
-            data,
-            error
-        } = await supabase.auth.getUser();
-
-
-        if (error) {
-
-            console.error(
-                "Error getting current user:",
-                error
-            );
-
-            return null;
-        }
-
-
-        return data?.user ?? null;
-
-
-    } catch (error) {
-
-        console.error(
-            "Authentication check failed:",
-            error
-        );
-
-        return null;
-    }
-}
-
-
-// ==========================================================
-// CHECK WHETHER ARTICLE IS ALREADY BOOKMARKED
-// ==========================================================
-
-async function checkBookmark(
-    articleId,
-    userId
-) {
-
-    if (!userId) {
-
-        return false;
-    }
-
-
-    try {
-
-        const {
-            data,
-            error
-        } = await supabase
-            .from("bookmarks")
-            .select("article_id")
-            .eq(
-                "user_id",
-                userId
-            )
-            .eq(
-                "article_id",
-                articleId
-            )
-            .maybeSingle();
-
-
-        if (error) {
-
-            console.error(
-                "Error checking bookmark:",
-                error
-            );
-
-            return false;
-        }
-
-
-        return !!data;
-
-
-    } catch (error) {
-
-        console.error(
-            "Unexpected bookmark check error:",
-            error
-        );
-
-        return false;
-    }
-}
-
-
-// ==========================================================
-// SAVE BOOKMARK
-// ==========================================================
-
-async function saveBookmark(
-    articleId,
-    userId
-) {
-
-    if (!userId) {
-
-        return {
-            success: false,
-            message: "Please log in to bookmark articles."
-        };
-    }
-
-
-    try {
-
-        const {
-            error
-        } = await supabase
-            .from("bookmarks")
-            .insert({
-                user_id: userId,
-                article_id: Number(articleId)
-            });
-
-
-        if (error) {
-
-            console.error(
-                "Error saving bookmark:",
-                error
-            );
-
-
-            // Duplicate bookmark
-
-            if (
-                error.code === "23505"
-            ) {
-
-                return {
-                    success: false,
-                    message: "This article is already bookmarked."
-                };
-
-            }
-
-
-            return {
-                success: false,
-                message: "Unable to bookmark this article."
-            };
-        }
-
-
-        return {
-            success: true,
-            message: "Article bookmarked successfully."
-        };
-
-
-    } catch (error) {
-
-        console.error(
-            "Unexpected bookmark error:",
-            error
-        );
-
-
-        return {
-            success: false,
-            message: "An unexpected error occurred."
-        };
-    }
-}
-
-
-// ==========================================================
-// REMOVE BOOKMARK
-// ==========================================================
-
-async function removeBookmark(
-    articleId,
-    userId
-) {
-
-    if (!userId) {
-
-        return false;
-    }
-
-
-    try {
-
-        const {
-            error
-        } = await supabase
-            .from("bookmarks")
-            .delete()
-            .eq(
-                "user_id",
-                userId
-            )
-            .eq(
-                "article_id",
-                Number(articleId)
-            );
-
-
-        if (error) {
-
-            console.error(
-                "Error removing bookmark:",
-                error
-            );
-
-            return false;
-        }
-
-
-        return true;
-
-
-    } catch (error) {
-
-        console.error(
-            "Unexpected remove bookmark error:",
-            error
-        );
-
-        return false;
-    }
-}
-
-
-// ==========================================================
-// CREATE BOOKMARK CONFIRMATION MODAL
-// ==========================================================
-
-function showBookmarkModal(
-    onConfirm
-) {
-
-    // Remove existing modal if one exists
-
-    const existingModal =
-        document.getElementById(
-            "bookmark-modal"
-        );
-
-    if (existingModal) {
-
-        existingModal.remove();
-
-    }
-
-
-    const modal =
-        document.createElement("div");
-
-
-    modal.id =
-        "bookmark-modal";
-
-
-    modal.className =
-        "bookmark-modal";
-
-
-    modal.innerHTML = `
-
-        <div class="bookmark-modal__overlay"></div>
-
-        <div
-            class="bookmark-modal__content"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="bookmark-modal-title"
-        >
-
-            <h2 id="bookmark-modal-title">
-                Bookmark Article
-            </h2>
-
-            <p>
-                Are you sure you want to bookmark
-                this article?
-            </p>
-
-            <div class="bookmark-modal__actions">
-
-                <button
-                    type="button"
-                    class="bookmark-modal__button bookmark-modal__button--cancel"
-                    id="bookmark-no"
-                >
-                    No
-                </button>
-
-                <button
-                    type="button"
-                    class="bookmark-modal__button bookmark-modal__button--confirm"
-                    id="bookmark-yes"
-                >
-                    Yes
-                </button>
-
-            </div>
-
-        </div>
-    `;
-
-
-    document.body.appendChild(
-        modal
-    );
-
-
-    const closeModal =
-        () => {
-
-            modal.remove();
-
-        };
-
-
-    document
-        .getElementById("bookmark-no")
-        .addEventListener(
-            "click",
-            closeModal
-        );
-
-
-    document
-        .querySelector(
-            ".bookmark-modal__overlay"
-        )
-        .addEventListener(
-            "click",
-            closeModal
-        );
-
-
-    document
-        .getElementById("bookmark-yes")
-        .addEventListener(
-            "click",
-            async () => {
-
-                await onConfirm();
-
-                closeModal();
-
-            }
-        );
-
-}
-
-
-// ==========================================================
-// SHOW TOAST MESSAGE
-// ==========================================================
-
-function showBookmarkMessage(
-    message,
-    isError = false
-) {
-
-    const existing =
-        document.getElementById(
-            "bookmark-message"
-        );
-
-    if (existing) {
-
-        existing.remove();
-
-    }
-
-
-    const messageBox =
-        document.createElement("div");
-
-
-    messageBox.id =
-        "bookmark-message";
-
-
-    messageBox.className =
-        "bookmark-message";
-
-
-    if (isError) {
-
-        messageBox.classList.add(
-            "bookmark-message--error"
-        );
-
-    }
-
-
-    messageBox.textContent =
-        message;
-
-
-    document.body.appendChild(
-        messageBox
-    );
-
-
-    setTimeout(
-        () => {
-
-            messageBox.classList.add(
-                "bookmark-message--hide"
-            );
-
-
-            setTimeout(
-                () => {
-
-                    messageBox.remove();
-
-                },
-                250
-            );
-
-        },
-        2500
-    );
-
-}
-
-
-// ==========================================================
-// UPDATE BOOKMARK BUTTON
-// ==========================================================
-
-function updateBookmarkButton(
-    isBookmarked
-) {
-
-    const button =
-        document.getElementById(
-            "bookmark-btn"
-        );
-
-
-    if (!button) {
-
-        return;
-    }
-
-
-    if (isBookmarked) {
-
-        button.textContent =
-            "🔖 Bookmarked";
-
-        button.classList.add(
-            "is-bookmarked"
-        );
-
-        button.title =
-            "Remove bookmark";
-
-
-    } else {
-
-        button.textContent =
-            "🔖 Bookmark";
-
-        button.classList.remove(
-            "is-bookmarked"
-        );
-
-        button.title =
-            "Bookmark this article";
-
-    }
-
-}
-
-
-// ==========================================================
-// SETUP BOOKMARK BUTTON
-// ==========================================================
-
-async function setupBookmarkButton(
-    articleId
-) {
-
-    const button =
-        document.getElementById(
-            "bookmark-btn"
-        );
-
-
-    if (!button) {
-
-        return;
-    }
-
-
-    // Check login status
-
-    currentUser =
-        await getCurrentUser();
-
-
-    // Guest user
-
-    if (!currentUser) {
-
-        button.addEventListener(
-            "click",
-            () => {
-
-                showBookmarkMessage(
-                    "Please log in to bookmark articles.",
-                    true
-                );
-
-            }
-        );
-
-        return;
-    }
-
-
-    // Check existing bookmark
-
-    let isBookmarked =
-        await checkBookmark(
-            articleId,
-            currentUser.id
-        );
-
-
-    updateBookmarkButton(
-        isBookmarked
-    );
-
-
-    // Handle click
-
-    button.addEventListener(
-        "click",
-        () => {
-
-            // Already bookmarked
-            // Ask whether to remove it
-
-            if (isBookmarked) {
-
-                showBookmarkModal(
-                    async () => {
-
-                        const removed =
-                            await removeBookmark(
-                                articleId,
-                                currentUser.id
-                            );
-
-
-                        if (!removed) {
-
-                            showBookmarkMessage(
-                                "Unable to remove bookmark.",
-                                true
-                            );
-
-                            return;
-                        }
-
-
-                        isBookmarked =
-                            false;
-
-
-                        updateBookmarkButton(
-                            false
-                        );
-
-
-                        showBookmarkMessage(
-                            "Bookmark removed."
-                        );
-
-                    }
-                );
-
-
-                return;
-            }
-
-
-            // Not bookmarked
-            // Ask whether to save it
-
-            showBookmarkModal(
-                async () => {
-
-                    const result =
-                        await saveBookmark(
-                            articleId,
-                            currentUser.id
-                        );
-
-
-                    if (!result.success) {
-
-                        showBookmarkMessage(
-                            result.message,
-                            true
-                        );
-
-                        return;
-                    }
-
-
-                    isBookmarked =
-                        true;
-
-
-                    updateBookmarkButton(
-                        true
-                    );
-
-
-                    showBookmarkMessage(
-                        "Article bookmarked successfully."
-                    );
-
-                }
-            );
-
-        }
-    );
-
-}
-
-
-// ==========================================================
-// RENDER TRENDING RAIL
-// ==========================================================
+/* ==========================================================
+   RENDER TRENDING RAIL
+========================================================== */
 
 function renderRail(
     articles,
@@ -703,7 +52,6 @@ function renderRail(
 
 
     if (!rail) {
-
         return;
     }
 
@@ -711,19 +59,19 @@ function renderRail(
     const others =
         articles
             .filter(
-                (a) =>
-                    String(a.id) !==
+                article =>
+                    String(article.id) !==
                     String(currentId)
             )
             .slice(0, 4);
 
 
-    if (
-        others.length === 0
-    ) {
+    if (others.length === 0) {
 
         rail.innerHTML =
-            '<p class="state-message">No other trending articles right now.</p>';
+            '<p class="state-message">' +
+            'No other trending articles right now.' +
+            '</p>';
 
         return;
     }
@@ -732,14 +80,16 @@ function renderRail(
     rail.innerHTML =
         others
             .map(
-                (a) => {
+                article => {
 
                     const thumb =
-                        a.featured_image_url
+                        article.featured_image_url
 
                             ? `
                                 <img
-                                    src="${escapeHtml(a.featured_image_url)}"
+                                    src="${escapeHtml(
+                                        article.featured_image_url
+                                    )}"
                                     alt=""
                                 />
                               `
@@ -748,10 +98,9 @@ function renderRail(
 
 
                     return `
-
                         <a
                             class="rail-item"
-                            href="article.html?id=${a.id}"
+                            href="article.html?id=${article.id}"
                         >
 
                             <div class="thumb">
@@ -761,21 +110,23 @@ function renderRail(
                             <div>
 
                                 <p class="rail-item__title">
-                                    ${escapeHtml(a.title)}
+                                    ${escapeHtml(
+                                        article.title
+                                    )}
                                 </p>
 
                                 <span class="meta-row">
 
                                     <span>
                                         ${formatRelativeTime(
-                                            a.published_at
+                                            article.published_at
                                         )}
                                     </span>
 
                                     <span>
                                         👁
                                         ${formatCount(
-                                            a.view_count
+                                            article.view_count
                                         )}
                                     </span>
 
@@ -784,19 +135,584 @@ function renderRail(
                             </div>
 
                         </a>
-
                     `;
 
                 }
             )
             .join("");
+}
+
+
+/* ==========================================================
+   CHECK WHETHER ARTICLE IS ALREADY BOOKMARKED
+========================================================== */
+
+async function isArticleBookmarked(
+    articleId
+) {
+
+    const {
+        data: {
+            user
+        }
+    } = await supabase.auth.getUser();
+
+
+    if (!user) {
+        return false;
+    }
+
+
+    const {
+        data,
+        error
+    } = await supabase
+        .from("bookmarks")
+        .select("article_id")
+        .eq(
+            "user_id",
+            user.id
+        )
+        .eq(
+            "article_id",
+            Number(articleId)
+        )
+        .maybeSingle();
+
+
+    if (error) {
+
+        console.error(
+            "Error checking bookmark:",
+            error
+        );
+
+        return false;
+    }
+
+
+    return Boolean(data);
+}
+
+
+/* ==========================================================
+   SHOW BOOKMARK / UNBOOKMARK MODAL
+========================================================== */
+
+function showBookmarkModal(
+    articleId,
+    bookmarkButton,
+    isCurrentlyBookmarked
+) {
+
+    const existingModal =
+        document.querySelector(
+            ".bookmark-modal"
+        );
+
+
+    if (existingModal) {
+        return;
+    }
+
+
+    const action =
+        isCurrentlyBookmarked
+            ? "remove"
+            : "add";
+
+
+    const modalTitle =
+        action === "remove"
+            ? "Remove Bookmark"
+            : "Bookmark Article";
+
+
+    const modalMessage =
+        action === "remove"
+            ? "Are you sure you want to remove this bookmark?"
+            : "Are you sure you want to bookmark this article?";
+
+
+    const confirmText =
+        action === "remove"
+            ? "Remove"
+            : "Yes";
+
+
+    const modal =
+        document.createElement(
+            "div"
+        );
+
+
+    modal.className =
+        "bookmark-modal";
+
+
+    modal.innerHTML = `
+
+        <div
+            class="bookmark-modal__content"
+        >
+
+            <h2>
+                ${modalTitle}
+            </h2>
+
+            <p>
+                ${modalMessage}
+            </p>
+
+            <div
+                class="bookmark-modal__actions"
+            >
+
+                <button
+                    type="button"
+                    class="bookmark-modal__cancel"
+                >
+                    No
+                </button>
+
+                <button
+                    type="button"
+                    class="bookmark-modal__confirm"
+                >
+                    ${confirmText}
+                </button>
+
+            </div>
+
+        </div>
+
+    `;
+
+
+    document.body.appendChild(
+        modal
+    );
+
+
+    const cancelButton =
+        modal.querySelector(
+            ".bookmark-modal__cancel"
+        );
+
+
+    cancelButton.addEventListener(
+        "click",
+        () => {
+
+            modal.remove();
+
+        }
+    );
+
+
+    const confirmButton =
+        modal.querySelector(
+            ".bookmark-modal__confirm"
+        );
+
+
+    confirmButton.addEventListener(
+        "click",
+        async () => {
+
+            if (
+                action === "remove"
+            ) {
+
+                await removeBookmark(
+                    articleId,
+                    bookmarkButton,
+                    modal,
+                    confirmButton
+                );
+
+            } else {
+
+                await saveBookmark(
+                    articleId,
+                    bookmarkButton,
+                    modal,
+                    confirmButton
+                );
+
+            }
+
+        }
+    );
+
+
+    modal.addEventListener(
+        "click",
+        event => {
+
+            if (
+                event.target === modal
+            ) {
+
+                modal.remove();
+
+            }
+
+        }
+    );
+
+
+    const escapeHandler =
+        event => {
+
+            if (
+                event.key === "Escape"
+            ) {
+
+                modal.remove();
+
+                document.removeEventListener(
+                    "keydown",
+                    escapeHandler
+                );
+
+            }
+
+        };
+
+
+    document.addEventListener(
+        "keydown",
+        escapeHandler
+    );
 
 }
 
 
-// ==========================================================
-// RENDER ARTICLE
-// ==========================================================
+/* ==========================================================
+   SAVE BOOKMARK
+========================================================== */
+
+async function saveBookmark(
+    articleId,
+    bookmarkButton,
+    modal,
+    confirmButton
+) {
+
+    const {
+        data: {
+            user
+        }
+    } = await supabase.auth.getUser();
+
+
+    if (!user) {
+
+        modal.remove();
+
+        alert(
+            "Please log in to bookmark an article."
+        );
+
+        window.location.href =
+            "login.html";
+
+        return;
+    }
+
+
+    const alreadyBookmarked =
+        await isArticleBookmarked(
+            articleId
+        );
+
+
+    if (alreadyBookmarked) {
+
+        modal.remove();
+
+        updateBookmarkButton(
+            bookmarkButton,
+            true
+        );
+
+        return;
+    }
+
+
+    confirmButton.disabled =
+        true;
+
+    confirmButton.textContent =
+        "Saving...";
+
+
+    const {
+        error
+    } = await supabase
+        .from("bookmarks")
+        .insert({
+
+            user_id:
+                user.id,
+
+            article_id:
+                Number(articleId)
+
+        });
+
+
+    if (error) {
+
+        console.error(
+            "Error saving bookmark:",
+            error
+        );
+
+
+        confirmButton.disabled =
+            false;
+
+        confirmButton.textContent =
+            "Yes";
+
+
+        alert(
+            "Unable to bookmark this article. Please try again."
+        );
+
+        return;
+    }
+
+
+    modal.remove();
+
+
+    updateBookmarkButton(
+        bookmarkButton,
+        true
+    );
+
+}
+
+
+/* ==========================================================
+   REMOVE BOOKMARK
+========================================================== */
+
+async function removeBookmark(
+    articleId,
+    bookmarkButton,
+    modal,
+    confirmButton
+) {
+
+    const {
+        data: {
+            user
+        }
+    } = await supabase.auth.getUser();
+
+
+    if (!user) {
+
+        modal.remove();
+
+        alert(
+            "Please log in to manage your bookmarks."
+        );
+
+        window.location.href =
+            "login.html";
+
+        return;
+    }
+
+
+    confirmButton.disabled =
+        true;
+
+    confirmButton.textContent =
+        "Removing...";
+
+
+    const {
+        error
+    } = await supabase
+        .from("bookmarks")
+        .delete()
+        .eq(
+            "user_id",
+            user.id
+        )
+        .eq(
+            "article_id",
+            Number(articleId)
+        );
+
+
+    if (error) {
+
+        console.error(
+            "Error removing bookmark:",
+            error
+        );
+
+
+        confirmButton.disabled =
+            false;
+
+        confirmButton.textContent =
+            "Remove";
+
+
+        alert(
+            "Unable to remove this bookmark. Please try again."
+        );
+
+        return;
+    }
+
+
+    modal.remove();
+
+
+    updateBookmarkButton(
+        bookmarkButton,
+        false
+    );
+
+}
+
+
+/* ==========================================================
+   UPDATE BOOKMARK BUTTON
+========================================================== */
+
+function updateBookmarkButton(
+    bookmarkButton,
+    bookmarked
+) {
+
+    if (bookmarked) {
+
+        bookmarkButton.textContent =
+            "🔖 Bookmarked";
+
+        bookmarkButton.classList.add(
+            "is-bookmarked"
+        );
+
+        bookmarkButton.title =
+            "Remove bookmark";
+
+    } else {
+
+        bookmarkButton.textContent =
+            "🔖 Bookmark";
+
+        bookmarkButton.classList.remove(
+            "is-bookmarked"
+        );
+
+        bookmarkButton.title =
+            "Bookmark this article";
+
+    }
+
+}
+
+
+/* ==========================================================
+   SET UP BOOKMARK BUTTON
+========================================================== */
+
+async function setupBookmarkButton(
+    articleId
+) {
+
+    const bookmarkButton =
+        document.getElementById(
+            "bookmark-btn"
+        );
+
+
+    if (!bookmarkButton) {
+        return;
+    }
+
+
+    const {
+        data: {
+            user
+        }
+    } = await supabase.auth.getUser();
+
+
+    if (!user) {
+
+        bookmarkButton.addEventListener(
+            "click",
+            () => {
+
+                alert(
+                    "Please log in to bookmark an article."
+                );
+
+                window.location.href =
+                    "login.html";
+
+            }
+        );
+
+        return;
+    }
+
+
+    const bookmarked =
+        await isArticleBookmarked(
+            articleId
+        );
+
+
+    updateBookmarkButton(
+        bookmarkButton,
+        bookmarked
+    );
+
+
+    bookmarkButton.addEventListener(
+        "click",
+        async () => {
+
+            const currentState =
+                await isArticleBookmarked(
+                    articleId
+                );
+
+
+            updateBookmarkButton(
+                bookmarkButton,
+                currentState
+            );
+
+
+            showBookmarkModal(
+                articleId,
+                bookmarkButton,
+                currentState
+            );
+
+        }
+    );
+
+}
+
+
+/* ==========================================================
+   RENDER ARTICLE
+========================================================== */
 
 function renderArticle(
     article
@@ -806,6 +722,11 @@ function renderArticle(
         document.getElementById(
             "article-slot"
         );
+
+
+    if (!slot) {
+        return;
+    }
 
 
     const thumb =
@@ -833,21 +754,27 @@ function renderArticle(
         <div class="article-layout">
 
 
-            <article class="article-panel">
+            <!-- ==========================================
+                 ARTICLE
+            =========================================== -->
 
+            <article
+                class="article-panel"
+            >
 
-                <!-- CATEGORY -->
 
                 <span class="badge">
+
                     ${escapeHtml(
                         article.category?.name ?? ""
                     )}
+
                 </span>
 
 
-                <!-- TITLE -->
-
-                <h1 class="article-panel__title">
+                <h1
+                    class="article-panel__title"
+                >
 
                     ${escapeHtml(
                         article.title
@@ -856,35 +783,41 @@ function renderArticle(
                 </h1>
 
 
-                <!-- BYLINE -->
-
-                <div class="article-panel__byline">
+                <div
+                    class="article-panel__byline"
+                >
 
                     <span>
+
                         👤 By
                         ${escapeHtml(
                             authorName
                         )}
+
                     </span>
 
+
                     <span>
+
                         ${formatRelativeTime(
                             article.published_at
                         )}
+
                     </span>
 
+
                     <span>
+
                         👁
                         ${formatCount(
                             article.view_count
                         )}
                         views
+
                     </span>
 
                 </div>
 
-
-                <!-- IMAGE -->
 
                 <div class="thumb">
 
@@ -893,9 +826,9 @@ function renderArticle(
                 </div>
 
 
-                <!-- ARTICLE CONTENT -->
-
-                <div class="article-panel__body">
+                <div
+                    class="article-panel__body"
+                >
 
                     ${escapeHtml(
                         article.content
@@ -904,54 +837,58 @@ function renderArticle(
                 </div>
 
 
-                <!-- ARTICLE ACTIONS -->
-
-                <div class="article-actions">
-
-
-                    <!-- EXISTING LIKE BUTTON -->
-
-                    <button
-                        class="article-action"
-                        title="Coming soon"
-                    >
-                        ♡ Like
-                        (${formatCount(
-                            article.reaction_count
-                        )})
-                    </button>
+                <!-- ======================================
+                     FEATURE 4 - REACTIONS
+                     Created by reactions.js
+                ======================================= -->
 
 
-                    <!-- EXISTING COMMENT BUTTON -->
+                <!-- ======================================
+                     ARTICLE ACTIONS
+                ======================================= -->
+
+                <div
+                    class="article-actions"
+                >
+
+
+                    <!-- COMMENT -->
 
                     <button
-                        class="article-action"
-                        title="Coming soon"
-                    >
-                        💬 Comment
-                    </button>
-
-
-                    <!-- FEATURE 3 BOOKMARK -->
-
-                    <button
-                        class="article-action"
-                        id="bookmark-btn"
                         type="button"
+                        class="article-action"
+                        title="Coming soon"
+                    >
+
+                        💬 Comment
+
+                    </button>
+
+
+                    <!-- BOOKMARK -->
+
+                    <button
+                        type="button"
+                        class="article-action is-live"
+                        id="bookmark-btn"
                         title="Bookmark this article"
                     >
+
                         🔖 Bookmark
+
                     </button>
 
 
-                    <!-- EXISTING SHARE BUTTON -->
+                    <!-- SHARE -->
 
                     <button
+                        type="button"
                         class="article-action is-live"
                         id="share-btn"
-                        type="button"
                     >
+
                         ↗ Share
+
                     </button>
 
 
@@ -961,19 +898,31 @@ function renderArticle(
             </article>
 
 
-            <!-- TRENDING RAIL -->
+            <!-- ==========================================
+                 TRENDING RAIL
+            =========================================== -->
 
             <aside>
 
-                <p class="rail-title">
-                    More Trending
+                <p
+                    class="rail-title"
+                >
+
+                    Recommended For You
+
                 </p>
 
 
-                <div class="rail-list">
+                <div
+                    class="rail-list"
+                >
 
-                    <p class="state-message">
+                    <p
+                        class="state-message"
+                    >
+
                         Loading…
+
                     </p>
 
                 </div>
@@ -986,33 +935,37 @@ function renderArticle(
     `;
 
 
-    // ======================================================
-    // SHARE BUTTON
-    // ======================================================
+    /* ------------------------------------------------------
+       SHARE BUTTON
+    ------------------------------------------------------ */
 
-    document
-        .getElementById("share-btn")
-        .addEventListener(
+    const shareButton =
+        document.getElementById(
+            "share-btn"
+        );
+
+
+    if (shareButton) {
+
+        shareButton.addEventListener(
             "click",
-            async (e) => {
+            async event => {
 
                 try {
 
-                    await navigator
-                        .clipboard
-                        .writeText(
-                            window.location.href
-                        );
+                    await navigator.clipboard.writeText(
+                        window.location.href
+                    );
 
 
-                    e.target.textContent =
+                    event.target.textContent =
                         "✓ Link copied";
 
 
                     setTimeout(
                         () => {
 
-                            e.target.textContent =
+                            event.target.textContent =
                                 "↗ Share";
 
                         },
@@ -1022,35 +975,47 @@ function renderArticle(
 
                 } catch {
 
-                    /* Clipboard unavailable */
+                    /*
+                       Clipboard access unavailable.
+                    */
 
                 }
 
             }
         );
 
+    }
 
-    // ======================================================
-    // BOOKMARK BUTTON
-    // ======================================================
+
+    /* ------------------------------------------------------
+       FEATURE 3 - BOOKMARK
+    ------------------------------------------------------ */
 
     setupBookmarkButton(
+        articleId
+    );
+
+
+    /* ------------------------------------------------------
+       FEATURE 4 - REACTIONS
+    ------------------------------------------------------ */
+
+    setupReactions(
         articleId
     );
 
 }
 
 
-// ==========================================================
-// INITIALISE ARTICLE
-// ==========================================================
+/* ==========================================================
+   INITIALISE ARTICLE PAGE
+========================================================== */
 
 async function init() {
 
-
-    // ------------------------------------------------------
-    // Guests are redirected to the marketing landing page
-    // ------------------------------------------------------
+    /* ------------------------------------------------------
+       GUESTS ARE REDIRECTED TO THE MARKETING LANDING PAGE
+    ------------------------------------------------------ */
 
     const user = await requireAuth("welcome.html");
 
@@ -1060,30 +1025,35 @@ async function init() {
     }
 
 
-    // ------------------------------------------------------
-    // Check article ID
-    // ------------------------------------------------------
+    /* ------------------------------------------------------
+       CHECK ARTICLE ID
+    ------------------------------------------------------ */
 
     if (!articleId) {
 
-        document
-            .getElementById(
+        const slot =
+            document.getElementById(
                 "article-slot"
-            )
-            .innerHTML =
-                `
-                    <p class="state-message is-error">
-                        No article was specified.
-                    </p>
-                `;
+            );
+
+
+        if (slot) {
+
+            slot.innerHTML =
+
+                '<p class="state-message is-error">' +
+                'No article was specified.' +
+                '</p>';
+
+        }
 
         return;
     }
 
 
-    // ------------------------------------------------------
-    // Record article view
-    // ------------------------------------------------------
+    /* ------------------------------------------------------
+       RECORD ARTICLE VIEW
+    ------------------------------------------------------ */
 
     try {
 
@@ -1094,17 +1064,17 @@ async function init() {
     } catch {
 
         /*
-         * View tracking is best-effort.
-         * It should not stop the user
-         * from reading the article.
-         */
+           View tracking is best-effort.
+           It should not stop the article
+           from loading.
+        */
 
     }
 
 
-    // ------------------------------------------------------
-    // Load article
-    // ------------------------------------------------------
+    /* ------------------------------------------------------
+       LOAD ARTICLE
+    ------------------------------------------------------ */
 
     try {
 
@@ -1119,59 +1089,66 @@ async function init() {
         );
 
 
-        // --------------------------------------------------
-        // Load trending articles
-        // --------------------------------------------------
+        /* --------------------------------------------------
+           LOAD RECOMMENDED ARTICLES (FEATURE 10)
+        -------------------------------------------------- */
 
         try {
 
-            const trending =
-                await getTrendingArticles(
+            const recommended =
+                await getRecommendations(
+                    articleId,
                     6
                 );
 
 
             renderRail(
-                trending,
+                recommended,
                 articleId
             );
 
 
         } catch {
 
-            renderRail(
-                [],
-                articleId
-            );
+            /* Keep the existing trending rail as a graceful fallback. */
+            try {
+                const trending = await getTrendingArticles(6);
+                renderRail(trending, articleId);
+            } catch {
+                renderRail([], articleId);
+            }
 
         }
 
 
     } catch (err) {
 
-        document
-            .getElementById(
+        const slot =
+            document.getElementById(
                 "article-slot"
-            )
-            .innerHTML =
-                `
-                    <p class="state-message is-error">
+            );
 
-                        This article is unavailable:
-                        ${escapeHtml(
-                            err.message
-                        )}
 
-                    </p>
-                `;
+        if (slot) {
+
+            slot.innerHTML =
+
+                `<p class="state-message is-error">
+                    This article is unavailable:
+                    ${escapeHtml(
+                        err.message
+                    )}
+                </p>`;
+
+        }
 
     }
 
 }
 
 
-// ==========================================================
-// START
-// ==========================================================
+/* ==========================================================
+   START
+========================================================== */
 
 init();

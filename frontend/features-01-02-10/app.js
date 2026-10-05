@@ -242,6 +242,11 @@ async function route() {
 }
 
 const quickSearch = document.getElementById("quick-search");
+const initialKeyword = new URLSearchParams(location.search).get("q");
+if (initialKeyword) {
+  state.search.keyword = initialKeyword;
+  history.replaceState(null, "", `${location.pathname}#search`);
+}
 quickSearch.addEventListener("focus", () => {
   if (location.hash !== "#search") location.hash = "search";
 });

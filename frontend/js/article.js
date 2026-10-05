@@ -16,6 +16,10 @@ import {
     setupReactions
 } from "./reactions.js";
 
+import {
+    getRecommendations
+} from "../features-01-02-10/featureService.js";
+
 
 /* ==========================================================
    GET ARTICLE ID FROM URL
@@ -900,7 +904,7 @@ function renderArticle(
                     class="rail-title"
                 >
 
-                    More Trending
+                    Recommended For You
 
                 </p>
 
@@ -1070,29 +1074,33 @@ async function init() {
 
 
         /* --------------------------------------------------
-           LOAD TRENDING ARTICLES
+           LOAD RECOMMENDED ARTICLES (FEATURE 10)
         -------------------------------------------------- */
 
         try {
 
-            const trending =
-                await getTrendingArticles(
+            const recommended =
+                await getRecommendations(
+                    articleId,
                     6
                 );
 
 
             renderRail(
-                trending,
+                recommended,
                 articleId
             );
 
 
         } catch {
 
-            renderRail(
-                [],
-                articleId
-            );
+            /* Keep the existing trending rail as a graceful fallback. */
+            try {
+                const trending = await getTrendingArticles(6);
+                renderRail(trending, articleId);
+            } catch {
+                renderRail([], articleId);
+            }
 
         }
 

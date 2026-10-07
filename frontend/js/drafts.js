@@ -1,5 +1,5 @@
 import { requireAuth } from "./auth.js";
-import { getMyArticles, deleteArticle, publishArticle } from "../../services/feature8Service.js";
+import { getMyArticles, deleteArticle } from "../../services/feature8Service.js";
 import { escapeHtml, formatRelativeTime, thumbHtml } from "./format.js";
 
 function rowHtml(article) {
@@ -16,7 +16,7 @@ function rowHtml(article) {
       <td>
         <div class="media-actions">
           <a class="article-action is-live" href="article-editor.html?id=${article.id}">Continue Editing</a>
-          <button class="article-action is-live" data-publish="${article.id}" type="button">Publish</button>
+          <a class="article-action is-live" href="article-editor.html?id=${article.id}#credibility-check">Check &amp; Publish</a>
           <button class="article-action is-live" data-delete="${article.id}" type="button">Delete</button>
         </div>
       </td>
@@ -40,19 +40,6 @@ async function render(articles) {
       </table>
     </div>
   `;
-
-  document.querySelectorAll("[data-publish]").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      btn.disabled = true;
-      try {
-        await publishArticle(btn.dataset.publish);
-        await reload();
-      } catch (err) {
-        alert(`Could not publish article: ${err.message}`);
-        btn.disabled = false;
-      }
-    });
-  });
 
   document.querySelectorAll("[data-delete]").forEach((btn) => {
     btn.addEventListener("click", async () => {

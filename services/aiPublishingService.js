@@ -16,6 +16,64 @@ function normaliseTier(value) {
   return String(value || "").toLowerCase() === "premium" ? "premium" : "free";
 }
 
+function normaliseBoolean(value) {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value !== 0;
+  if (typeof value === "string") {
+    return ["true", "1", "yes", "critical", "found"].includes(value.trim().toLowerCase());
+  }
+  return Boolean(value);
+}
+
+function normaliseSources(data) {
+  const rawSources =
+    data?.sources ??
+    data?.source_links ??
+    data?.supporting_sources ??
+    data?.grounding_sources ??
+    [];
+
+  if (!Array.isArray(rawSources)) return [];
+
+  return rawSources
+    .map((source) => {
+      if (typeof source === "string") {
+        return { title: source, url: source };
+      }
+      if (!source || typeof source !== "object") return null;
+
+      const url =
+        source.url ??
+        source.uri ??
+        source.link ??
+        source.web?.uri ??
+        source.web?.url ??
+        null;
+      const title = source.title ?? source.name ?? source.web?.title ?? url;
+
+      return title || url ? { title: title || url, url } : null;
+    })
+    .filter(Boolean);
+}
+
+function normaliseCriticalIssue(data) {
+  const rawIssue = data?.critical_issue ?? data?.criticalIssue ?? data?.has_critical_issue;
+  const issueObject = rawIssue && typeof rawIssue === "object" ? rawIssue : null;
+  const found = issueObject
+    ? normaliseBoolean(issueObject.found ?? issueObject.exists ?? issueObject.value ?? true)
+    : normaliseBoolean(rawIssue);
+  const message =
+    data?.critical_issue_explanation ??
+    data?.critical_issue_message ??
+    issueObject?.explanation ??
+    issueObject?.message ??
+    (typeof rawIssue === "string" && !["true", "false", "yes", "no", "1", "0"].includes(rawIssue.trim().toLowerCase())
+      ? rawIssue
+      : null);
+
+  return { found, message };
+}
+
 /**
  * The tier is read from signed user metadata for display only. Usage limits and
  * permissions must still be enforced by the Edge Function, never by the browser.
@@ -77,15 +135,15 @@ export async function checkArticleCredibility({ title, content, categoryId }) {
     throw new Error("Credibility checking returned an invalid score.");
   }
 
+  const criticalIssue = normaliseCriticalIssue(data);
+
   return {
     score: Math.round(score),
     summary: data.summary ?? data.explanation ?? "The credibility check is complete.",
     issues: Array.isArray(data.issues) ? data.issues.filter(Boolean) : [],
-    sources: Array.isArray(data.sources)
-      ? data.sources
-          .filter((source) => source && (source.title || source.url))
-          .map((source) => ({ title: source.title || source.url, url: source.url || null }))
-      : [],
+    sources: normaliseSources(data),
+    criticalIssue: criticalIssue.found,
+    criticalIssueMessage: criticalIssue.message,
     checkedAt: data.checked_at ?? new Date().toISOString()
   };
 }

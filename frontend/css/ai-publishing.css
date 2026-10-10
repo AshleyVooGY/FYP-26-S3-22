@@ -220,6 +220,31 @@
   background: var(--bg-input);
 }
 
+.credibility-detail.is-critical {
+  border: 1px solid rgba(223, 96, 123, 0.5);
+  background: rgba(223, 96, 123, 0.08);
+}
+
+.credibility-detail.is-critical p {
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.credibility-detail.is-warning {
+  border-color: rgba(245, 158, 11, 0.5);
+  background: rgba(120, 78, 13, 0.2);
+  color: #fde68a;
+}
+
+.credibility-detail.is-warning p {
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
 .credibility-detail ul {
   margin: 8px 0 0;
   padding-left: 18px;

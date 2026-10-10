@@ -14,7 +14,7 @@ import {
   getSubscriptionTier,
   requestWritingAssistance,
   checkArticleCredibility
-} from "../../services/aiPublishingService.js";
+} from "../../services/aiPublishingService.js?v=ai-publishing-20261010c";
 import { escapeHtml, thumbHtml } from "./format.js";
 
 const params = new URLSearchParams(window.location.search);
@@ -66,23 +66,15 @@ function hasCurrentPassingCheck() {
   return Boolean(
     credibilityResult &&
       credibilityResult.score >= CREDIBILITY_THRESHOLD &&
+      !credibilityResult.criticalIssue &&
       verifiedFingerprint === articleFingerprint()
   );
-}
-
-function safeUrl(value) {
-  try {
-    const url = new URL(value);
-    return ["http:", "https:"].includes(url.protocol) ? url.href : null;
-  } catch {
-    return null;
-  }
 }
 
 function credibilityPanelHtml() {
   const planName = subscriptionTier === "premium" ? "Premium" : "Free";
   const planDescription = subscriptionTier === "premium"
-    ? "Expanded AI writing assistance and detailed source analysis"
+    ? "Expanded AI writing assistance"
     : "Limited AI writing assistance";
 
   return `
@@ -95,8 +87,8 @@ function credibilityPanelHtml() {
         <span class="plan-badge plan-badge--${subscriptionTier}">${planName} plan</span>
       </div>
       <p class="ai-panel__description">
-        Every registered user must reach ${CREDIBILITY_THRESHOLD}% before publishing. Editing the title,
-        category or article content after a check automatically invalidates the result.
+        This AI-assisted preliminary assessment must reach ${CREDIBILITY_THRESHOLD}% before publishing.
+        Editing the title, category or article content after a check automatically invalidates the result.
       </p>
       <p class="plan-description">${planDescription}. The credibility requirement cannot be bypassed.</p>
 
@@ -218,7 +210,7 @@ function render() {
   });
 
   ["field-title", "field-content", "field-category"].forEach((id) => {
-    document.getElementById(id).addEventListener(id === "field-category" ? "change" : "input", invalidateCredibility);
+    document.getElementById(id).addEventListener(id === "field-category" ? "change" : "input", handleArticleInput);
   });
 
   const publishBtn = document.getElementById("publish-btn");
@@ -241,8 +233,23 @@ function invalidateCredibility() {
     credibilityWasInvalidated = true;
     verifiedFingerprint = null;
     credibilityResult = null;
+    const status = document.getElementById("credibility-status");
+    if (status) {
+      status.textContent = "";
+      status.classList.remove("is-error");
+    }
     renderCredibilityResult();
     updatePublishingState();
+  }
+}
+
+function handleArticleInput() {
+  invalidateCredibility();
+
+  if (aiSuggestion) {
+    aiSuggestion = null;
+    renderAiSuggestion();
+    setAiStatus("");
   }
 }
 
@@ -260,6 +267,9 @@ function updatePublishingState() {
   if (passed) {
     lock.textContent = `Credibility score ${credibilityResult.score}% — publishing is unlocked.`;
     lock.className = "publish-lock is-ready";
+  } else if (credibilityResult?.criticalIssue) {
+    lock.textContent = "A critical issue was found — publishing remains locked until the article is revised and rechecked.";
+    lock.className = "publish-lock is-blocked";
   } else if (credibilityResult) {
     lock.textContent = `Credibility score ${credibilityResult.score}% — revise the article and recheck before publishing.`;
     lock.className = "publish-lock is-blocked";
@@ -291,25 +301,26 @@ function renderCredibilityResult() {
     return;
   }
 
-  const passed = credibilityResult.score >= CREDIBILITY_THRESHOLD;
-  const sources = credibilityResult.sources
-    .map((source) => {
-      const url = source.url ? safeUrl(source.url) : null;
-      return `<li>${url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.title)}</a>` : escapeHtml(source.title)}</li>`;
-    })
-    .join("");
+  const passed = credibilityResult.score >= CREDIBILITY_THRESHOLD && !credibilityResult.criticalIssue;
   const issues = credibilityResult.issues.map((issue) => `<li>${escapeHtml(String(issue))}</li>`).join("");
+  const criticalIssue = credibilityResult.criticalIssue
+    ? `<div class="credibility-detail is-critical"><strong>Critical issue found</strong><p>${escapeHtml(credibilityResult.criticalIssueMessage || "This article contains a serious unsupported or contradicted claim. Revise it and run the check again.")}</p></div>`
+    : "";
 
   slot.innerHTML = `
     <div class="credibility-score ${passed ? "is-pass" : "is-fail"}">
       <div class="credibility-score__number"><strong>${credibilityResult.score}</strong><span>%</span></div>
       <div>
-        <strong>${passed ? "Ready to publish" : "Revision required"}</strong>
+        <strong>${passed ? "Assessment passed" : "Revision required"}</strong>
         <p>${escapeHtml(credibilityResult.summary)}</p>
       </div>
     </div>
+    ${criticalIssue}
     ${issues ? `<div class="credibility-detail"><strong>Items to review</strong><ul>${issues}</ul></div>` : ""}
-    ${sources ? `<div class="credibility-detail"><strong>Sources analysed</strong><ul>${sources}</ul></div>` : ""}
+    <div class="credibility-detail is-warning">
+      <strong>Preliminary AI assessment</strong>
+      <p>This assessment uses Gemini's existing knowledge and does not include live external verification. Important claims should still be checked manually.</p>
+    </div>
   `;
 }
 
@@ -326,7 +337,7 @@ async function handleCredibilityCheck() {
 
   button.disabled = true;
   button.textContent = "Checking…";
-  status.textContent = "Analysing claims and available sources…";
+  status.textContent = "Running a preliminary AI credibility assessment…";
   status.classList.remove("is-error");
 
   try {
@@ -340,9 +351,11 @@ async function handleCredibilityCheck() {
     credibilityResult = result;
     verifiedFingerprint = fingerprintAtRequest;
     credibilityWasInvalidated = false;
-    status.textContent = result.score >= CREDIBILITY_THRESHOLD
+    status.textContent = result.score >= CREDIBILITY_THRESHOLD && !result.criticalIssue
       ? "Check passed. Publishing is now available for this version."
-      : "The score is below the publishing threshold. Revise the article and check again.";
+      : result.criticalIssue
+        ? "A critical issue was found. Revise the article and check again before publishing."
+        : "The score is below the publishing threshold. Revise the article and check again.";
     renderCredibilityResult();
     updatePublishingState();
   } catch (err) {
@@ -395,12 +408,16 @@ function renderAiSuggestion() {
     button.addEventListener("click", () => {
       document.getElementById("field-title").value = titles[Number(button.dataset.applyTitle)];
       invalidateCredibility();
+      aiSuggestion = null;
+      renderAiSuggestion();
       setAiStatus("Title applied. Review it before continuing.");
     });
   });
   slot.querySelector("[data-apply-content]")?.addEventListener("click", () => {
     document.getElementById("field-content").value = aiSuggestion.content;
     invalidateCredibility();
+    aiSuggestion = null;
+    renderAiSuggestion();
     setAiStatus("Polished content applied. Review it and run a new credibility check.");
   });
   slot.querySelector("[data-copy-value]")?.addEventListener("click", async (event) => {
@@ -417,6 +434,7 @@ function renderAiSuggestion() {
   slot.querySelector("[data-dismiss-ai]")?.addEventListener("click", () => {
     aiSuggestion = null;
     renderAiSuggestion();
+    setAiStatus("");
   });
 }
 
@@ -430,10 +448,17 @@ async function handleAiTask(task) {
   }
 
   buttons.forEach((button) => (button.disabled = true));
+  aiSuggestion = null;
+  renderAiSuggestion();
   setAiStatus("Generating a suggestion…");
 
   try {
-    aiSuggestion = await requestWritingAssistance({ task, ...values });
+    const fingerprintAtRequest = articleFingerprint(values);
+    const suggestion = await requestWritingAssistance({ task, ...values });
+    if (fingerprintAtRequest !== articleFingerprint()) {
+      throw new Error("The article changed while the suggestion was being generated. Please request it again.");
+    }
+    aiSuggestion = suggestion;
     renderAiSuggestion();
     setAiStatus("Suggestion ready. Review it before applying.");
   } catch (err) {

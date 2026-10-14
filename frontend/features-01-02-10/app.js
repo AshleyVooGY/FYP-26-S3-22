@@ -4,8 +4,6 @@ import {
   getPublishedArticles,
   getArticlesByClassification,
   searchArticles,
-  getArticle,
-  getRecommendations,
   createClassification,
   updateClassification,
   deleteClassification
@@ -69,7 +67,7 @@ function card(article) {
       <h2>${escapeHtml(article.title || "Untitled article")}</h2>
       <p>${escapeHtml(excerpt(article.content || "No summary available."))}</p>
       ${articleMeta(article)}
-      <div class="article-card__actions"><a class="button" href="#article/${article.id}">Read article</a></div>
+      <div class="article-card__actions"><a class="button" href="../article.html?id=${article.id}">Read article</a></div>
     </div>
   </article>`;
 }
@@ -78,7 +76,7 @@ function resultCard(article) {
   return `<article class="result-card">
     <div class="article-card__image">${imageMarkup(article)}</div>
     <div><h2>${escapeHtml(article.title || "Untitled article")}</h2><p>${escapeHtml(excerpt(article.content || "No summary available.", 210))}</p>${articleMeta(article)}</div>
-    <a class="button result-card__action" href="#article/${article.id}">Read article</a>
+    <a class="button result-card__action" href="../article.html?id=${article.id}">Read article</a>
   </article>`;
 }
 
@@ -191,7 +189,7 @@ async function renderManage() {
   if (token !== renderToken) return;
   const disabled = !state.viewer.isAdmin ? "disabled" : "";
   app.innerHTML = `<header class="page-head"><div><h1>Manage Categories &amp; Tags</h1><p>Create, view, edit and delete article classifications.</p></div></header>
-    ${state.viewer.isAdmin ? "" : '<div class="status-banner">Administrator sign-in is required to create, edit or delete categories and tags. Browsing remains available to everyone.</div>'}
+    ${state.viewer.isAdmin ? "" : '<div class="status-banner">Administrator access is required to create, edit or delete categories and tags. Signed-in users can still browse classifications and published articles.</div>'}
     <div class="manage-grid"><section class="panel"><h2>Create category/tag</h2><form id="create-form"><div class="field"><label for="classification-name">Name</label><input id="classification-name" name="name" maxlength="60" placeholder="Enter a unique name" ${disabled} required></div><p class="field-label">Type</p><div class="button-row"><label><input type="radio" name="type" value="category" checked ${disabled}> Category</label><label><input type="radio" name="type" value="tag" ${disabled}> Tag</label></div><div class="button-row" style="margin-top:18px"><button class="button button--primary" ${disabled}>Save</button><button class="button" type="reset" ${disabled}>Cancel</button></div></form></section>
     <section class="panel"><h2>Existing categories and tags</h2><div style="overflow:auto"><table class="classification-table"><thead><tr><th>Name</th><th>Type</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody>${manageRows(state.categories, "category")}${manageRows(state.tags, "tag")}</tbody></table></div></section></div>`;
 
@@ -220,22 +218,14 @@ function openDeleteModal(item) {
   document.querySelector("[data-confirm-delete]").addEventListener("click", async () => { try { await deleteClassification(item.type, item.id); closeModal(); toast(`${item.name} was deleted.`); await renderManage(); } catch (error) { toast(error.message, true); } });
 }
 
-async function renderArticle(articleId) {
-  const token = ++renderToken;
-  setActiveNavigation("article");
-  app.innerHTML = '<div class="loading-panel">Loading article and recommendations…</div>';
-  try {
-    const [article, recommendations] = await Promise.all([getArticle(articleId), getRecommendations(articleId, 6)]);
-    if (token !== renderToken) return;
-    app.innerHTML = `<a class="back-link" href="#browse">← Back to articles</a><div class="article-layout"><article class="article-panel"><span class="badge">Published</span><h1>${escapeHtml(article.title)}</h1>${articleMeta(article)}${article.featured_image_url ? `<img class="hero-image" src="${escapeHtml(article.featured_image_url)}" alt="">` : ""}<div class="article-copy">${escapeHtml(article.content || "No article content available.")}</div></article>
-      <aside class="article-panel"><h2>Recommended For You</h2><p class="state-message">Related published articles based on shared categories and tags.</p><div class="recommendation-list">${recommendations.length ? recommendations.map((item) => `<a class="recommendation-item" href="#article/${item.id}"><div class="article-card__image">${imageMarkup(item)}</div><div><h3>${escapeHtml(item.title)}</h3><div class="article-meta"><span>${formatDate(item.published_at)}</span><span>◉ ${formatCount(item.view_count)}</span></div></div></a>`).join("") : '<div class="empty-state">No related articles were found.</div>'}</div></aside></div>`;
-  } catch (error) { if (token === renderToken) errorMessage(error); }
-}
-
 async function route() {
   window.scrollTo({ top: 0, left: 0 });
   const routeName = location.hash.slice(1) || "browse";
-  if (routeName.startsWith("article/")) return renderArticle(routeName.split("/")[1]);
+  if (routeName.startsWith("article/")) {
+    const articleId = routeName.split("/")[1];
+    window.location.replace(`../article.html?id=${encodeURIComponent(articleId)}`);
+    return;
+  }
   if (routeName === "search") return renderSearch();
   if (routeName === "manage") return renderManage();
   return renderBrowse();
@@ -267,6 +257,15 @@ window.addEventListener("hashchange", route);
 
 try {
   state.viewer = await getViewer();
-  document.getElementById("user-label").textContent = state.viewer.displayName || "Guest";
-} catch (error) { console.error(error); }
-route();
+  if (!state.viewer.user) {
+    // This project intentionally keeps the news application behind sign-in.
+    // Guests use the marketing landing page instead of the legacy feature shell.
+    window.location.replace("../welcome.html");
+  } else {
+    document.getElementById("user-label").textContent = state.viewer.displayName || "User";
+    route();
+  }
+} catch (error) {
+  console.error(error);
+  window.location.replace("../welcome.html");
+}

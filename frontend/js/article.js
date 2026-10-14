@@ -37,6 +37,229 @@ const articleId = params.get("id");
 
 
 /* ==========================================================
+   ARTICLE READ ALOUD
+========================================================== */
+
+let speechChunks = [];
+let speechChunkIndex = 0;
+let speechSession = 0;
+let speechState = "idle";
+
+
+function splitSpeechText(text, maxLength = 240) {
+
+    const sentences = String(text || "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [];
+
+    const chunks = [];
+    let current = "";
+
+    sentences.forEach(sentence => {
+
+        const cleanSentence = sentence.trim();
+
+        if (!cleanSentence) {
+            return;
+        }
+
+        if (current && `${current} ${cleanSentence}`.length > maxLength) {
+            chunks.push(current);
+            current = cleanSentence;
+        } else {
+            current = current
+                ? `${current} ${cleanSentence}`
+                : cleanSentence;
+        }
+
+    });
+
+    if (current) {
+        chunks.push(current);
+    }
+
+    return chunks;
+
+}
+
+
+function updateReadAloudControls(message = "Ready to read.") {
+
+    const readButton = document.getElementById("read-aloud-btn");
+    const stopButton = document.getElementById("stop-reading-btn");
+    const status = document.getElementById("read-aloud-status");
+
+    if (status) {
+        status.textContent = message;
+    }
+
+    if (!readButton || !stopButton) {
+        return;
+    }
+
+    if (speechState === "reading") {
+        readButton.textContent = "⏸ Pause";
+        readButton.setAttribute("aria-label", "Pause article reading");
+        stopButton.disabled = false;
+    } else if (speechState === "paused") {
+        readButton.textContent = "▶ Resume";
+        readButton.setAttribute("aria-label", "Resume article reading");
+        stopButton.disabled = false;
+    } else {
+        readButton.textContent = "🔊 Read Aloud";
+        readButton.setAttribute("aria-label", "Read article aloud");
+        stopButton.disabled = true;
+    }
+
+}
+
+
+function stopReadAloud(message = "Reading stopped.") {
+
+    speechSession += 1;
+    speechChunks = [];
+    speechChunkIndex = 0;
+    speechState = "idle";
+
+    if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+    }
+
+    updateReadAloudControls(message);
+
+}
+
+
+function speakNextChunk(sessionId) {
+
+    if (
+        sessionId !== speechSession ||
+        speechChunkIndex >= speechChunks.length
+    ) {
+        if (sessionId === speechSession) {
+            stopReadAloud("Finished reading article.");
+        }
+        return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(
+        speechChunks[speechChunkIndex]
+    );
+
+    utterance.lang = document.documentElement.lang || "en-US";
+    utterance.rate = 1;
+    utterance.pitch = 1;
+
+    utterance.onend = () => {
+
+        if (sessionId !== speechSession) {
+            return;
+        }
+
+        speechChunkIndex += 1;
+        speakNextChunk(sessionId);
+
+    };
+
+    utterance.onerror = event => {
+
+        if (
+            sessionId !== speechSession ||
+            event.error === "canceled" ||
+            event.error === "interrupted"
+        ) {
+            return;
+        }
+
+        stopReadAloud("Unable to read this article aloud. Please try again.");
+
+    };
+
+    window.speechSynthesis.speak(utterance);
+
+}
+
+
+function startReadAloud(article) {
+
+    if (!("speechSynthesis" in window)) {
+        updateReadAloudControls(
+            "Read Aloud is not supported by this browser."
+        );
+        return;
+    }
+
+    const text = `${article.title}. ${article.content}`.trim();
+    speechChunks = splitSpeechText(text);
+
+    if (speechChunks.length === 0) {
+        updateReadAloudControls("There is no article content to read.");
+        return;
+    }
+
+    window.speechSynthesis.cancel();
+    speechSession += 1;
+    speechChunkIndex = 0;
+    speechState = "reading";
+    updateReadAloudControls("Reading article aloud.");
+    speakNextChunk(speechSession);
+
+}
+
+
+function setupReadAloud(article) {
+
+    const readButton = document.getElementById("read-aloud-btn");
+    const stopButton = document.getElementById("stop-reading-btn");
+
+    if (!readButton || !stopButton) {
+        return;
+    }
+
+    if (!("speechSynthesis" in window)) {
+        readButton.disabled = true;
+        updateReadAloudControls(
+            "Read Aloud is not supported by this browser."
+        );
+        return;
+    }
+
+    readButton.addEventListener("click", () => {
+
+        if (speechState === "reading") {
+            window.speechSynthesis.pause();
+            speechState = "paused";
+            updateReadAloudControls("Reading paused.");
+            return;
+        }
+
+        if (speechState === "paused") {
+            window.speechSynthesis.resume();
+            speechState = "reading";
+            updateReadAloudControls("Reading article aloud.");
+            return;
+        }
+
+        startReadAloud(article);
+
+    });
+
+    stopButton.addEventListener("click", () => {
+        stopReadAloud();
+    });
+
+    updateReadAloudControls();
+
+}
+
+
+window.addEventListener("pagehide", () => {
+    stopReadAloud("");
+});
+
+
+/* ==========================================================
    RENDER TRENDING RAIL
 ========================================================== */
 
@@ -838,6 +1061,56 @@ function renderArticle(
 
 
                 <!-- ======================================
+                     READING ACCESSIBILITY - READ ALOUD
+                ======================================= -->
+
+                <section
+                    class="article-read-aloud"
+                    aria-label="Article read aloud controls"
+                >
+
+                    <div>
+
+                        <strong>
+                            Listen to this article
+                        </strong>
+
+                        <p
+                            id="read-aloud-status"
+                            aria-live="polite"
+                        >
+                            Ready to read.
+                        </p>
+
+                    </div>
+
+                    <div class="article-read-aloud__actions">
+
+                        <button
+                            type="button"
+                            class="article-action article-action--control is-live"
+                            id="read-aloud-btn"
+                            aria-label="Read article aloud"
+                        >
+                            🔊 Read Aloud
+                        </button>
+
+                        <button
+                            type="button"
+                            class="article-action article-action--control is-live"
+                            id="stop-reading-btn"
+                            aria-label="Stop article reading"
+                            disabled
+                        >
+                            ■ Stop
+                        </button>
+
+                    </div>
+
+                </section>
+
+
+                <!-- ======================================
                      FEATURE 4 - REACTIONS
                      Created by reactions.js
                 ======================================= -->
@@ -1002,6 +1275,15 @@ function renderArticle(
 
     setupReactions(
         articleId
+    );
+
+
+    /* ------------------------------------------------------
+       READING ACCESSIBILITY - READ ALOUD
+    ------------------------------------------------------ */
+
+    setupReadAloud(
+        article
     );
 
 }

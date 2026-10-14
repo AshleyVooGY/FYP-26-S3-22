@@ -8,7 +8,7 @@ import {
   createClassification,
   updateClassification,
   deleteClassification
-} from "../features-01-02-10/featureService.js";
+} from "../features-01-02-10/featureService.js?v=category-badges";
 
 const app = document.getElementById("categories-app");
 const state = {
@@ -35,16 +35,15 @@ function showError(error, retry) {
 }
 
 function articleCard(article) {
-  return `<article class="article-card">
+  return `<a class="article-card news-card-link" href="article.html?id=${article.id}">
     <div class="article-card__image">${thumbHtml(article)}</div>
     <div class="article-card__body">
-      <span class="badge">News</span>
+      <span class="badge">${escapeHtml(article.category?.name || "Uncategorised")}</span>
       <h2>${escapeHtml(article.title || "Untitled article")}</h2>
       <p>${escapeHtml((article.content || "No summary available.").slice(0, 150))}</p>
       <div class="article-meta"><span>${formatRelativeTime(article.published_at)}</span><span>◉ ${formatCount(article.view_count)} views</span><span>♡ ${formatCount(article.reaction_count)}</span></div>
-      <div class="article-card__actions"><a class="button" href="article.html?id=${article.id}">Read article</a></div>
     </div>
-  </article>`;
+  </a>`;
 }
 
 async function loadClassifications() {

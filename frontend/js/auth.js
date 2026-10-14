@@ -85,7 +85,13 @@ function wireLogoutLinks() {
 // Keep primary navigation consistent across the shared shell. Older pages
 // still contain disabled placeholders, so activate them here instead of
 // maintaining a second feature-only navigation system.
+const searchIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>';
+
 function wirePrimaryNavigation() {
+  const searchStyles = document.createElement("link");
+  searchStyles.rel = "stylesheet";
+  searchStyles.href = new URL("../css/search-navigation.css", import.meta.url).href;
+  document.head.append(searchStyles);
   document.querySelectorAll(".topbar__nav a").forEach((link) => {
     if (link.textContent.trim().startsWith("Categories")) {
       link.href = "categories.html";
@@ -100,19 +106,33 @@ function wirePrimaryNavigation() {
     input.removeAttribute("title");
     input.name = "q";
 
-    const form = input.closest("form");
-    if (form) {
-      form.action = "search.html";
-      form.method = "get";
+    if (document.getElementById("search-app")) {
+      const entry = document.createElement("button");
+      entry.type = "button";
+      entry.className = "topbar-search-button";
+      entry.setAttribute("aria-label", "Focus news search");
+      entry.innerHTML = searchIcon;
+      entry.addEventListener("click", () => document.getElementById("keyword")?.focus());
+      const existingForm = input.closest("form");
+      (existingForm || input).replaceWith(entry);
       return;
     }
 
-    input.addEventListener("keydown", (event) => {
-      if (event.key !== "Enter") return;
-      event.preventDefault();
-      const keyword = input.value.trim();
-      window.location.href = `search.html${keyword ? `?q=${encodeURIComponent(keyword)}` : ""}`;
-    });
+    let form = input.closest("form");
+    if (!form) {
+      form = document.createElement("form");
+      input.replaceWith(form);
+      form.append(input);
+    }
+    form.action = "search.html";
+    form.method = "get";
+    form.classList.add("topbar-search-form");
+    const button = document.createElement("button");
+    button.type = "submit";
+    button.className = "topbar-search-button";
+    button.setAttribute("aria-label", "Search news");
+    button.innerHTML = searchIcon;
+    form.append(button);
   });
 
   document.querySelectorAll(".btn-publish").forEach((button) => {

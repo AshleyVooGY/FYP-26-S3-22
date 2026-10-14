@@ -39,7 +39,7 @@ export async function getClassifications() {
 export async function getPublishedArticles(limit = 24) {
   const { data, error } = await supabase
     .from("articles")
-    .select("id, title, content, featured_image_url, published_at, view_count, reaction_count")
+    .select("id, title, content, featured_image_url, published_at, view_count, reaction_count, category:categories!articles_category_id_fkey(name)")
     .eq("status", "published")
     .order("published_at", { ascending: false })
     .limit(limit);
@@ -60,7 +60,7 @@ export async function getArticlesByClassification(type, id) {
 
   const { data, error } = await supabase
     .from("articles")
-    .select("id, title, content, featured_image_url, published_at, view_count, reaction_count")
+    .select("id, title, content, featured_image_url, published_at, view_count, reaction_count, category:categories!articles_category_id_fkey(name)")
     .in("id", ids)
     .eq("status", "published")
     .order("published_at", { ascending: false });

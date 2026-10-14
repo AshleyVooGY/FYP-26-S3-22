@@ -1,14 +1,16 @@
 import { requireAuth } from "./auth.js";
 import {
   getCategories,
+  getTags,
   getMyArticleById,
   createArticle,
   updateArticle,
+  saveArticleLinks,
   publishArticle,
   deleteArticle,
   uploadArticleImage,
   removeArticleImage
-} from "../../services/feature8Service.js";
+} from "../../services/feature8Service.js?v=article-links-20261014";
 import {
   CREDIBILITY_THRESHOLD,
   getSubscriptionTier,
@@ -21,6 +23,7 @@ const params = new URLSearchParams(window.location.search);
 let articleId = params.get("id");
 let article = null;
 let categories = [];
+let tags = [];
 let currentUser = null;
 let subscriptionTier = "free";
 let credibilityResult = null;
@@ -47,10 +50,21 @@ function setAiStatus(message, isError = false) {
 }
 
 function readForm() {
+  const categoryIds = [...document.querySelectorAll('input[name="categoryIds"]:checked')].map(
+    (input) => input.value
+  );
+  const tagIds = [...document.querySelectorAll('input[name="tagIds"]:checked')].map(
+    (input) => input.value
+  );
+
   return {
     title: document.getElementById("field-title").value,
     content: document.getElementById("field-content").value,
-    categoryId: document.getElementById("field-category").value || null
+    categoryIds,
+    tagIds,
+    // The AI functions currently accept one category. Use the primary (first)
+    // selection while the article itself keeps every selected relationship.
+    categoryId: categoryIds[0] ?? null
   };
 }
 
@@ -58,8 +72,27 @@ function articleFingerprint(values = readForm()) {
   return JSON.stringify({
     title: values.title.trim(),
     content: values.content.trim(),
-    categoryId: values.categoryId ? String(values.categoryId) : null
+    categoryIds: [...values.categoryIds].map(String).sort(),
+    tagIds: [...values.tagIds].map(String).sort()
   });
+}
+
+function classificationOptionsHtml(items, selectedIds, inputName, emptyMessage) {
+  if (!items.length) {
+    return `<p class="classification-picker__empty">${escapeHtml(emptyMessage)}</p>`;
+  }
+
+  const selected = new Set((selectedIds ?? []).map(String));
+  return items
+    .map(
+      (item) => `
+        <label class="classification-option">
+          <input type="checkbox" name="${inputName}" value="${item.id}" ${selected.has(String(item.id)) ? "checked" : ""} />
+          <span>${escapeHtml(item.name)}</span>
+        </label>
+      `
+    )
+    .join("");
 }
 
 function hasCurrentPassingCheck() {
@@ -88,7 +121,7 @@ function credibilityPanelHtml() {
       </div>
       <p class="ai-panel__description">
         This AI-assisted preliminary assessment must reach ${CREDIBILITY_THRESHOLD}% before publishing.
-        Editing the title, category or article content after a check automatically invalidates the result.
+        Editing the title, categories, tags or article content after a check automatically invalidates the result.
       </p>
       <p class="plan-description">${planDescription}. The credibility requirement cannot be bypassed.</p>
 
@@ -130,6 +163,8 @@ function render() {
   const slot = document.getElementById("editor-slot");
   const isEditing = Boolean(articleId);
   const isPublished = article?.status === "published";
+  const selectedCategoryIds = article?.category_ids ?? (article?.category_id ? [article.category_id] : []);
+  const selectedTagIds = article?.tag_ids ?? [];
 
   slot.innerHTML = `
     <div class="article-workspace">
@@ -147,18 +182,21 @@ function render() {
           <input id="field-title" type="text" placeholder="Article title" value="${escapeHtml(article?.title ?? "")}" />
         </label>
 
-        <label class="article-editor__field">
-          <span>Category</span>
-          <select id="field-category">
-            <option value="">Uncategorised</option>
-            ${categories
-              .map(
-                (c) =>
-                  `<option value="${c.id}" ${String(c.id) === String(article?.category_id) ? "selected" : ""}>${escapeHtml(c.name)}</option>`
-              )
-              .join("")}
-          </select>
-        </label>
+        <div class="article-editor__field">
+          <span>Categories</span>
+          <p class="classification-help">Select one or more categories. The first selected category remains the primary category for older pages.</p>
+          <div class="classification-picker" id="category-options">
+            ${classificationOptionsHtml(categories, selectedCategoryIds, "categoryIds", "No categories are available.")}
+          </div>
+        </div>
+
+        <div class="article-editor__field">
+          <span>Tags</span>
+          <p class="classification-help">Choose all tags that describe this article.</p>
+          <div class="classification-picker" id="tag-options">
+            ${classificationOptionsHtml(tags, selectedTagIds, "tagIds", "No tags are available.")}
+          </div>
+        </div>
 
         <label class="article-editor__field">
           <span>Content</span>
@@ -209,8 +247,11 @@ function render() {
     button.addEventListener("click", () => handleAiTask(button.dataset.aiTask));
   });
 
-  ["field-title", "field-content", "field-category"].forEach((id) => {
-    document.getElementById(id).addEventListener(id === "field-category" ? "change" : "input", handleArticleInput);
+  ["field-title", "field-content"].forEach((id) => {
+    document.getElementById(id).addEventListener("input", handleArticleInput);
+  });
+  document.querySelectorAll('input[name="categoryIds"], input[name="tagIds"]').forEach((input) => {
+    input.addEventListener("change", handleArticleInput);
   });
 
   const publishBtn = document.getElementById("publish-btn");
@@ -492,12 +533,14 @@ async function handleSaveDraft() {
 
   try {
     if (!articleId) {
-      articleId = await createArticle({ ...values, publish: false });
+      articleId = await createArticle(values);
       window.history.replaceState(null, "", `article-editor.html?id=${articleId}`);
+      await saveArticleLinks(articleId, values.categoryIds, values.tagIds);
       await reloadArticle();
       setStatus("Draft saved. You can continue editing or run the credibility check when ready.");
     } else {
       await updateArticle(articleId, values);
+      await saveArticleLinks(articleId, values.categoryIds, values.tagIds);
       await reloadArticle();
       setStatus(isPublished ? "Verified changes saved." : "Draft saved.");
     }
@@ -520,11 +563,13 @@ async function handlePublish() {
 
   try {
     if (!articleId) {
-      articleId = await createArticle({ ...values, publish: true });
+      articleId = await createArticle(values);
+      window.history.replaceState(null, "", `article-editor.html?id=${articleId}`);
     } else {
       await updateArticle(articleId, values);
-      await publishArticle(articleId);
     }
+    await saveArticleLinks(articleId, values.categoryIds, values.tagIds);
+    await publishArticle(articleId);
     window.location.href = "my-articles.html";
   } catch (err) {
     setStatus(err.message, true);
@@ -577,9 +622,10 @@ async function init() {
   slot.innerHTML = '<p class="state-message">Loading…</p>';
 
   try {
-    categories = await getCategories();
+    [categories, tags] = await Promise.all([getCategories(), getTags()]);
   } catch {
     categories = [];
+    tags = [];
   }
 
   if (articleId) {

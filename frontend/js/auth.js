@@ -82,6 +82,53 @@ function wireLogoutLinks() {
   });
 }
 
+// Keep primary navigation consistent across the shared shell. Older pages
+// still contain disabled placeholders, so activate them here instead of
+// maintaining a second feature-only navigation system.
+function wirePrimaryNavigation() {
+  document.querySelectorAll(".topbar__nav a").forEach((link) => {
+    if (link.textContent.trim().startsWith("Categories")) {
+      link.href = "categories.html";
+      link.classList.remove("is-disabled");
+      link.removeAttribute("title");
+    }
+  });
+
+  document.querySelectorAll(".topbar__search").forEach((input) => {
+    input.disabled = false;
+    input.removeAttribute("disabled");
+    input.removeAttribute("title");
+    input.name = "q";
+
+    const form = input.closest("form");
+    if (form) {
+      form.action = "search.html";
+      form.method = "get";
+      return;
+    }
+
+    input.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      const keyword = input.value.trim();
+      window.location.href = `search.html${keyword ? `?q=${encodeURIComponent(keyword)}` : ""}`;
+    });
+  });
+
+  document.querySelectorAll(".btn-publish").forEach((button) => {
+    button.classList.add("is-live");
+    button.removeAttribute("disabled");
+    button.removeAttribute("title");
+    if (button.tagName === "A") {
+      button.href = "article-editor.html";
+    } else {
+      button.addEventListener("click", () => {
+        window.location.href = "article-editor.html";
+      });
+    }
+  });
+}
+
 async function renderUserChip() {
   const label = document.getElementById("user-label");
   const chip = document.getElementById("user-chip");
@@ -125,5 +172,6 @@ async function applyRoleVisibility() {
   });
 }
 
+wirePrimaryNavigation();
 renderUserChip();
 applyRoleVisibility();

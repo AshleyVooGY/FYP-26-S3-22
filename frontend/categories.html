@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Categories & Tags — News Release System</title>
+  <link rel="stylesheet" href="css/shell.css" />
+  <link rel="stylesheet" href="features-01-02-10/features.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="topbar__brand" href="index.html">
+      <span class="topbar__brand-icon" aria-hidden="true">▣</span>
+      <span>NEWS RELEASE SYSTEM</span>
+    </a>
+    <nav class="topbar__nav" aria-label="Primary navigation">
+      <a href="index.html">Home</a>
+      <a href="categories.html" class="is-active">Categories ▾</a>
+      <a href="trending.html">Trending</a>
+      <a href="bookmarks.html">Bookmarks</a>
+    </nav>
+    <div class="topbar__actions">
+      <form action="search.html" method="get" role="search">
+        <input class="topbar__search" name="q" type="search" placeholder="Search news..." aria-label="Search news" />
+      </form>
+      <button class="icon-btn" type="button" title="Coming soon" aria-label="Notifications">♧</button>
+      <a class="btn-publish is-live" href="article-editor.html">+ Publish</a>
+      <a href="login.html" class="user-chip" id="user-chip">
+        <span class="user-chip__avatar" aria-hidden="true">●</span>
+        <span id="user-label">User</span>
+      </a>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <nav class="sidebar__nav" aria-label="Account navigation">
+        <a href="index.html"><span class="sidebar__icon">▦</span>Dashboard</a>
+        <a href="my-articles.html"><span class="sidebar__icon">◇</span>My Articles</a>
+        <a href="drafts.html"><span class="sidebar__icon">✎</span>Drafts</a>
+        <a href="bookmarks.html"><span class="sidebar__icon">▱</span>Bookmarks</a>
+        <a href="history.html"><span class="sidebar__icon">◉</span>History</a>
+        <a href="preferences.html"><span class="sidebar__icon">⌘</span>Preferences</a>
+        <a href="analytics.html" data-role="admin"><span class="sidebar__icon">▤</span>Analytics</a>
+        <a href="users.html" data-role="admin"><span class="sidebar__icon">♙</span>Users</a>
+        <a href="#" data-logout><span class="sidebar__icon">↩</span>Logout</a>
+      </nav>
+    </aside>
+
+    <main id="categories-app" class="content" tabindex="-1" aria-live="polite">
+      <div class="loading-panel">Loading categories and articles…</div>
+    </main>
+  </div>
+
+  <div id="toast-region" class="toast-region" aria-live="polite"></div>
+  <script type="module" src="js/auth.js"></script>
+  <script type="module" src="js/categories.js"></script>
+</body>
+</html>

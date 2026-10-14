@@ -18,6 +18,84 @@ export async function getCategories() {
 }
 
 /**
+ * Retrieve every tag used by the article editor.
+ */
+export async function getTags() {
+  const { data, error } = await supabase.from("tags").select("id, name").order("name");
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
+}
+
+function normaliseIds(ids = []) {
+  return [...new Set(ids.map(Number).filter((id) => Number.isInteger(id) && id > 0))];
+}
+
+async function getArticleLinks(articleId) {
+  const [categoryResult, tagResult] = await Promise.all([
+    supabase.from("article_categories").select("category_id").eq("article_id", articleId),
+    supabase.from("article_tags").select("tag_id").eq("article_id", articleId)
+  ]);
+
+  if (categoryResult.error) throw new Error(categoryResult.error.message);
+  if (tagResult.error) throw new Error(tagResult.error.message);
+
+  return {
+    categoryIds: normaliseIds((categoryResult.data ?? []).map((row) => row.category_id)),
+    tagIds: normaliseIds((tagResult.data ?? []).map((row) => row.tag_id))
+  };
+}
+
+async function manageArticleLink(articleId, linkType, linkId, action) {
+  const { error } = await supabase.rpc("manage_article_link", {
+    p_article_id: Number(articleId),
+    p_link_type: linkType,
+    p_link_id: Number(linkId),
+    p_action: action
+  });
+
+  if (error) {
+    throw new Error(`Could not ${action} the ${linkType} link: ${error.message}`);
+  }
+}
+
+async function syncLinkType(articleId, linkType, previousIds, nextIds) {
+  const previous = normaliseIds(previousIds);
+  const next = normaliseIds(nextIds);
+  const previousSet = new Set(previous);
+  const nextSet = new Set(next);
+
+  const removals = previous.filter((id) => !nextSet.has(id));
+  const additions = next.filter((id) => !previousSet.has(id));
+
+  // Keep the operations sequential so a useful error identifies the exact
+  // relationship that failed instead of returning an opaque Promise error.
+  for (const id of removals) {
+    await manageArticleLink(articleId, linkType, id, "remove");
+  }
+  for (const id of additions) {
+    await manageArticleLink(articleId, linkType, id, "add");
+  }
+}
+
+async function syncArticleLinks(articleId, categoryIds, tagIds, previousLinks = null) {
+  const current = previousLinks ?? (await getArticleLinks(articleId));
+  await syncLinkType(articleId, "category", current.categoryIds, categoryIds);
+  await syncLinkType(articleId, "tag", current.tagIds, tagIds);
+}
+
+/**
+ * Synchronise an article's many-to-many classifications through the
+ * ownership-checking backend RPC.
+ */
+export async function saveArticleLinks(articleId, categoryIds = [], tagIds = []) {
+  await syncArticleLinks(articleId, categoryIds, tagIds);
+}
+
+/**
  * Retrieve one of the current user's own articles, draft or published.
  *
  * The author is filtered explicitly rather than left to RLS: without
@@ -45,7 +123,18 @@ export async function getMyArticleById(articleId) {
     throw new Error(error.message);
   }
 
-  return data;
+  if (!data) return null;
+
+  const links = await getArticleLinks(articleId);
+  return {
+    ...data,
+    category_ids: links.categoryIds.length
+      ? links.categoryIds
+      : data.category_id
+        ? [Number(data.category_id)]
+        : [],
+    tag_ids: links.tagIds
+  };
 }
 
 /**
@@ -89,10 +178,12 @@ function validateArticleInput({ title, content }) {
 }
 
 /**
- * Create a new article owned by the current user, as a draft or published directly.
+ * Create a new draft owned by the current user. Publishing happens only after
+ * its category and tag relationships have been saved successfully.
  */
-export async function createArticle({ title, content, categoryId, publish }) {
+export async function createArticle({ title, content, categoryIds = [] }) {
   validateArticleInput({ title, content });
+  const nextCategoryIds = normaliseIds(categoryIds);
 
   const {
     data: { user }
@@ -107,10 +198,12 @@ export async function createArticle({ title, content, categoryId, publish }) {
     .insert({
       title: title.trim(),
       content: content.trim(),
-      category_id: categoryId ? Number(categoryId) : null,
+      // Keep the legacy field in sync until every existing page has migrated
+      // to article_categories.
+      category_id: nextCategoryIds[0] ?? null,
       author_id: user.id,
-      status: publish ? "published" : "draft",
-      published_at: publish ? new Date().toISOString() : null
+      status: "draft",
+      published_at: null
     })
     .select("id")
     .single();
@@ -125,15 +218,15 @@ export async function createArticle({ title, content, categoryId, publish }) {
 /**
  * Update an article the current user owns (draft or already published).
  */
-export async function updateArticle(articleId, { title, content, categoryId }) {
+export async function updateArticle(articleId, { title, content, categoryIds = [] }) {
   validateArticleInput({ title, content });
-
+  const nextCategoryIds = normaliseIds(categoryIds);
   const { error } = await supabase
     .from("articles")
     .update({
       title: title.trim(),
       content: content.trim(),
-      category_id: categoryId ? Number(categoryId) : null
+      category_id: nextCategoryIds[0] ?? null
     })
     .eq("id", articleId);
 

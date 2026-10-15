@@ -117,12 +117,14 @@ export async function requestWritingAssistance({ task, title, content, categoryI
   };
 }
 
-export async function checkArticleCredibility({ title, content, categoryId }) {
+export async function checkArticleCredibility({ title, content, categoryId, categoryIds = [], tagIds = [] }) {
   const { data, error } = await supabase.functions.invoke(CREDIBILITY_FUNCTION, {
     body: {
       title: title.trim(),
       content: content.trim(),
-      category_id: categoryId ? Number(categoryId) : null
+      category_id: categoryId ? Number(categoryId) : null,
+      category_ids: categoryIds.map(Number),
+      tag_ids: tagIds.map(Number)
     }
   });
 
@@ -138,6 +140,7 @@ export async function checkArticleCredibility({ title, content, categoryId }) {
   const criticalIssue = normaliseCriticalIssue(data);
 
   return {
+    receiptId: data.receipt_id || null,
     score: Math.round(score),
     summary: data.summary ?? data.explanation ?? "The credibility check is complete.",
     issues: Array.isArray(data.issues) ? data.issues.filter(Boolean) : [],

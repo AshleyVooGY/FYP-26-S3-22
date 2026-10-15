@@ -3,20 +3,17 @@ import {
   getCategories,
   getTags,
   getMyArticleById,
-  createArticle,
-  updateArticle,
-  saveArticleLinks,
-  publishArticle,
+  saveArticleWorkspace,
   deleteArticle,
   uploadArticleImage,
   removeArticleImage
-} from "../../services/feature8Service.js?v=article-links-20261014";
+} from "../../services/feature8Service.js?v=workspace-20261015";
 import {
   CREDIBILITY_THRESHOLD,
   getSubscriptionTier,
   requestWritingAssistance,
   checkArticleCredibility
-} from "../../services/aiPublishingService.js?v=ai-publishing-20261010c";
+} from "../../services/aiPublishingService.js?v=receipt-20261015";
 import { escapeHtml, thumbHtml } from "./format.js";
 
 const params = new URLSearchParams(window.location.search);
@@ -57,6 +54,11 @@ function readForm() {
     (input) => input.value
   );
 
+  const primaryId = document.getElementById('primary-category')?.value;
+  if (primaryId && categoryIds.includes(primaryId)) {
+    categoryIds.splice(categoryIds.indexOf(primaryId), 1);
+    categoryIds.unshift(primaryId);
+  }
   return {
     title: document.getElementById("field-title").value,
     content: document.getElementById("field-content").value,
@@ -72,6 +74,7 @@ function articleFingerprint(values = readForm()) {
   return JSON.stringify({
     title: values.title.trim(),
     content: values.content.trim(),
+    primaryCategoryId: values.categoryIds[0] || null,
     categoryIds: [...values.categoryIds].map(String).sort(),
     tagIds: [...values.tagIds].map(String).sort()
   });
@@ -184,12 +187,13 @@ function render() {
 
         <div class="article-editor__field">
           <span>Categories</span>
-          <p class="classification-help">Select one or more categories. The first selected category remains the primary category for older pages.</p>
+          <p class="classification-help">Select categories, then choose the primary category displayed on news cards.</p>
           <div class="classification-picker" id="category-options">
             ${classificationOptionsHtml(categories, selectedCategoryIds, "categoryIds", "No categories are available.")}
           </div>
         </div>
 
+        <label class="article-editor__field"><span>Primary category</span><select id="primary-category" aria-label="Primary category"></select></label>
         <div class="article-editor__field">
           <span>Tags</span>
           <p class="classification-help">Choose all tags that describe this article.</p>
@@ -241,6 +245,16 @@ function render() {
     </div>
   `;
 
+  function syncPrimaryCategory() {
+    const picker = document.getElementById('primary-category');
+    const previous = picker.value || String(article?.category_id || '');
+    const checked = [...document.querySelectorAll('input[name="categoryIds"]:checked')].map(input => input.value);
+    picker.innerHTML = checked.length ? categories.filter(item => checked.includes(String(item.id))).map(item => `<option value="${item.id}">${escapeHtml(item.name)}</option>`).join('') : '<option value="">No category selected</option>';
+    if (checked.includes(previous)) picker.value = previous;
+  }
+  syncPrimaryCategory();
+  document.querySelectorAll('input[name="categoryIds"]').forEach(input => input.addEventListener('change', syncPrimaryCategory));
+  document.getElementById('primary-category').addEventListener('change', handleArticleInput);
   document.getElementById("save-draft-btn").addEventListener("click", handleSaveDraft);
   document.getElementById("check-credibility-btn").addEventListener("click", handleCredibilityCheck);
   document.querySelectorAll("[data-ai-task]").forEach((button) => {
@@ -389,6 +403,9 @@ async function handleCredibilityCheck() {
       throw new Error("The article changed while it was being checked. Please run the check again.");
     }
 
+    if (result.score >= CREDIBILITY_THRESHOLD && !result.criticalIssue && !result.receiptId) {
+      throw new Error('The AI assessment completed, but the backend has not issued a verified publishing receipt. Save a draft; the backend team must update the credibility function before publishing.');
+    }
     credibilityResult = result;
     verifiedFingerprint = fingerprintAtRequest;
     credibilityWasInvalidated = false;
@@ -531,51 +548,49 @@ async function handleSaveDraft() {
     return;
   }
 
+  await saveWorkspace(values, isPublished);
+}
+
+let savingWorkspace = false;
+async function saveWorkspace(values, publish) {
+  if (savingWorkspace) return;
+  if (!values.title.trim() || !values.content.trim()) {
+    setStatus('Enter a title and article content before saving.', true);
+    return;
+  }
+  if (publish && !values.categoryIds.length) {
+    setStatus('Select at least one category before publishing.', true);
+    return;
+  }
+  savingWorkspace = true;
+  document.querySelectorAll('#save-draft-btn,#publish-btn').forEach(button => { button.disabled = true; });
+  setStatus(publish ? 'Saving verified article…' : 'Saving draft…');
   try {
-    if (!articleId) {
-      articleId = await createArticle(values);
-      window.history.replaceState(null, "", `article-editor.html?id=${articleId}`);
-      await saveArticleLinks(articleId, values.categoryIds, values.tagIds);
-      await reloadArticle();
-      setStatus("Draft saved. You can continue editing or run the credibility check when ready.");
-    } else {
-      await updateArticle(articleId, values);
-      await saveArticleLinks(articleId, values.categoryIds, values.tagIds);
-      await reloadArticle();
-      setStatus(isPublished ? "Verified changes saved." : "Draft saved.");
+    articleId = await saveArticleWorkspace(articleId, values, publish, credibilityResult?.receiptId);
+    window.history.replaceState(null, '', `article-editor.html?id=${articleId}`);
+    if (publish) {
+      window.location.href = 'my-articles.html';
+      return;
     }
-  } catch (err) {
-    setStatus(err.message, true);
+    await reloadArticle();
+    setStatus('Draft saved with its categories and tags.');
+  } catch (error) {
+    setStatus(error.message, true);
+  } finally {
+    savingWorkspace = false;
+    const saveButton = document.getElementById('save-draft-btn');
+    if (saveButton) saveButton.disabled = false;
+    updatePublishingState();
   }
 }
 
 async function handlePublish() {
-  const values = readForm();
   if (!hasCurrentPassingCheck()) {
-    setStatus(`A current credibility score of at least ${CREDIBILITY_THRESHOLD}% is required before publishing.`, true);
-    document.getElementById("credibility-check").scrollIntoView({ behavior: "smooth", block: "start" });
+    setStatus('Run and pass the credibility check for the current article before publishing.', true);
+    document.getElementById('credibility-check').scrollIntoView({behavior:'smooth',block:'start'});
     return;
   }
-
-  const button = document.getElementById("publish-btn");
-  button.disabled = true;
-  button.textContent = "Publishing…";
-
-  try {
-    if (!articleId) {
-      articleId = await createArticle(values);
-      window.history.replaceState(null, "", `article-editor.html?id=${articleId}`);
-    } else {
-      await updateArticle(articleId, values);
-    }
-    await saveArticleLinks(articleId, values.categoryIds, values.tagIds);
-    await publishArticle(articleId);
-    window.location.href = "my-articles.html";
-  } catch (err) {
-    setStatus(err.message, true);
-    button.disabled = false;
-    button.textContent = "Publish";
-  }
+  await saveWorkspace(readForm(), true);
 }
 
 async function handleDelete() {
@@ -623,9 +638,9 @@ async function init() {
 
   try {
     [categories, tags] = await Promise.all([getCategories(), getTags()]);
-  } catch {
-    categories = [];
-    tags = [];
+  } catch (error) {
+    slot.innerHTML = `<p class="state-message is-error">Could not load categories and tags. Reload to retry. ${escapeHtml(error.message)}</p>`;
+    return;
   }
 
   if (articleId) {
@@ -637,4 +652,6 @@ async function init() {
   }
 }
 
-init();
+init().catch(error => {
+  document.getElementById('editor-slot').innerHTML = `<p class="state-message is-error">Could not open the editor. ${escapeHtml(error.message)}</p>`;
+});

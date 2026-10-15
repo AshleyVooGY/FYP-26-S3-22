@@ -128,11 +128,7 @@ export async function getMyArticleById(articleId) {
   const links = await getArticleLinks(articleId);
   return {
     ...data,
-    category_ids: links.categoryIds.length
-      ? links.categoryIds
-      : data.category_id
-        ? [Number(data.category_id)]
-        : [],
+    category_ids: normaliseIds([...(data.category_id ? [data.category_id] : []), ...links.categoryIds]),
     tag_ids: links.tagIds
   };
 }
@@ -320,4 +316,23 @@ export async function removeArticleImage(articleId, imageUrl) {
   if (error) {
     throw new Error(error.message);
   }
+}
+
+/** Save the workspace in one database transaction; requires the demo-readiness migration. */
+export async function saveArticleWorkspace(articleId, values, publish = false, receiptId = null) {
+  validateArticleInput(values);
+  const { data, error } = await supabase.rpc('save_my_article_workspace', {
+    p_article_id: articleId ? Number(articleId) : null,
+    p_title: values.title.trim(), p_content: values.content.trim(),
+    p_category_ids: normaliseIds(values.categoryIds), p_tag_ids: normaliseIds(values.tagIds),
+    p_publish: publish, p_receipt_id: publish ? receiptId : null
+  });
+  if (error) {
+    if (['PGRST202','42883'].includes(error.code)) {
+      throw new Error('Saving is not available until the backend deploys the demo-readiness migration. Your text is still in the editor.');
+    }
+    throw new Error(error.message);
+  }
+  if (!data) throw new Error('The server did not confirm the save. Keep this page open and retry.');
+  return data;
 }

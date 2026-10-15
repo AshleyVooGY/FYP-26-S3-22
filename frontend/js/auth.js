@@ -1,3 +1,4 @@
+import { sidebarHtml } from "./sidebar.js";
 import { supabase } from "../../config/supabaseClient.js";
 
 // ==========================================================
@@ -88,13 +89,29 @@ function wireLogoutLinks() {
 const searchIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>';
 
 function wirePrimaryNavigation() {
+  const sidebar = document.querySelector('aside.sidebar');
+  if (sidebar) {
+    const template = document.createElement('template');
+    template.innerHTML = sidebarHtml;
+    sidebar.replaceWith(template.content.firstElementChild);
+    const page = location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.sidebar__nav a').forEach(link => {
+      if (link.getAttribute('href') === page) {
+        link.classList.add('is-active');
+        link.setAttribute('aria-current', 'page');
+      }
+    });
+  }
   const searchStyles = document.createElement("link");
   searchStyles.rel = "stylesheet";
   searchStyles.href = new URL("../css/search-navigation.css", import.meta.url).href;
   document.head.append(searchStyles);
   document.querySelectorAll(".topbar__nav a").forEach((link) => {
-    if (link.textContent.trim().startsWith("Categories")) {
-      link.href = "categories.html";
+    const label = link.textContent.trim();
+    const destinations = { Home: 'index.html', Trending: 'trending.html', Bookmarks: 'bookmarks.html' };
+    const destination = label.startsWith('Categories') ? 'categories.html' : destinations[label];
+    if (destination) {
+      link.href = destination;
       link.classList.remove("is-disabled");
       link.removeAttribute("title");
     }

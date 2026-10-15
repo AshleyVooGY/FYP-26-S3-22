@@ -56,12 +56,14 @@ export async function getArticlesByClassification(type, id) {
     .eq(key, id);
   throwIfError(linkError);
   const ids = (links ?? []).map((link) => link.article_id);
-  if (!ids.length) return [];
+  if (!ids.length && type === "tag") return [];
 
-  const { data, error } = await supabase
-    .from("articles")
-    .select("id, title, content, featured_image_url, published_at, view_count, reaction_count, category:categories!articles_category_id_fkey(name)")
-    .in("id", ids)
+  let query = supabase.from("articles")
+    .select("id, title, content, featured_image_url, published_at, view_count, reaction_count, category:categories!articles_category_id_fkey(name)");
+  query = type === "category"
+    ? query.or(`category_id.eq.${Number(id)}${ids.length ? `,id.in.(${ids.join(',')})` : ''}`)
+    : query.in("id", ids);
+  const { data, error } = await query
     .eq("status", "published")
     .order("published_at", { ascending: false });
   throwIfError(error);

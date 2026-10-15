@@ -20,7 +20,7 @@ export async function getAllProfiles() {
  * Set a user's role (System Admin only, via RLS).
  */
 export async function setUserRole(userId, role) {
-  const { error } = await supabase.from("profiles").update({ role }).eq("id", userId);
+  const { error } = await supabase.rpc("set_user_role", { p_user_id: userId, p_role: role });
 
   if (error) {
     throw new Error(error.message);

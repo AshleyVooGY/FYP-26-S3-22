@@ -1,51 +1,66 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
 <head>
-
   <meta charset="UTF-8" />
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  />
-
-  <title>
-    Reading History — News Release System
-  </title>
-
-
-  <link
-    rel="stylesheet"
-    href="css/shell.css"
-  />
-
-  <link
-    rel="stylesheet"
-    href="css/feature5.css"
-  />
-
-  <link
-    rel="stylesheet"
-    href="css/feature3.css"
-  />
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reading History — News Release System</title>
+  <link rel="stylesheet" href="css/shell.css" />
+  <link rel="stylesheet" href="features-01-02-10/features.css" />
+  <link rel="stylesheet" href="css/history.css" />
 </head>
-
-
 <body>
+<header class="topbar">
 
-
-  <!-- =====================================================
-     TOP BAR
-  ====================================================== -->
-
-  <header class="topbar">
+    <!-- BRAND -->
 
     <div class="topbar__brand">
 
       <span class="topbar__brand-icon">
-        📰
+
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+
+          <rect
+            x="3"
+            y="4"
+            width="14"
+            height="16"
+            rx="1.5"
+          />
+
+          <path
+            d="M17 8.5h4V18a2 2 0 0 1-2 2h-2"
+          />
+
+          <line
+            x1="6.5"
+            y1="8.5"
+            x2="13.5"
+            y2="8.5"
+          />
+
+          <line
+            x1="6.5"
+            y1="12"
+            x2="13.5"
+            y2="12"
+          />
+
+          <line
+            x1="6.5"
+            y1="15.5"
+            x2="11"
+            y2="15.5"
+          />
+
+        </svg>
+
       </span>
 
       <span>
@@ -55,61 +70,99 @@
     </div>
 
 
+    <!-- ==================================================
+         TOP NAVIGATION
+    =================================================== -->
+
     <nav class="topbar__nav">
 
-      <a href="index.html">
+      <!-- HOME -->
+
+      <a
+        href="index.html"
+      >
         Home
       </a>
 
+
+      <!-- CATEGORIES -->
+
       <a
         href="categories.html"
-        class=""
-
       >
         Categories ▾
       </a>
+
+
+      <!-- TRENDING -->
 
       <a href="trending.html">
         Trending
       </a>
 
-      <a
-        href="bookmarks.html"
-        class=""
 
-      >
+      <!-- BOOKMARKS -->
+
+      <a href="bookmarks.html">
         Bookmarks
       </a>
 
     </nav>
 
 
+    <!-- ==================================================
+         TOP ACTIONS
+    =================================================== -->
+
     <div class="topbar__actions">
 
-      <input
-        class="topbar__search"
-        type="text"
-        placeholder="Search news..."
-        disabled
-        title="Coming soon"
-      />
+      <!-- SEARCH -->
 
+      <form class="feature-search-entry" action="search.html" method="get" role="search">
+        <input class="topbar__search" name="q" type="search" placeholder="Search news..." aria-label="Search news" />
+      </form>
+
+
+      <!-- NOTIFICATION -->
 
       <button
         class="icon-btn"
         title="Coming soon"
       >
-        🔔
+
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+
+          <path
+            d="M18 8a6 6 0 0 0-12 0c0 6.5-2.5 8.5-2.5 8.5h17S18 14.5 18 8z"
+          />
+
+          <path
+            d="M13.7 20a2 2 0 0 1-3.4 0"
+          />
+
+        </svg>
+
       </button>
 
 
-      <button
-        class="btn-publish"
-        title="Coming soon"
+      <!-- PUBLISH -->
+
+      <a
+        class="btn-publish is-live"
+        href="article-editor.html"
       >
         + Publish
-      </button>
+      </a>
 
+
+      <!-- USER -->
 
       <a
         href="login.html"
@@ -118,7 +171,28 @@
       >
 
         <span class="user-chip__avatar">
-          👤
+
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+
+            <path
+              d="M20 21v-1.5A4.5 4.5 0 0 0 15.5 15h-7A4.5 4.5 0 0 0 4 19.5V21"
+            />
+
+            <circle
+              cx="12"
+              cy="7.5"
+              r="4"
+            />
+
+          </svg>
+
         </span>
 
         <span id="user-label">
@@ -130,81 +204,19 @@
     </div>
 
   </header>
-
-
-
-  <!-- =====================================================
-       PAGE LAYOUT
-  ====================================================== -->
-
   <div class="layout">
-
-
-    <!-- ===================================================
-        SIDEBAR
-    ==================================================== -->
-
     <aside class="sidebar" aria-label="Account navigation"></aside>
-
-
-
-    <!-- ===================================================
-         MAIN CONTENT
-    ==================================================== -->
-
     <main class="content">
-
-
-      <section class="history-page">
-
-
-        <h1 class="history-title">
-          Reading History
-        </h1>
-
-
-        <p class="history-subtitle">
-          Articles you have previously viewed
-        </p>
-
-
-        <div
-          id="historyGrid"
-          class="history-grid"
-        >
-
-          <p class="state-message">
-            Loading reading history…
-          </p>
-
-        </div>
-
-
-      </section>
-
-
+      <header class="page-head">
+        <div><h1>Reading History</h1><p>Articles you have read, with the most recently viewed first.</p></div>
+        <span id="history-count"></span>
+      </header>
+      <div id="historyGrid" class="article-grid" aria-live="polite" aria-busy="true">
+        <div class="loading-panel" role="status">Loading reading history…</div>
+      </div>
     </main>
-
   </div>
-
-
-
-  <!-- =====================================================
-       SCRIPTS
-  ====================================================== -->
-
-  <script
-    type="module"
-    src="js/auth.js"
-  ></script>
-
-
-  <script
-    type="module"
-    src="js/history.js"
-  ></script>
-
-
+  <script type="module" src="js/auth.js"></script>
+  <script type="module" src="js/history.js"></script>
 </body>
-
 </html>

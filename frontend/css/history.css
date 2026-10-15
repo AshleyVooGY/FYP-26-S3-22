@@ -1,0 +1,5 @@
+/* History uses the shared Categories card and page layout. */
+#historyGrid > .empty-state,
+#historyGrid > .loading-panel { grid-column:1/-1; }
+#history-count { color:var(--text-secondary); font-size:13px; }
+#historyGrid .article-meta { margin-top:12px; }

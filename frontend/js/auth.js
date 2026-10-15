@@ -89,6 +89,11 @@ function wireLogoutLinks() {
 const searchIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>';
 
 function wirePrimaryNavigation() {
+  document.querySelectorAll('.topbar__actions .icon-btn').forEach(button => {
+    button.type = 'button';
+    button.setAttribute('aria-label', 'Notifications');
+    button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 6.5-2.5 8.5-2.5 8.5h17S18 14.5 18 8z"/><path d="M13.7 20a2 2 0 0 1-3.4 0"/></svg>';
+  });
   const sidebar = document.querySelector('aside.sidebar');
   if (sidebar) {
     const template = document.createElement('template');
@@ -122,6 +127,8 @@ function wirePrimaryNavigation() {
     input.removeAttribute("disabled");
     input.removeAttribute("title");
     input.name = "q";
+    input.type = "search";
+    input.setAttribute("aria-label", "Search news");
 
     if (document.getElementById("search-app")) {
       const entry = document.createElement("button");

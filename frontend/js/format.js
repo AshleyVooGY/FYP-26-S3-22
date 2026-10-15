@@ -58,7 +58,7 @@ export function forbiddenStateHtml() {
   return `
     <div class="forbidden-state">
       <p class="forbidden-state__title">Restricted to System Admins</p>
-      <p>This page shows analytics for the whole platform and is only available to System Admin accounts.</p>
+      <p>This page is only available to System Admin accounts.</p>
     </div>
   `;
 }

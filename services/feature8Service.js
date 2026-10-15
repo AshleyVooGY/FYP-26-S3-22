@@ -276,7 +276,7 @@ export async function uploadArticleImage(articleId, file, previousImageUrl = nul
   }
 
   const extension = file.name.split(".").pop();
-  const path = `${articleId}/${Date.now()}.${extension}`;
+  const path = `${articleId}/${crypto.randomUUID()}.${extension}`;
 
   const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: true });
 
@@ -287,10 +287,27 @@ export async function uploadArticleImage(articleId, file, previousImageUrl = nul
   const { data: publicUrlData } = supabase.storage.from(BUCKET).getPublicUrl(path);
   const imageUrl = publicUrlData.publicUrl;
 
-  const { error: updateError } = await supabase.from("articles").update({ featured_image_url: imageUrl }).eq("id", articleId);
-
-  if (updateError) {
-    throw new Error(updateError.message);
+  let attachmentConfirmed = false;
+  try {
+    const { data: updated, error: updateError } = await supabase.from("articles")
+      .update({ featured_image_url: imageUrl }).eq("id", articleId).select("id").maybeSingle();
+    attachmentConfirmed = true;
+    if (updateError) throw new Error(updateError.message);
+    if (!updated) throw new Error("The article could not be updated. Reload and try again.");
+  } catch (error) {
+    // A lost response can follow a committed update. Do not delete a file
+    // that the database may already reference when the outcome is unknown.
+    if (!attachmentConfirmed) {
+      throw new Error("Could not confirm the image update. Reload the editor before uploading again.");
+    }
+    // Keep the old image and remove only this attempt's unlinked upload.
+    try {
+      const { error: cleanupError } = await supabase.storage.from(BUCKET).remove([path]);
+      if (cleanupError) throw cleanupError;
+    } catch {
+      throw new Error(`${error.message} The unused upload could not be cleaned up; please contact an administrator.`);
+    }
+    throw error;
   }
 
   const previousPath = previousImageUrl ? storagePathFromUrl(previousImageUrl) : null;
@@ -307,14 +324,15 @@ export async function uploadArticleImage(articleId, file, previousImageUrl = nul
 export async function removeArticleImage(articleId, imageUrl) {
   const path = storagePathFromUrl(imageUrl);
 
+  // Detach first: a denied database update must never delete the displayed file.
+  const { data: updated, error } = await supabase.from("articles")
+    .update({ featured_image_url: null }).eq("id", articleId).select("id").maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!updated) throw new Error("The article could not be updated. Reload and try again.");
+
   if (path) {
-    await supabase.storage.from(BUCKET).remove([path]);
-  }
-
-  const { error } = await supabase.from("articles").update({ featured_image_url: null }).eq("id", articleId);
-
-  if (error) {
-    throw new Error(error.message);
+    const { error: cleanupError } = await supabase.storage.from(BUCKET).remove([path]);
+    if (cleanupError) throw new Error("Image detached, but the stored file could not be removed. Reload the editor and contact an administrator.");
   }
 }
 

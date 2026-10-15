@@ -1,10 +1,10 @@
 # Demo readiness: deployed backend and integration results
 
 ## Deployment status — 15 October 2026
-- Applied `supabase/migrations/202610150002_live_compatible_readiness.sql` to project xqcastmsficshjnwyqmk through its SQL Editor after a successful rollback rehearsal.
-- Applied `supabase/migrations/202610150003_credibility_classification_reads.sql`: gives the server function SELECT access to already public classification labels.
+- Applied `supabase/Features/article-publishing-permissions-update.sql` to project xqcastmsficshjnwyqmk through its SQL Editor after a successful rollback rehearsal.
+- Applied `supabase/Features/article-credibility-classification-reads.sql`: gives the server function SELECT access to already public classification labels.
 - Deployed `supabase/functions/check-article-credibility/index.ts`. It preserves the existing Gemini assessment, 80% threshold and legacy approval, and additionally validates category/tag IDs and issues an exact-snapshot receipt.
-- Existing tracked SQL files were restored; all database changes are in new migration scripts. The earlier untracked 001 draft was NOT deployed and has been moved to local work backup, outside active migrations. Do not execute earlier handoff copies of that draft.
+- Existing tracked SQL files were restored; all database changes are in new SQL update scripts. The earlier untracked 001 draft was NOT deployed and has been moved to local work backup, outside the submitted SQL directory. Do not execute earlier handoff copies of that draft.
 - Frontend and backend source changes are maintained in separate feature branches for review. AGENTS.md remains local and must not be staged.
 
 ## Existing online behavior preserved

@@ -411,3 +411,12 @@
     flex-direction: column;
   }
 }
+
+.category-check-actions { margin-top: 12px; }
+#category-suggestion p { overflow-wrap: anywhere; }
+#category-suggestion .ai-apply-btn { margin: 4px 8px 0 0; }
+
+.ai-compare { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; margin: 16px 0; }
+.ai-compare h3 { font-size: 1em; margin: 0 0 8px; }
+.ai-compare .ai-content-preview { max-height: 320px; overflow-wrap: anywhere; }
+#writing-undo { margin-top: 12px; }

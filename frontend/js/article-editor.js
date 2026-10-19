@@ -7,13 +7,14 @@ import {
   deleteArticle,
   uploadArticleImage,
   removeArticleImage
-} from "../../services/feature8Service.js?v=workspace-20261015";
+} from "../../services/feature8Service.js?v=single-category-20261019";
 import {
   CREDIBILITY_THRESHOLD,
   getSubscriptionTier,
   requestWritingAssistance,
-  checkArticleCredibility
-} from "../../services/aiPublishingService.js?v=receipt-20261015";
+  checkArticleCredibility,
+  suggestArticleCategory
+} from "../../services/aiPublishingService.js?v=writing-polish-20261019";
 import { escapeHtml, thumbHtml } from "./format.js";
 
 const params = new URLSearchParams(window.location.search);
@@ -27,6 +28,11 @@ let credibilityResult = null;
 let verifiedFingerprint = null;
 let credibilityWasInvalidated = false;
 let aiSuggestion = null;
+let writingUndo = null;
+let writingChecking = false;
+let categorySuggestion = null;
+let categoryRequest = 0;
+let categoryChecking = false;
 
 function setPageTitle(text) {
   document.getElementById("editor-title").textContent = text;
@@ -47,25 +53,14 @@ function setAiStatus(message, isError = false) {
 }
 
 function readForm() {
-  const categoryIds = [...document.querySelectorAll('input[name="categoryIds"]:checked')].map(
-    (input) => input.value
-  );
-  const tagIds = [...document.querySelectorAll('input[name="tagIds"]:checked')].map(
-    (input) => input.value
-  );
-
-  const primaryId = document.getElementById('primary-category')?.value;
-  if (primaryId && categoryIds.includes(primaryId)) {
-    categoryIds.splice(categoryIds.indexOf(primaryId), 1);
-    categoryIds.unshift(primaryId);
-  }
+  const categoryId = document.getElementById('field-category').value;
+  const categoryIds = categoryId ? [categoryId] : [];
+  const tagIds = [...document.querySelectorAll('input[name="tagIds"]:checked')].map(input => input.value);
   return {
     title: document.getElementById("field-title").value,
     content: document.getElementById("field-content").value,
     categoryIds,
     tagIds,
-    // The AI functions currently accept one category. Use the primary (first)
-    // selection while the article itself keeps every selected relationship.
     categoryId: categoryIds[0] ?? null
   };
 }
@@ -109,9 +104,7 @@ function hasCurrentPassingCheck() {
 
 function credibilityPanelHtml() {
   const planName = subscriptionTier === "premium" ? "Premium" : "Free";
-  const planDescription = subscriptionTier === "premium"
-    ? "Expanded AI writing assistance"
-    : "Limited AI writing assistance";
+  const planDescription = "Up to 20 AI writing requests per hour";
 
   return `
     <section class="ai-panel" id="credibility-check" aria-labelledby="credibility-title">
@@ -124,7 +117,7 @@ function credibilityPanelHtml() {
       </div>
       <p class="ai-panel__description">
         This AI-assisted preliminary assessment must reach ${CREDIBILITY_THRESHOLD}% before publishing.
-        Editing the title, categories, tags or article content after a check automatically invalidates the result.
+        Editing the title, category, tags or article content after a check automatically invalidates the result.
       </p>
       <p class="plan-description">${planDescription}. The credibility requirement cannot be bypassed.</p>
 
@@ -157,7 +150,8 @@ function aiWritingPanelHtml() {
         <button class="ai-tool" type="button" data-ai-task="polish">Polish article</button>
       </div>
       <div id="ai-suggestion" class="ai-suggestion" hidden></div>
-      <p class="media-row-status" id="ai-writing-status"></p>
+      <div id="writing-undo" hidden></div>
+      <p class="media-row-status" id="ai-writing-status" role="status" aria-live="polite"></p>
     </section>
   `;
 }
@@ -166,7 +160,11 @@ function render() {
   const slot = document.getElementById("editor-slot");
   const isEditing = Boolean(articleId);
   const isPublished = article?.status === "published";
-  const selectedCategoryIds = article?.category_ids ?? (article?.category_id ? [article.category_id] : []);
+  // Never silently choose between several legacy categories without a primary.
+  const selectedCategoryId = article?.category_id ?? (article?.category_ids?.length === 1 ? article.category_ids[0] : null);
+  categoryRequest += 1;
+  categoryChecking = false;
+  categorySuggestion = null;
   const selectedTagIds = article?.tag_ids ?? [];
 
   slot.innerHTML = `
@@ -186,14 +184,21 @@ function render() {
         </label>
 
         <div class="article-editor__field">
-          <span>Categories</span>
-          <p class="classification-help">Select categories, then choose the primary category displayed on news cards.</p>
-          <div class="classification-picker" id="category-options">
-            ${classificationOptionsHtml(categories, selectedCategoryIds, "categoryIds", "No categories are available.")}
+          <label for="field-category">Category</label>
+          <p class="classification-help" id="category-help">Choose one main category. Required to publish; drafts can leave it blank.</p>
+          <select id="field-category" aria-describedby="category-help">
+            <option value="">Choose a category</option>
+            ${categories.map(item => `<option value="${item.id}" ${String(selectedCategoryId) === String(item.id) ? 'selected' : ''}>${escapeHtml(item.name)}</option>`).join('')}
+          </select>
+          ${article?.category_ids?.length > 1 ? '<p class="classification-help">This older article has multiple category links. Saving will keep only the category selected above.</p>' : ''}
+          <div class="category-check-actions">
+            <button class="article-editor__btn" id="check-category-btn" type="button" ${categories.length ? '' : 'disabled'}>Check category with AI</button>
           </div>
+          <p class="classification-help">AI suggestions are optional. Review the reason before applying a change.</p>
+          <p id="category-check-status" class="media-row-status" role="status"></p>
+          <div id="category-suggestion" class="ai-suggestion" hidden></div>
         </div>
 
-        <label class="article-editor__field"><span>Primary category</span><select id="primary-category" aria-label="Primary category"></select></label>
         <div class="article-editor__field">
           <span>Tags</span>
           <p class="classification-help">Choose all tags that describe this article.</p>
@@ -245,16 +250,8 @@ function render() {
     </div>
   `;
 
-  function syncPrimaryCategory() {
-    const picker = document.getElementById('primary-category');
-    const previous = picker.value || String(article?.category_id || '');
-    const checked = [...document.querySelectorAll('input[name="categoryIds"]:checked')].map(input => input.value);
-    picker.innerHTML = checked.length ? categories.filter(item => checked.includes(String(item.id))).map(item => `<option value="${item.id}">${escapeHtml(item.name)}</option>`).join('') : '<option value="">No category selected</option>';
-    if (checked.includes(previous)) picker.value = previous;
-  }
-  syncPrimaryCategory();
-  document.querySelectorAll('input[name="categoryIds"]').forEach(input => input.addEventListener('change', syncPrimaryCategory));
-  document.getElementById('primary-category').addEventListener('change', handleArticleInput);
+  document.getElementById('field-category').addEventListener('change', handleArticleInput);
+  document.getElementById('check-category-btn').addEventListener('click', handleCategoryCheck);
   document.getElementById("save-draft-btn").addEventListener("click", handleSaveDraft);
   document.getElementById("check-credibility-btn").addEventListener("click", handleCredibilityCheck);
   document.querySelectorAll("[data-ai-task]").forEach((button) => {
@@ -264,7 +261,7 @@ function render() {
   ["field-title", "field-content"].forEach((id) => {
     document.getElementById(id).addEventListener("input", handleArticleInput);
   });
-  document.querySelectorAll('input[name="categoryIds"], input[name="tagIds"]').forEach((input) => {
+  document.querySelectorAll('input[name="tagIds"]').forEach((input) => {
     input.addEventListener("change", handleArticleInput);
   });
 
@@ -279,8 +276,108 @@ function render() {
   if (removeBtn) removeBtn.addEventListener("click", handleImageRemove);
 
   renderCredibilityResult();
+  if (categorySuggestion && categorySuggestion.snapshot !== categoryFingerprint()) categorySuggestion = null;
+  if (aiSuggestion && aiSuggestion.snapshot !== articleFingerprint()) aiSuggestion = null;
+  if (writingUndo && writingUndo.applied !== readForm().content) writingUndo = null;
+  renderCategorySuggestion();
   renderAiSuggestion();
+  renderWritingUndo();
+  const categoryButton = document.getElementById('check-category-btn');
+  categoryButton.disabled = categoryChecking;
+  categoryButton.textContent = categoryChecking ? 'Checking category…' : 'Check category with AI';
+  document.querySelectorAll('[data-ai-task]').forEach(button => { button.disabled = writingChecking; });
+  if (categoryChecking) setCategoryStatus('Reviewing the article topic…');
+  if (writingChecking) setAiStatus('Generating a suggestion…');
   updatePublishingState();
+}
+
+function categoryFingerprint(values = readForm()) {
+  return JSON.stringify([values.title.trim(), values.content.trim(), values.categoryId || null]);
+}
+
+function setCategoryStatus(message, isError = false) {
+  const status = document.getElementById('category-check-status');
+  if (!status) return;
+  status.textContent = message;
+  status.classList.toggle('is-error', isError);
+}
+
+function renderCategorySuggestion() {
+  const slot = document.getElementById('category-suggestion');
+  slot.hidden = !categorySuggestion;
+  slot.innerHTML = '';
+  if (!categorySuggestion) return;
+  const { category, reason, matches } = categorySuggestion;
+  slot.innerHTML = `<p class="ai-suggestion__label">${!category ? 'No clear category suggestion' : matches ? 'Current category looks appropriate' : `Suggested category: ${escapeHtml(category.name)}`}</p>
+    <p>${escapeHtml(reason)}</p>
+    ${category && !matches ? '<button class="ai-apply-btn" type="button" data-apply-category>Use suggested category</button>' : ''}
+    <button class="ai-apply-btn" type="button" data-dismiss-category>Dismiss</button>`;
+  slot.querySelector('[data-dismiss-category]').addEventListener('click', () => {
+    categorySuggestion = null;
+    renderCategorySuggestion();
+    setCategoryStatus('');
+  });
+  slot.querySelector('[data-apply-category]')?.addEventListener('click', () => {
+    if (!categorySuggestion || categorySuggestion.snapshot !== categoryFingerprint()) {
+      categorySuggestion = null;
+      renderCategorySuggestion();
+      setCategoryStatus('The article changed. Check the category again.', true);
+      return;
+    }
+    const picker = document.getElementById('field-category');
+    picker.value = String(category.id);
+    if (picker.value !== String(category.id)) {
+      setCategoryStatus('Categories have changed. Reload the editor and try again.', true);
+      return;
+    }
+    handleArticleInput();
+    setCategoryStatus(`Category changed to ${category.name}. Save your draft to keep it; recheck credibility before publishing.`);
+    picker.focus();
+  });
+}
+
+async function handleCategoryCheck() {
+  if (categoryChecking) return;
+  const values = readForm();
+  if (!values.title.trim() || !values.content.trim()) {
+    setCategoryStatus('Enter a title and article content before checking the category.', true);
+    return;
+  }
+  categoryChecking = true;
+  categorySuggestion = null;
+  renderCategorySuggestion();
+  const token = ++categoryRequest;
+  const snapshot = categoryFingerprint(values);
+  const button = document.getElementById('check-category-btn');
+  button.disabled = true;
+  button.textContent = 'Checking category…';
+  setCategoryStatus('Reviewing the article topic…');
+  try {
+    const result = await suggestArticleCategory(values);
+    if (token !== categoryRequest) return;
+    if (snapshot !== categoryFingerprint()) {
+      setCategoryStatus('The article changed during checking. Run the check again.', true);
+      return;
+    }
+    const category = result.categoryId === null ? null : categories.find(item => Number(item.id) === result.categoryId);
+    if (result.categoryId !== null && !category) {
+      throw new Error('Categories have changed. Reload the editor and try again.');
+    }
+    categorySuggestion = { category, reason: result.reason, snapshot, matches: Boolean(category && String(category.id) === String(values.categoryId)) };
+    renderCategorySuggestion();
+    setCategoryStatus('Suggestion ready. Your category has not been changed.');
+  } catch (error) {
+    if (token === categoryRequest) setCategoryStatus(error.message, true);
+  } finally {
+    if (token === categoryRequest) {
+      categoryChecking = false;
+      const currentButton = document.getElementById('check-category-btn');
+      if (currentButton) {
+        currentButton.disabled = false;
+        currentButton.textContent = 'Check category with AI';
+      }
+    }
+  }
 }
 
 function invalidateCredibility() {
@@ -300,6 +397,13 @@ function invalidateCredibility() {
 
 function handleArticleInput() {
   invalidateCredibility();
+  if (writingUndo && readForm().content !== writingUndo.applied) writingUndo = null;
+  renderWritingUndo();
+  if (categorySuggestion && categorySuggestion.snapshot !== categoryFingerprint()) {
+    categorySuggestion = null;
+    renderCategorySuggestion();
+    setCategoryStatus('The article changed. Check the category again for a fresh suggestion.');
+  }
 
   if (aiSuggestion) {
     aiSuggestion = null;
@@ -450,7 +554,11 @@ function renderAiSuggestion() {
   } else if (aiSuggestion.tags.length) {
     body = `<p class="ai-suggestion__label">Suggested tags</p><div class="ai-tag-list">${aiSuggestion.tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div><button class="ai-apply-btn" type="button" data-copy-value="tags">Copy tags</button>`;
   } else if (aiSuggestion.content) {
-    body = `<p class="ai-suggestion__label">Polished article preview</p><div class="ai-content-preview">${escapeHtml(aiSuggestion.content)}</div><button class="ai-apply-btn" type="button" data-apply-content>Apply to article</button>`;
+    body = `<p class="ai-suggestion__label">Review polished article</p>
+      <p>Check names, dates, numbers and quotations before applying. AI editing can make mistakes.</p>
+      <div class="ai-compare"><section aria-label="Original article"><h3>Original</h3><div class="ai-content-preview" tabindex="0">${escapeHtml(aiSuggestion.originalContent)}</div></section>
+      <section aria-label="Polished article"><h3>Polished</h3><div class="ai-content-preview" tabindex="0">${escapeHtml(aiSuggestion.content)}</div></section></div>
+      <button class="ai-apply-btn" type="button" data-apply-content>Apply to article</button>`;
   } else {
     body = "<p>No suggestion was returned. Try again.</p>";
   }
@@ -464,16 +572,22 @@ function renderAiSuggestion() {
 
   slot.querySelectorAll("[data-apply-title]").forEach((button) => {
     button.addEventListener("click", () => {
+      if (aiSuggestion.snapshot !== articleFingerprint()) { handleArticleInput(); return; }
       document.getElementById("field-title").value = titles[Number(button.dataset.applyTitle)];
-      invalidateCredibility();
+      handleArticleInput();
       aiSuggestion = null;
       renderAiSuggestion();
       setAiStatus("Title applied. Review it before continuing.");
     });
   });
   slot.querySelector("[data-apply-content]")?.addEventListener("click", () => {
-    document.getElementById("field-content").value = aiSuggestion.content;
-    invalidateCredibility();
+    if (aiSuggestion.snapshot !== articleFingerprint()) { handleArticleInput(); return; }
+    const original = document.getElementById("field-content").value;
+    const applied = aiSuggestion.content;
+    document.getElementById("field-content").value = applied;
+    handleArticleInput();
+    writingUndo = {original, applied};
+    renderWritingUndo();
     aiSuggestion = null;
     renderAiSuggestion();
     setAiStatus("Polished content applied. Review it and run a new credibility check.");
@@ -496,7 +610,22 @@ function renderAiSuggestion() {
   });
 }
 
+function renderWritingUndo() {
+  const slot = document.getElementById('writing-undo');
+  if (!slot) return;
+  slot.hidden = !writingUndo;
+  slot.innerHTML = writingUndo ? '<button class="ai-apply-btn" type="button" data-undo-polish>Undo polished content</button>' : '';
+  slot.querySelector('[data-undo-polish]')?.addEventListener('click', () => {
+    if (!writingUndo || readForm().content !== writingUndo.applied) { writingUndo = null; renderWritingUndo(); return; }
+    document.getElementById('field-content').value = writingUndo.original;
+    writingUndo = null;
+    handleArticleInput();
+    setAiStatus('Original content restored. Save when ready; a new credibility check is required before publishing.');
+  });
+}
+
 async function handleAiTask(task) {
+  if (writingChecking) return;
   const values = readForm();
   const buttons = [...document.querySelectorAll("[data-ai-task]")];
 
@@ -505,6 +634,7 @@ async function handleAiTask(task) {
     return;
   }
 
+  writingChecking = true;
   buttons.forEach((button) => (button.disabled = true));
   aiSuggestion = null;
   renderAiSuggestion();
@@ -516,13 +646,18 @@ async function handleAiTask(task) {
     if (fingerprintAtRequest !== articleFingerprint()) {
       throw new Error("The article changed while the suggestion was being generated. Please request it again.");
     }
-    aiSuggestion = suggestion;
+    if (task === 'polish' && suggestion.content === values.content.trim()) {
+      setAiStatus('No wording changes were suggested. Your article has not changed.');
+      return;
+    }
+    aiSuggestion = {...suggestion, originalContent:values.content, snapshot:fingerprintAtRequest};
     renderAiSuggestion();
     setAiStatus("Suggestion ready. Review it before applying.");
   } catch (err) {
     setAiStatus(err.message, true);
   } finally {
-    buttons.forEach((button) => (button.disabled = false));
+    writingChecking = false;
+    document.querySelectorAll('[data-ai-task]').forEach(button => { button.disabled = false; });
   }
 }
 
@@ -559,7 +694,7 @@ async function saveWorkspace(values, publish) {
     return;
   }
   if (publish && !values.categoryIds.length) {
-    setStatus('Select at least one category before publishing.', true);
+    setStatus('Select a category before publishing.', true);
     return;
   }
   savingWorkspace = true;

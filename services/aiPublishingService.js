@@ -88,33 +88,37 @@ export function getSubscriptionTier(user) {
 }
 
 export async function requestWritingAssistance({ task, title, content, categoryId }) {
-  const { data, error } = await supabase.functions.invoke(WRITING_FUNCTION, {
-    body: {
-      task,
-      title: title?.trim() || null,
-      content: content?.trim() || null,
-      category_id: categoryId ? Number(categoryId) : null
-    }
-  });
-
-  if (error) {
-    throw functionError(error, "AI writing assistance");
+  const supported = ['title', 'summary', 'tags', 'polish'];
+  if (!supported.includes(task) || !content?.trim()) throw new Error('Add article content and choose a writing task.');
+  if ((title?.trim().length || 0) > 300 || content.trim().length > 20000) {
+    throw new Error('Use a title of up to 300 characters and content of up to 20,000 characters.');
   }
-  if (!data || typeof data !== "object") {
-    throw new Error("AI writing assistance returned an invalid response.");
-  }
-
-  return {
-    task,
-    title: data.title ?? null,
-    titles: Array.isArray(data.titles) ? data.titles.filter(Boolean) : [],
-    summary: data.summary ?? null,
-    tags: Array.isArray(data.tags) ? data.tags.filter(Boolean) : [],
-    content: data.content ?? data.polished_content ?? null,
-    explanation: data.explanation ?? null,
-    remaining: Number.isFinite(Number(data.remaining)) ? Number(data.remaining) : null,
-    limit: Number.isFinite(Number(data.limit)) ? Number(data.limit) : null
-  };
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 55000);
+  try {
+    const {data,error} = await supabase.functions.invoke(WRITING_FUNCTION, {
+      body:{task,title:title?.trim() || null,content:content.trim(),category_id:categoryId ? Number(categoryId) : null},
+      signal:controller.signal
+    });
+    if (error?.context?.status === 401) throw new Error('Please sign in again to use writing assistance.');
+    if (error?.context?.status === 429 || data?.code === 'RATE_LIMITED') throw new Error('Hourly writing limit reached. Try again later.');
+    if (error || data?.error) throw new Error('Writing assistance is temporarily unavailable. Your article has not changed. Please try again.');
+    const text = (value, max) => typeof value === 'string' && value.trim() && value.length <= max ? value.trim() : null;
+    const field = task === 'title' ? 'titles' : task === 'tags' ? 'tags' : task === 'summary' ? 'summary' : 'content';
+    const value = data?.[field];
+    const array = field === 'titles' || field === 'tags';
+    if (array ? !Array.isArray(value) || value.length !== (field === 'titles' ? 3 : 5) || !value.every(v => text(v, field === 'titles' ? 300 : 100))
+      : !text(value, field === 'summary' ? 4000 : 20000)) throw new Error('The AI returned an incomplete suggestion. Please try again.');
+    return {task,title:null,titles:field === 'titles' ? value.map(v => v.trim()) : [],
+      tags:field === 'tags' ? value.map(v => v.trim()) : [],
+      summary:field === 'summary' ? value.trim() : null,
+      content:field === 'content' ? value.trim() : null,explanation:null,
+      remaining:Number.isInteger(data.remaining) && data.remaining >= 0 ? data.remaining : null,
+      limit:Number.isInteger(data.limit) && data.limit > 0 ? data.limit : null};
+  } catch (error) {
+    if (controller.signal.aborted) throw new Error('Writing assistance took too long. Your article has not changed. Please try again.');
+    throw error;
+  } finally { clearTimeout(timeout); }
 }
 
 export async function checkArticleCredibility({ title, content, categoryId, categoryIds = [], tagIds = [] }) {
@@ -149,4 +153,36 @@ export async function checkArticleCredibility({ title, content, categoryId, cate
     criticalIssueMessage: criticalIssue.message,
     checkedAt: data.checked_at ?? new Date().toISOString()
   };
+}
+
+/** Optional topic classification; it never writes to an article or publishes it. */
+export async function suggestArticleCategory({ title, content, categoryId }) {
+  if (!title?.trim() || !content?.trim()) throw new Error('Enter a title and article content first.');
+  if (title.trim().length > 300 || content.trim().length > 20000) {
+    throw new Error('Use a title of up to 300 characters and article content of up to 20,000 characters.');
+  }
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 35000);
+  try {
+    const { data, error } = await supabase.functions.invoke('suggest-article-category', {
+      body: { title: title.trim(), content: content.trim(), category_id: categoryId ? Number(categoryId) : null },
+      signal: controller.signal
+    });
+    if (error?.context?.status === 429 || data?.code === 'RATE_LIMITED') {
+      throw new Error('Hourly category check limit reached. Try again later.');
+    }
+    if (error || data?.error) {
+      throw new Error('Category suggestions are temporarily unavailable. You can choose a category and save normally. Try again later.');
+    }
+    if (!data || (data.category_id !== null && (!Number.isSafeInteger(data.category_id) || data.category_id <= 0))
+      || typeof data.reason !== 'string' || !data.reason.trim() || data.reason.length > 1000) {
+      throw new Error('The category suggestion could not be read. Please try again.');
+    }
+    return { categoryId: data.category_id, reason: data.reason.trim() };
+  } catch (error) {
+    if (controller.signal.aborted) throw new Error('The category check took too long. You can keep editing and try again.');
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 }

@@ -339,10 +339,13 @@ export async function removeArticleImage(articleId, imageUrl) {
 /** Save the workspace in one database transaction; requires the demo-readiness migration. */
 export async function saveArticleWorkspace(articleId, values, publish = false, receiptId = null) {
   validateArticleInput(values);
+  const categoryIds = normaliseIds(values.categoryIds);
+  if (categoryIds.length > 1) throw new Error('Choose only one category for this article.');
+  if (publish && categoryIds.length !== 1) throw new Error('Select a category before publishing.');
   const { data, error } = await supabase.rpc('save_my_article_workspace', {
     p_article_id: articleId ? Number(articleId) : null,
     p_title: values.title.trim(), p_content: values.content.trim(),
-    p_category_ids: normaliseIds(values.categoryIds), p_tag_ids: normaliseIds(values.tagIds),
+    p_category_ids: categoryIds, p_tag_ids: normaliseIds(values.tagIds),
     p_publish: publish, p_receipt_id: publish ? receiptId : null
   });
   if (error) {

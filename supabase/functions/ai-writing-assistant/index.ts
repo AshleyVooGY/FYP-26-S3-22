@@ -15,9 +15,11 @@ const handler = createWritingHandler({
     return error || !data.user ? null : { id: data.user.id, client };
   },
   consumeQuota: async ({client}: Session) => {
+    // Returns {remaining, limit} — the hourly cap depends on the caller's
+    // subscription tier, resolved server-side in claim_writing_assistance_request().
     const {data,error} = await client.rpc('claim_writing_assistance_request');
     if (error) throw new Error('Could not check writing limit');
-    return data;
+    return data as {remaining: number; limit: number};
   },
   generate: async ({task,title,content}: {task:string;title:string;content:string}) => {
     const key = Deno.env.get('GEMINI_API_KEY');

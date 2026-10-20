@@ -24,8 +24,13 @@ const handler = createCategorySuggestionHandler({
   },
   consumeQuota: async ({ client }: Session) => {
     const { data, error } = await client.rpc('claim_category_suggestion_request');
-    if (error) throw new Error('Could not check category request limit');
-    return data === true;
+    if (error) {
+      // Raised deliberately in claim_category_suggestion_request() for
+      // non-Premium callers — distinguish it from an hourly rate limit.
+      if (/Premium feature/i.test(error.message || '')) return { allowed: false, reason: 'premium_required' };
+      throw new Error('Could not check category request limit');
+    }
+    return { allowed: data === true, reason: 'rate_limited' };
   },
   generate: async ({ title, content, currentCategoryId, categories }: { title: string; content: string; currentCategoryId: number | null; categories: Category[] }) => {
     const key = Deno.env.get('GEMINI_API_KEY');

@@ -6,12 +6,14 @@ import { supabase } from "../../config/supabaseClient.js";
 // Shared helpers used by every page (auth pages + app shell).
 // ==========================================================
 
-export async function signUp(email, password, displayName) {
+export async function signUp(email, password, displayName, tier = "free") {
   return supabase.auth.signUp({
     email,
     password,
     options: {
-      data: { display_name: displayName },
+      // requested_tier is only ever read once, at account creation, by the
+      // handle_new_user trigger — it is never trusted again after that.
+      data: { display_name: displayName, requested_tier: tier === "premium" ? "premium" : "free" },
       emailRedirectTo: new URL("login.html", window.location.href).href
     }
   });

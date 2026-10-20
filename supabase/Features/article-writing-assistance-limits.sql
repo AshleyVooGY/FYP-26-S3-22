@@ -1,4 +1,6 @@
--- Optional writing assistance: same hourly limit for all authenticated accounts.
+-- Deploy AFTER subscription-tiers.sql (uses is_premium_subscriber()).
+-- Optional writing assistance: hourly limit depends on subscription tier,
+-- read server-side via is_premium_subscriber() (subscription-tiers.sql).
 -- Does not trust subscription/user IDs supplied by the browser.
 begin;
 create schema if not exists internal;
@@ -10,16 +12,20 @@ create table if not exists internal.writing_assistance_usage (
 );
 alter table internal.writing_assistance_usage enable row level security;
 revoke all on internal.writing_assistance_usage from public,anon,authenticated;
-create or replace function public.claim_writing_assistance_request()
-returns integer language plpgsql security definer set search_path=public as $$
-declare used integer;
+-- Return type changed from integer to jsonb (remaining + the cap that
+-- applied), so the UI can show the right limit for the caller's tier.
+drop function if exists public.claim_writing_assistance_request();
+create function public.claim_writing_assistance_request()
+returns jsonb language plpgsql security definer set search_path=public as $$
+declare used integer; cap integer;
 begin
  if auth.uid() is null then raise exception 'Sign in to use writing assistance'; end if;
+ cap := case when public.is_premium_subscriber() then 20 else 5 end;
  insert into internal.writing_assistance_usage(user_id,window_start,request_count)
  values(auth.uid(),date_trunc('hour',now()),1)
  on conflict(user_id,window_start) do update set request_count=internal.writing_assistance_usage.request_count+1
- where internal.writing_assistance_usage.request_count<20 returning request_count into used;
- return case when used is null then -1 else 20-used end;
+ where internal.writing_assistance_usage.request_count<cap returning request_count into used;
+ return jsonb_build_object('remaining',case when used is null then -1 else cap-used end,'limit',cap);
 end $$;
 revoke all on function public.claim_writing_assistance_request() from public,anon;
 grant execute on function public.claim_writing_assistance_request() to authenticated;

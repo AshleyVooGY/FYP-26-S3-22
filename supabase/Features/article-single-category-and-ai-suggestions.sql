@@ -1,4 +1,4 @@
--- Deploy AFTER article-publishing-permissions-update.sql.
+-- Deploy AFTER article-publishing-permissions-update.sql and subscription-tiers.sql.
 -- Existing primary categories are retained. Extra legacy links are backed up
 -- privately before removal. Ambiguous articles abort the whole migration.
 begin;
@@ -121,7 +121,8 @@ $$;
 revoke all on function public.save_my_article_workspace(bigint,text,text,bigint[],bigint[],boolean,uuid) from public,anon;
 grant execute on function public.save_my_article_workspace(bigint,text,text,bigint[],bigint[],boolean,uuid) to authenticated;
 
--- Limit optional model requests independently of any writing-assistant plan.
+-- AI category suggestions are a Premium feature. Limit optional model
+-- requests independently of any writing-assistant plan.
 create table if not exists internal.category_suggestion_usage (
  user_id uuid not null references auth.users(id) on delete cascade,
  window_start timestamptz not null,
@@ -135,6 +136,9 @@ returns boolean language plpgsql security definer set search_path=public as $$
 declare allowed boolean;
 begin
  if auth.uid() is null then raise exception 'Sign in to check article categories'; end if;
+ if not public.is_premium_subscriber() then
+  raise exception 'Category suggestions are a Premium feature. Upgrade to use AI category suggestions.';
+ end if;
  insert into internal.category_suggestion_usage(user_id,window_start,request_count)
  values(auth.uid(),date_trunc('hour',now()),1)
  on conflict(user_id,window_start) do update set request_count=internal.category_suggestion_usage.request_count+1

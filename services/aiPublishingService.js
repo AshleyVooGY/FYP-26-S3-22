@@ -168,6 +168,9 @@ export async function suggestArticleCategory({ title, content, categoryId }) {
       body: { title: title.trim(), content: content.trim(), category_id: categoryId ? Number(categoryId) : null },
       signal: controller.signal
     });
+    if (error?.context?.status === 403 || data?.code === 'PREMIUM_REQUIRED') {
+      throw new Error(data?.error || 'Category suggestions are a Premium feature. Upgrade to use AI category suggestions.');
+    }
     if (error?.context?.status === 429 || data?.code === 'RATE_LIMITED') {
       throw new Error('Hourly category check limit reached. Try again later.');
     }

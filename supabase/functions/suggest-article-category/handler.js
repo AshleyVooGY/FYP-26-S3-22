@@ -54,7 +54,11 @@ export function createCategorySuggestionHandler({ authenticate, loadCategories, 
       if (currentCategoryId !== null && !categories.some(item => item.id === currentCategoryId)) {
         return reply(400, { error: 'The selected category is no longer available.' });
       }
-      if (!await consumeQuota(session)) {
+      const quota = await consumeQuota(session);
+      if (!quota.allowed) {
+        if (quota.reason === 'premium_required') {
+          return reply(403, { error: 'Category suggestions are a Premium feature. Upgrade to use AI category suggestions.', code: 'PREMIUM_REQUIRED' });
+        }
         return reply(429, { error: 'Hourly category check limit reached. Try again later.', code: 'RATE_LIMITED' });
       }
       let result;

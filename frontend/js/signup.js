@@ -14,11 +14,12 @@ form.addEventListener("submit", async (event) => {
   const displayName = document.getElementById("display-name").value.trim();
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
+  const tier = document.querySelector('input[name="tier"]:checked')?.value === "premium" ? "premium" : "free";
 
   submitBtn.disabled = true;
   messageSlot.innerHTML = "";
 
-  const { data, error } = await signUp(email, password, displayName);
+  const { data, error } = await signUp(email, password, displayName, tier);
 
   submitBtn.disabled = false;
 

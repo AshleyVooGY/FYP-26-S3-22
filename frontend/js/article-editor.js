@@ -104,7 +104,9 @@ function hasCurrentPassingCheck() {
 
 function credibilityPanelHtml() {
   const planName = subscriptionTier === "premium" ? "Premium" : "Free";
-  const planDescription = "Up to 20 AI writing requests per hour";
+  const planDescription = subscriptionTier === "premium"
+    ? "Up to 20 AI writing requests per hour, plus AI category suggestions"
+    : "Up to 5 AI writing requests per hour. Upgrade to Premium for a higher limit and AI category suggestions";
 
   return `
     <section class="ai-panel" id="credibility-check" aria-labelledby="credibility-title">
@@ -192,7 +194,7 @@ function render() {
           </select>
           ${article?.category_ids?.length > 1 ? '<p class="classification-help">This older article has multiple category links. Saving will keep only the category selected above.</p>' : ''}
           <div class="category-check-actions">
-            <button class="article-editor__btn" id="check-category-btn" type="button" ${categories.length ? '' : 'disabled'}>Check category with AI</button>
+            <button class="article-editor__btn" id="check-category-btn" type="button" ${categories.length && subscriptionTier === "premium" ? '' : 'disabled'} ${subscriptionTier === "premium" ? '' : 'title="Category suggestions are a Premium feature"'}>Check category with AI${subscriptionTier === "premium" ? '' : ' (Premium)'}</button>
           </div>
           <p class="classification-help">AI suggestions are optional. Review the reason before applying a change.</p>
           <p id="category-check-status" class="media-row-status" role="status"></p>
@@ -283,8 +285,11 @@ function render() {
   renderAiSuggestion();
   renderWritingUndo();
   const categoryButton = document.getElementById('check-category-btn');
-  categoryButton.disabled = categoryChecking;
-  categoryButton.textContent = categoryChecking ? 'Checking category…' : 'Check category with AI';
+  const canCheckCategory = subscriptionTier === "premium" && categories.length;
+  categoryButton.disabled = categoryChecking || !canCheckCategory;
+  categoryButton.textContent = categoryChecking
+    ? 'Checking category…'
+    : `Check category with AI${canCheckCategory ? '' : ' (Premium)'}`;
   document.querySelectorAll('[data-ai-task]').forEach(button => { button.disabled = writingChecking; });
   if (categoryChecking) setCategoryStatus('Reviewing the article topic…');
   if (writingChecking) setAiStatus('Generating a suggestion…');

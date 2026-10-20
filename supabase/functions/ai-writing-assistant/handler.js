@@ -53,14 +53,16 @@ export function createWritingHandler({authenticate, consumeQuota, generate}) {
       if (!['title','summary','tags','polish','paragraph'].includes(task) || title.length > 300 || !content || content.length > 20000) {
         return reply(400, {error:'Choose a writing task and provide up to 20,000 characters of article content.'});
       }
-      const remaining = await consumeQuota(session);
-      if (!Number.isInteger(remaining) || remaining < 0) return reply(429, {error:'Hourly writing limit reached. Try again later.',code:'RATE_LIMITED'});
+      const quota = await consumeQuota(session);
+      if (!quota || !Number.isInteger(quota.remaining) || quota.remaining < 0 || !Number.isInteger(quota.limit)) {
+        return reply(429, {error:'Hourly writing limit reached. Try again later.',code:'RATE_LIMITED'});
+      }
       let raw;
       try { raw = await generate({task,title,content}); }
       catch { return reply(502, {error:'Writing assistance is temporarily unavailable. Your article has not changed.'}); }
       const result = normaliseWritingResult(task, raw);
       if (!result) return reply(502, {error:'The AI returned an incomplete suggestion. Please try again.'});
-      return reply(200, {...result, remaining, limit:20});
+      return reply(200, {...result, remaining: quota.remaining, limit: quota.limit});
     } catch {
       return reply(503, {error:'Writing assistance is temporarily unavailable. Please try again later.'});
     }

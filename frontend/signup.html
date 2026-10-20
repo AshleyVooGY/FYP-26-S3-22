@@ -36,6 +36,24 @@
           <input class="form-input" type="password" id="password" name="password" placeholder="At least 6 characters" required minlength="6" autocomplete="new-password" />
         </div>
 
+        <fieldset class="plan-picker">
+          <legend>Choose a plan</legend>
+          <label class="plan-option">
+            <input type="radio" name="tier" value="free" checked />
+            <span class="plan-option__body">
+              <span class="plan-option__name">Free</span>
+              <span class="plan-option__desc">Read, bookmark, react, publish articles, and up to 5 AI writing requests per hour.</span>
+            </span>
+          </label>
+          <label class="plan-option">
+            <input type="radio" name="tier" value="premium" />
+            <span class="plan-option__body">
+              <span class="plan-option__name">Premium</span>
+              <span class="plan-option__desc">Everything in Free, plus the personalized For You feed, AI category suggestions, and up to 20 AI writing requests per hour.</span>
+            </span>
+          </label>
+        </fieldset>
+
         <button class="auth-submit" type="submit" id="submit-btn">Sign Up</button>
       </form>
 

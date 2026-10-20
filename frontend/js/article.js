@@ -44,219 +44,197 @@ let speechChunks = [];
 let speechChunkIndex = 0;
 let speechSession = 0;
 let speechState = "idle";
-
+let speechUtterance = null;
+let speechStartTimer = null;
 
 function splitSpeechText(text, maxLength = 240) {
-
-    const sentences = String(text || "")
-        .replace(/\s+/g, " ")
-        .trim()
-        .match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [];
-
+    const normalized = String(text || "").replace(/\s+/g, " ").trim();
+    if (!normalized || !/[\p{L}\p{N}]/u.test(normalized)) return [];
+    const sentences = normalized.match(/[^.!?。！？]+[.!?。！？]*|[.!?。！？]+/gu) || [];
     const chunks = [];
     let current = "";
-
-    sentences.forEach(sentence => {
-
-        const cleanSentence = sentence.trim();
-
-        if (!cleanSentence) {
-            return;
+    for (const sentence of sentences) {
+        let characters = Array.from(sentence.trim());
+        // Hard-bound long sentences too, including Chinese text without spaces.
+        while (characters.length > maxLength) {
+            if (current) { chunks.push(current); current = ""; }
+            let cut = characters.slice(0, maxLength + 1).lastIndexOf(" ");
+            if (cut < maxLength / 3) cut = maxLength;
+            chunks.push(characters.slice(0, cut).join("").trim());
+            characters = Array.from(characters.slice(cut).join("").trim());
         }
-
-        if (current && `${current} ${cleanSentence}`.length > maxLength) {
-            chunks.push(current);
-            current = cleanSentence;
-        } else {
-            current = current
-                ? `${current} ${cleanSentence}`
-                : cleanSentence;
+        const rest = characters.join("");
+        if (!rest) continue;
+        if (current && Array.from(`${current} ${rest}`).length > maxLength) {
+            chunks.push(current); current = "";
         }
-
-    });
-
-    if (current) {
-        chunks.push(current);
+        current = current ? `${current} ${rest}` : rest;
     }
-
+    if (current) chunks.push(current);
     return chunks;
-
 }
 
+function supportsReadAloud() {
+    return Boolean(window.speechSynthesis && typeof window.SpeechSynthesisUtterance === "function");
+}
 
 function updateReadAloudControls(message = "Ready to read.") {
-
     const readButton = document.getElementById("read-aloud-btn");
     const stopButton = document.getElementById("stop-reading-btn");
     const status = document.getElementById("read-aloud-status");
-
-    if (status) {
-        status.textContent = message;
-    }
-
-    if (!readButton || !stopButton) {
-        return;
-    }
-
-    if (speechState === "reading") {
+    if (status) status.textContent = message;
+    if (!readButton || !stopButton) return;
+    readButton.disabled = !supportsReadAloud() || speechState === "starting";
+    stopButton.disabled = speechState === "idle";
+    if (speechState === "starting") {
+        readButton.textContent = "Starting…";
+        readButton.setAttribute("aria-label", "Starting article reading");
+    } else if (speechState === "reading") {
         readButton.textContent = "⏸ Pause";
         readButton.setAttribute("aria-label", "Pause article reading");
-        stopButton.disabled = false;
     } else if (speechState === "paused") {
         readButton.textContent = "▶ Resume";
         readButton.setAttribute("aria-label", "Resume article reading");
-        stopButton.disabled = false;
     } else {
         readButton.textContent = "🔊 Read Aloud";
         readButton.setAttribute("aria-label", "Read article aloud");
-        stopButton.disabled = true;
     }
-
 }
 
+function clearSpeechStartTimer() {
+    if (speechStartTimer !== null) clearTimeout(speechStartTimer);
+    speechStartTimer = null;
+}
 
 function stopReadAloud(message = "Reading stopped.") {
-
+    // Invalidate old callbacks before cancel(), which may dispatch synchronously.
     speechSession += 1;
+    clearSpeechStartTimer();
+    if (speechUtterance) {
+        speechUtterance.onstart = null;
+        speechUtterance.onend = null;
+        speechUtterance.onerror = null;
+    }
+    speechUtterance = null;
     speechChunks = [];
     speechChunkIndex = 0;
     speechState = "idle";
-
-    if ("speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
+    if (window.speechSynthesis) {
+        try {
+            window.speechSynthesis.cancel();
+            // cancel() does not clear the engine's paused flag in every browser.
+            if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+        } catch { /* Controls must still recover. */ }
     }
-
     updateReadAloudControls(message);
-
 }
-
 
 function speakNextChunk(sessionId) {
-
-    if (
-        sessionId !== speechSession ||
-        speechChunkIndex >= speechChunks.length
-    ) {
-        if (sessionId === speechSession) {
-            stopReadAloud("Finished reading article.");
-        }
+    if (sessionId !== speechSession || speechState === "paused") return;
+    if (speechChunkIndex >= speechChunks.length) {
+        stopReadAloud("Finished reading article.");
         return;
     }
-
-    const utterance = new SpeechSynthesisUtterance(
-        speechChunks[speechChunkIndex]
-    );
-
-    utterance.lang = document.documentElement.lang || "en-US";
-    utterance.rate = 1;
-    utterance.pitch = 1;
-
-    utterance.onend = () => {
-
-        if (sessionId !== speechSession) {
-            return;
-        }
-
-        speechChunkIndex += 1;
-        speakNextChunk(sessionId);
-
-    };
-
-    utterance.onerror = event => {
-
-        if (
-            sessionId !== speechSession ||
-            event.error === "canceled" ||
-            event.error === "interrupted"
-        ) {
-            return;
-        }
-
-        stopReadAloud("Unable to read this article aloud. Please try again.");
-
-    };
-
-    window.speechSynthesis.speak(utterance);
-
+    try {
+        const utterance = new window.SpeechSynthesisUtterance(speechChunks[speechChunkIndex]);
+        // Keep the active utterance alive until completion or cancellation.
+        speechUtterance = utterance;
+        let started = false;
+        utterance.lang = document.documentElement.lang || "en-US";
+        utterance.rate = 1;
+        utterance.pitch = 1;
+        speechState = "starting";
+        updateReadAloudControls("Starting article reading…");
+        clearSpeechStartTimer();
+        speechStartTimer = setTimeout(() => {
+            if (sessionId === speechSession && speechUtterance === utterance && speechState === "starting") {
+                stopReadAloud("Speech could not start. Check your browser voice settings and try again.");
+            }
+        }, 8000);
+        utterance.onstart = () => {
+            if (sessionId !== speechSession || speechUtterance !== utterance) return;
+            clearSpeechStartTimer();
+            started = true;
+            speechState = "reading";
+            updateReadAloudControls("Reading article aloud.");
+        };
+        utterance.onend = () => {
+            if (sessionId !== speechSession || speechUtterance !== utterance) return;
+            clearSpeechStartTimer();
+            if (!started) {
+                stopReadAloud("Speech ended before audio started. Check your browser voices and try again.");
+                return;
+            }
+            speechUtterance = null;
+            speechChunkIndex += 1;
+            // A pause at a chunk boundary must not enqueue the next chunk.
+            if (speechState !== "paused") speakNextChunk(sessionId);
+        };
+        utterance.onerror = event => {
+            if (sessionId !== speechSession || speechUtterance !== utterance) return;
+            const message = event.error === "not-allowed"
+                ? "Your browser blocked speech. Allow audio and try again."
+                : "Unable to read this article aloud. Check your browser voices and try again.";
+            stopReadAloud(message);
+        };
+        window.speechSynthesis.speak(utterance);
+    } catch {
+        stopReadAloud("Unable to start reading. Please try again.");
+    }
 }
 
-
 function startReadAloud(article) {
-
-    if (!("speechSynthesis" in window)) {
-        updateReadAloudControls(
-            "Read Aloud is not supported by this browser."
-        );
+    if (!supportsReadAloud()) {
+        updateReadAloudControls("Read Aloud is not supported by this browser.");
         return;
     }
-
-    const text = `${article.title}. ${article.content}`.trim();
-    speechChunks = splitSpeechText(text);
-
-    if (speechChunks.length === 0) {
+    const text = [article?.title, article?.content]
+        .filter(value => typeof value === "string" && value.trim()).join(". ");
+    const chunks = splitSpeechText(text);
+    stopReadAloud("");
+    if (!chunks.length) {
         updateReadAloudControls("There is no article content to read.");
         return;
     }
-
-    window.speechSynthesis.cancel();
-    speechSession += 1;
-    speechChunkIndex = 0;
-    speechState = "reading";
-    updateReadAloudControls("Reading article aloud.");
+    speechChunks = chunks;
     speakNextChunk(speechSession);
-
 }
-
 
 function setupReadAloud(article) {
-
     const readButton = document.getElementById("read-aloud-btn");
     const stopButton = document.getElementById("stop-reading-btn");
-
-    if (!readButton || !stopButton) {
+    if (!readButton || !stopButton) return;
+    if (!supportsReadAloud()) {
+        updateReadAloudControls("Read Aloud is not supported by this browser.");
         return;
     }
-
-    if (!("speechSynthesis" in window)) {
-        readButton.disabled = true;
-        updateReadAloudControls(
-            "Read Aloud is not supported by this browser."
-        );
-        return;
-    }
-
     readButton.addEventListener("click", () => {
-
-        if (speechState === "reading") {
-            window.speechSynthesis.pause();
-            speechState = "paused";
-            updateReadAloudControls("Reading paused.");
-            return;
+        try {
+            if (speechState === "starting") return;
+            if (speechState === "reading") {
+                speechState = "paused";
+                window.speechSynthesis.pause();
+                updateReadAloudControls("Reading paused.");
+            } else if (speechState === "paused") {
+                speechState = "reading";
+                window.speechSynthesis.resume();
+                if (speechUtterance) {
+                    updateReadAloudControls("Reading article aloud.");
+                } else {
+                    speakNextChunk(speechSession);
+                }
+            } else {
+                startReadAloud(article);
+            }
+        } catch {
+            stopReadAloud("Unable to control reading. Stop and try again.");
         }
-
-        if (speechState === "paused") {
-            window.speechSynthesis.resume();
-            speechState = "reading";
-            updateReadAloudControls("Reading article aloud.");
-            return;
-        }
-
-        startReadAloud(article);
-
     });
-
-    stopButton.addEventListener("click", () => {
-        stopReadAloud();
-    });
-
+    stopButton.addEventListener("click", () => stopReadAloud());
     updateReadAloudControls();
-
 }
 
-
-window.addEventListener("pagehide", () => {
-    stopReadAloud("");
-});
+window.addEventListener("pagehide", () => stopReadAloud(""));
 
 
 /* ==========================================================

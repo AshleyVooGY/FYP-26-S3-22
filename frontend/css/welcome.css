@@ -11,6 +11,27 @@
   color: var(--text-primary);
 }
 
+/* Same look as .btn-publish, but under its own class name — auth.js's
+   global nav wiring rewrites every .btn-publish link to article-editor.html
+   for the real app shell, which must not touch these signup/login CTAs. */
+.btn-cta {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.btn-cta:hover {
+  background: var(--accent-hover);
+}
+
 .welcome {
   max-width: 1040px;
   margin: 0 auto;

@@ -34,5 +34,10 @@ form.addEventListener("submit", async (event) => {
   const user = await getCurrentUser();
   if (user) {
     window.location.href = "index.html";
+    return;
+  }
+
+  if (new URLSearchParams(window.location.search).get("confirmEmail") === "1") {
+    showMessage("Account created. Check your email and confirm it before logging in.", false);
   }
 })();

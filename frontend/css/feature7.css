@@ -852,3 +852,16 @@
     }
 
 }
+.preference-fields { border:0; padding:0; margin:0; min-width:0; }
+.preference-tag-list { display:flex; flex-wrap:wrap; gap:12px; }
+.preference-tag { display:flex; gap:8px; align-items:center; padding:10px 14px; border:1px solid var(--border); border-radius:24px; color:var(--text-primary); cursor:pointer; }
+.preference-tag:has(input:checked) { border-color:var(--accent); }
+.preference-tag input { accent-color:var(--accent); }
+.feature7-feed-link { display:flex; justify-content:flex-end; margin-bottom:16px; }
+.feature7-feed-link a { color:var(--accent); }
+button.interest-card { text-align:left; font:inherit; color:inherit; width:100%; }
+@media (max-width:700px) {
+ .preferences-view .layout { display:block; }
+ .preferences-view .sidebar { display:none; }
+ .preferences-view .content { padding:20px 14px 45px; min-width:0; }
+}

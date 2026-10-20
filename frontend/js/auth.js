@@ -1,4 +1,4 @@
-import { sidebarHtml } from "./sidebar.js";
+import { sidebarHtml } from "./sidebar.js?v=for-you-20261020";
 import { supabase } from "../../config/supabaseClient.js";
 
 // ==========================================================

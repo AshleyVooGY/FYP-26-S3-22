@@ -1,6 +1,6 @@
-import { sidebarHtml } from "./sidebar.js?v=upgrade-cta-20261022";
+import { sidebarHtml } from "./sidebar.js?v=upgrade-success-20261022";
 import { supabase } from "../../config/supabaseClient.js";
-import { upgradeMyAccountToPremium } from "../../services/userManagementService.js?v=upgrade-cta-20261022";
+import { upgradeMyAccountToPremium } from "../../services/userManagementService.js?v=upgrade-success-20261022";
 
 // ==========================================================
 // LOGIN / AUTHENTICATION
@@ -103,6 +103,7 @@ function wireUpgradeLinks() {
         // Refresh the session so the app_metadata mirror (and every
         // tier-aware part of the UI) reflects Premium immediately.
         await supabase.auth.refreshSession();
+        alert("You're now on Premium! Enjoy higher AI writing limits and AI category suggestions.");
         window.location.reload();
       } catch (error) {
         alert(`Could not upgrade your account: ${error.message}`);

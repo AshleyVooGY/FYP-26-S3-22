@@ -1,4 +1,4 @@
-import { requireAuth } from "./auth.js?v=upgrade-cta-20261022";
+import { requireAuth } from "./auth.js?v=upgrade-success-20261022";
 import { getTrendingArticles, getPopularArticles } from "../../services/feature5Service.js";
 import { formatCount, formatRelativeTime, escapeHtml, thumbHtml } from "./format.js";
 import { renderPagination as renderPaginationControl } from "./pagination.js";

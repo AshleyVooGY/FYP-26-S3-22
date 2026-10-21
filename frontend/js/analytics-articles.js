@@ -1,4 +1,4 @@
-import { requireAdmin } from "./auth.js?v=upgrade-cta-20261022";
+import { requireAdmin } from "./auth.js?v=upgrade-success-20261022";
 import { getArticleViewStats } from "../../services/feature6Service.js";
 import { formatCount, formatRelativeTime, escapeHtml, forbiddenStateHtml } from "./format.js";
 import { renderPagination } from "./pagination.js";

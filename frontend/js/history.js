@@ -1,4 +1,4 @@
-import { requireAuth } from "./auth.js?v=upgrade-cta-20261022";
+import { requireAuth } from "./auth.js?v=upgrade-success-20261022";
 import { getReadingHistory } from "../../services/readingHistoryService.js";
 import { formatCount, formatRelativeTime, escapeHtml, thumbHtml } from "./format.js";
 

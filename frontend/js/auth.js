@@ -1,5 +1,6 @@
-import { sidebarHtml } from "./sidebar.js?v=for-you-20261020";
+import { sidebarHtml } from "./sidebar.js?v=upgrade-cta-20261022";
 import { supabase } from "../../config/supabaseClient.js";
+import { upgradeMyAccountToPremium } from "../../services/userManagementService.js?v=upgrade-cta-20261022";
 
 // ==========================================================
 // LOGIN / AUTHENTICATION
@@ -81,6 +82,32 @@ function wireLogoutLinks() {
       event.preventDefault();
       await signOut();
       window.location.href = "login.html";
+    });
+  });
+}
+
+// Wires the sidebar's "Upgrade to Premium" link (shown to Free users only,
+// see applyTierVisibility). The server — guard_profile_tier_change() in
+// subscription-tiers.sql — is what actually allows this one-directional
+// self-service change; this is just the UI around it.
+function wireUpgradeLinks() {
+  document.querySelectorAll("[data-upgrade-tier]").forEach((el) => {
+    el.addEventListener("click", async (event) => {
+      event.preventDefault();
+      if (!window.confirm("Upgrade your account to Premium? This unlocks higher AI writing limits and AI category suggestions.")) {
+        return;
+      }
+      el.style.pointerEvents = "none";
+      try {
+        await upgradeMyAccountToPremium();
+        // Refresh the session so the app_metadata mirror (and every
+        // tier-aware part of the UI) reflects Premium immediately.
+        await supabase.auth.refreshSession();
+        window.location.reload();
+      } catch (error) {
+        alert(`Could not upgrade your account: ${error.message}`);
+        el.style.pointerEvents = "";
+      }
     });
   });
 }
@@ -218,6 +245,27 @@ async function applyRoleVisibility() {
   });
 }
 
+// Shows [data-tier="free"] elements (the "Upgrade to Premium" sidebar
+// link) only to signed-in Free users — hidden for guests and for Premium
+// accounts, who have nothing to upgrade to.
+async function applyTierVisibility() {
+  const freeOnlyEls = document.querySelectorAll('[data-tier="free"]');
+  if (freeOnlyEls.length === 0) {
+    return;
+  }
+
+  const user = await getCurrentUser();
+  const tier = user?.app_metadata?.subscription_tier === "premium" ? "premium" : "free";
+  const show = Boolean(user) && tier === "free";
+  freeOnlyEls.forEach((el) => {
+    el.hidden = !show;
+  });
+  if (show) {
+    wireUpgradeLinks();
+  }
+}
+
 wirePrimaryNavigation();
 renderUserChip();
 applyRoleVisibility();
+applyTierVisibility();

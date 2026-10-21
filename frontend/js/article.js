@@ -2,7 +2,7 @@ import { supabase } from "../../config/supabaseClient.js";
 
 import {
     requireAuth
-} from "./auth.js";
+} from "./auth.js?v=upgrade-cta-20261022";
 
 import {
     getArticleById,

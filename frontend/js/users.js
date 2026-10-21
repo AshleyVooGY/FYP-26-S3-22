@@ -1,5 +1,5 @@
-import { requireAdmin } from "./auth.js";
-import { getAllProfiles, setUserRole, setUserSubscriptionTier } from "../../services/userManagementService.js";
+import { requireAdmin } from "./auth.js?v=upgrade-cta-20261022";
+import { getAllProfiles, setUserRole, setUserSubscriptionTier } from "../../services/userManagementService.js?v=upgrade-cta-20261022";
 import { escapeHtml, forbiddenStateHtml } from "./format.js";
 
 let currentAdminId = null;

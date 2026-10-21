@@ -1,5 +1,5 @@
-import { requireAuth } from './auth.js';
-import { getPersonalizedNews } from '../../services/personalizationService.js?v=for-you-20261020';
+import { requireAuth } from './auth.js?v=upgrade-cta-20261022';
+import { getPersonalizedNews } from '../../services/personalizationService.js?v=upgrade-cta-20261022';
 import { escapeHtml, thumbHtml, formatRelativeTime, formatCount } from './format.js';
 const grid=document.getElementById('feed-grid'),status=document.getElementById('feed-status'),state=document.getElementById('feed-state');
 const more=document.getElementById('feed-more'),refresh=document.getElementById('feed-refresh');

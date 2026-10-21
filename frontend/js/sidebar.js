@@ -419,6 +419,41 @@ export const sidebarHtml = `<aside class="sidebar">
 
 
         <!-- ==================================================
+             UPGRADE TO PREMIUM (Free users only)
+        =================================================== -->
+
+        <a
+          href="#"
+          data-upgrade-tier
+          data-tier="free"
+          hidden
+        >
+
+          <span class="sidebar__icon">
+
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+
+              <path
+                d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"
+              />
+
+            </svg>
+
+          </span>
+
+          Upgrade to Premium
+
+        </a>
+
+
+        <!-- ==================================================
              SETTINGS
         =================================================== -->
 

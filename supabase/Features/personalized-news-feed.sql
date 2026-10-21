@@ -1,6 +1,7 @@
--- Requires feature-07-user-preferences.sql, existing article/category/tag
--- tables, and subscription-tiers.sql (is_premium_subscriber()).
+-- Requires feature-07-user-preferences.sql and existing article/category/tag tables.
 -- Additive migration: existing scripts and saved category preferences stay intact.
+-- The For You feed is available to every Registered User (Free and Premium) —
+-- it is a core feature of the news site, not a tier-gated one.
 begin;
 create table if not exists public.user_tag_preferences (
  user_id uuid not null references auth.users(id) on delete cascade,
@@ -73,9 +74,6 @@ declare
  personalized boolean; result jsonb;
 begin
  if viewer is null then raise exception 'Sign in to view For You' using errcode='42501'; end if;
- if not public.is_premium_subscriber() then
-  raise exception 'The For You feed is a Premium feature. Upgrade your plan to see personalized recommendations.';
- end if;
  if p_cursor='null'::jsonb then p_cursor:=null; end if;
  select coalesce((select use_activity from public.user_feed_settings where user_id=viewer),true) into activity;
  select exists(select 1 from public.user_preferences where user_id=viewer) or exists(select 1 from public.user_tag_preferences where user_id=viewer) into saved;

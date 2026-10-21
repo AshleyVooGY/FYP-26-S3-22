@@ -38,3 +38,26 @@ export async function setUserSubscriptionTier(userId, tier) {
     throw new Error(error.message);
   }
 }
+
+/**
+ * Self-service upgrade: any signed-in user may upgrade their own account
+ * from Free to Premium. guard_profile_tier_change() (subscription-tiers.sql)
+ * is what actually enforces this is the only direction a non-admin can
+ * change their own tier in — this plain table update relies entirely on
+ * that server-side check, not on anything client-side.
+ */
+export async function upgradeMyAccountToPremium() {
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    throw new Error("Please sign in again to upgrade.");
+  }
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ subscription_tier: "premium" })
+    .eq("id", user.id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}

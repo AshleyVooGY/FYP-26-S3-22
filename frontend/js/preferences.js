@@ -1,5 +1,5 @@
-import { getCurrentUser as authCurrentUser } from "./auth.js";
-import { getNewsPreferences, saveNewsPreferences } from "../../services/personalizationService.js?v=for-you-20261020";
+import { getCurrentUser as authCurrentUser } from "./auth.js?v=upgrade-cta-20261022";
+import { getNewsPreferences, saveNewsPreferences } from "../../services/personalizationService.js?v=upgrade-cta-20261022";
 
 import { ICONS } from "./icons.js";
 

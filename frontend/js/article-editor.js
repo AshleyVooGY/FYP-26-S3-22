@@ -1,4 +1,4 @@
-import { requireAuth } from "./auth.js";
+import { requireAuth } from "./auth.js?v=upgrade-cta-20261022";
 import {
   getCategories,
   getTags,

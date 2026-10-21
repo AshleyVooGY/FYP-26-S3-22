@@ -1,4 +1,4 @@
-import { requireAdmin } from "./auth.js";
+import { requireAdmin } from "./auth.js?v=upgrade-cta-20261022";
 import {
   getAnalyticsOverview,
   getArticleViewStats,

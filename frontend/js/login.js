@@ -1,4 +1,4 @@
-import { signIn, getCurrentUser } from "./auth.js";
+import { signIn, getCurrentUser } from "./auth.js?v=upgrade-cta-20261022";
 
 const form = document.getElementById("login-form");
 const submitBtn = document.getElementById("submit-btn");

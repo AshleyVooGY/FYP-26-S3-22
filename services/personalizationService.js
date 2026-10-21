@@ -2,7 +2,6 @@ import { supabase } from '../config/supabaseClient.js';
 
 function failure(error) {
   if (['42P01','PGRST202','PGRST205','42883'].includes(error?.code)) return new Error('News preferences are being updated. Please try again later.');
-  if (/Premium feature|Upgrade your plan/i.test(error?.message || '')) return Object.assign(new Error(error.message), { premiumRequired: true });
   if(error?.code==='42501') return new Error('Please sign in again to use your news preferences.');
   if(error?.code==='22023' && /Preferences changed|feed has expired/i.test(error.message || '')) return new Error(error.message);
   if(error instanceof Error && !error.code) return error;

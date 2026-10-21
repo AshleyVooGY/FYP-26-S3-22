@@ -21,12 +21,6 @@ async function load(reset=false) {
   status.textContent=`Showing ${seen.size} article${seen.size===1?'':'s'}`;
   if(!seen.size)state.innerHTML='<div class="empty-state"><h2>You’re all caught up</h2><p>Check back for new stories, update your interests, or browse all news.</p><a class="button" href="categories.html">Browse news</a></div>';
  } catch(error) {
-  if(error.premiumRequired){
-   status.textContent='';
-   state.innerHTML='<div class="empty-state"><h2>For You is a Premium feature</h2><p>'+escapeHtml(error.message)+'</p></div>';
-   more.hidden=true;refresh.hidden=true;
-   return;
-  }
   status.textContent=error.message || 'Unable to load your news. Please try again.';status.classList.add('is-error');
   state.innerHTML='<button class="button" type="button" id="feed-retry">Try again</button>';
   document.getElementById('feed-retry').addEventListener('click',()=>load(reset));refresh.hidden=false;

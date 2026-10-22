@@ -418,6 +418,8 @@ export const sidebarHtml = `<aside class="sidebar">
         </a>
 
 
+        <a href="category-reviews.html" data-role="admin" hidden><span class="sidebar__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 5h10v15H5V5h4M9 3h6v4H9z"/><path d="m8 13 3 3 5-6"/></svg></span>Category Reviews</a>
+
         <!-- ==================================================
              UPGRADE TO PREMIUM (Free users only)
         =================================================== -->

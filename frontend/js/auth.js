@@ -1,6 +1,6 @@
-import { sidebarHtml } from "./sidebar.js?v=upgrade-success-20261022";
+import { sidebarHtml } from "./sidebar.js?v=required-category-20261022";
 import { supabase } from "../../config/supabaseClient.js";
-import { upgradeMyAccountToPremium } from "../../services/userManagementService.js?v=upgrade-success-20261022";
+import { upgradeMyAccountToPremium } from "../../services/userManagementService.js?v=required-category-20261022";
 
 // ==========================================================
 // LOGIN / AUTHENTICATION
@@ -94,7 +94,7 @@ function wireUpgradeLinks() {
   document.querySelectorAll("[data-upgrade-tier]").forEach((el) => {
     el.addEventListener("click", async (event) => {
       event.preventDefault();
-      if (!window.confirm("Upgrade your account to Premium? This unlocks higher AI writing limits and AI category suggestions.")) {
+      if (!window.confirm("Upgrade your account to Premium? This unlocks higher optional AI writing limits. Publishing checks are available on both plans.")) {
         return;
       }
       el.style.pointerEvents = "none";
@@ -103,7 +103,7 @@ function wireUpgradeLinks() {
         // Refresh the session so the app_metadata mirror (and every
         // tier-aware part of the UI) reflects Premium immediately.
         await supabase.auth.refreshSession();
-        alert("You're now on Premium! Enjoy higher AI writing limits and AI category suggestions.");
+        alert("You're now on Premium! Enjoy higher optional AI writing limits.");
         window.location.reload();
       } catch (error) {
         alert(`Could not upgrade your account: ${error.message}`);

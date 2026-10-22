@@ -1,4 +1,4 @@
-import { requireAuth } from "./auth.js?v=upgrade-success-20261022";
+import { requireAuth } from "./auth.js?v=required-category-20261022";
 import { getMyArticles, deleteArticle } from "../../services/feature8Service.js";
 import { escapeHtml, formatCount, formatRelativeTime, thumbHtml } from "./format.js";
 

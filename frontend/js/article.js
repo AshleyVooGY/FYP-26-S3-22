@@ -2,7 +2,7 @@ import { supabase } from "../../config/supabaseClient.js";
 
 import {
     requireAuth
-} from "./auth.js?v=upgrade-success-20261022";
+} from "./auth.js?v=required-category-20261022";
 
 import {
     getArticleById,

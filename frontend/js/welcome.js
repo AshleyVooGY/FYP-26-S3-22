@@ -1,4 +1,4 @@
-import { getCurrentUser } from "./auth.js?v=upgrade-success-20261022";
+import { getCurrentUser } from "./auth.js?v=required-category-20261022";
 import { getTrendingArticles, getPopularArticles } from "../../services/feature5Service.js";
 import { escapeHtml, formatCount } from "./format.js";
 

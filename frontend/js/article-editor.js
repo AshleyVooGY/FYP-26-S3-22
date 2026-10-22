@@ -1,4 +1,4 @@
-import { requireAuth } from "./auth.js?v=upgrade-success-20261022";
+import { requireAuth } from "./auth.js?v=required-category-20261022";
 import {
   getCategories,
   getTags,
@@ -12,9 +12,10 @@ import {
   CREDIBILITY_THRESHOLD,
   getSubscriptionTier,
   requestWritingAssistance,
-  checkArticleCredibility,
-  suggestArticleCategory
-} from "../../services/aiPublishingService.js?v=writing-polish-20261019";
+  checkArticleCredibility
+} from "../../services/aiPublishingService.js?v=required-category-20261022";
+import { getCategoryReview,requestCategoryReview,getArticleCategoryReview } from '../../services/publishingReviewService.js?v=required-category-20261022';
+import { publishingFingerprint,isPublishReviewReady } from './publish-review-state.js?v=required-category-20261022';
 import { escapeHtml, thumbHtml } from "./format.js";
 
 const params = new URLSearchParams(window.location.search);
@@ -30,9 +31,7 @@ let credibilityWasInvalidated = false;
 let aiSuggestion = null;
 let writingUndo = null;
 let writingChecking = false;
-let categorySuggestion = null;
-let categoryRequest = 0;
-let categoryChecking = false;
+let categoryReview=null, categoryReviewFingerprint=null, publishRequest=0, publishChecking=false;
 
 function setPageTitle(text) {
   document.getElementById("editor-title").textContent = text;
@@ -65,15 +64,7 @@ function readForm() {
   };
 }
 
-function articleFingerprint(values = readForm()) {
-  return JSON.stringify({
-    title: values.title.trim(),
-    content: values.content.trim(),
-    primaryCategoryId: values.categoryIds[0] || null,
-    categoryIds: [...values.categoryIds].map(String).sort(),
-    tagIds: [...values.tagIds].map(String).sort()
-  });
-}
+function articleFingerprint(values=readForm()){return publishingFingerprint(values);}
 
 function classificationOptionsHtml(items, selectedIds, inputName, emptyMessage) {
   if (!items.length) {
@@ -94,39 +85,34 @@ function classificationOptionsHtml(items, selectedIds, inputName, emptyMessage) 
 }
 
 function hasCurrentPassingCheck() {
-  return Boolean(
-    credibilityResult &&
-      credibilityResult.score >= CREDIBILITY_THRESHOLD &&
-      !credibilityResult.criticalIssue &&
-      verifiedFingerprint === articleFingerprint()
-  );
+ return isPublishReviewReady(credibilityResult,categoryReview,verifiedFingerprint,articleFingerprint(),categoryReviewFingerprint);
 }
 
 function credibilityPanelHtml() {
   const planName = subscriptionTier === "premium" ? "Premium" : "Free";
   const planDescription = subscriptionTier === "premium"
-    ? "Up to 20 AI writing requests per hour, plus AI category suggestions"
-    : "Up to 5 AI writing requests per hour. Upgrade to Premium for a higher limit and AI category suggestions";
+    ? "Up to 20 optional AI writing requests per hour"
+    : "Up to 5 optional AI writing requests per hour";
 
   return `
     <section class="ai-panel" id="credibility-check" aria-labelledby="credibility-title">
       <div class="ai-panel__heading">
         <div>
           <p class="ai-eyebrow">Required before publishing</p>
-          <h2 id="credibility-title">Credibility Check</h2>
+          <h2 id="credibility-title">Check before publishing</h2>
         </div>
         <span class="plan-badge plan-badge--${subscriptionTier}">${planName} plan</span>
       </div>
       <p class="ai-panel__description">
-        This AI-assisted preliminary assessment must reach ${CREDIBILITY_THRESHOLD}% before publishing.
+        Credibility must reach ${CREDIBILITY_THRESHOLD}% with no critical issues, and the selected category must pass AI checking or receive administrator approval.
         Editing the title, category, tags or article content after a check automatically invalidates the result.
       </p>
-      <p class="plan-description">${planDescription}. The credibility requirement cannot be bypassed.</p>
+      <p class="plan-description">${planDescription}. The required publishing check is available to all signed-in users (up to 20 checks per hour). Publishing results expire after 30 minutes.</p>
 
       <div class="credibility-result" id="credibility-result" aria-live="polite"></div>
 
       <button class="article-editor__btn credibility-check-btn" id="check-credibility-btn" type="button">
-        Run Credibility Check
+        Check before publishing
       </button>
       <p class="media-row-status" id="credibility-status"></p>
     </section>
@@ -164,9 +150,8 @@ function render() {
   const isPublished = article?.status === "published";
   // Never silently choose between several legacy categories without a primary.
   const selectedCategoryId = article?.category_id ?? (article?.category_ids?.length === 1 ? article.category_ids[0] : null);
-  categoryRequest += 1;
-  categoryChecking = false;
-  categorySuggestion = null;
+  publishRequest += 1;
+  publishChecking = false;
   const selectedTagIds = article?.tag_ids ?? [];
 
   slot.innerHTML = `
@@ -193,10 +178,7 @@ function render() {
             ${categories.map(item => `<option value="${item.id}" ${String(selectedCategoryId) === String(item.id) ? 'selected' : ''}>${escapeHtml(item.name)}</option>`).join('')}
           </select>
           ${article?.category_ids?.length > 1 ? '<p class="classification-help">This older article has multiple category links. Saving will keep only the category selected above.</p>' : ''}
-          <div class="category-check-actions">
-            <button class="article-editor__btn" id="check-category-btn" type="button" ${categories.length && subscriptionTier === "premium" ? '' : 'disabled'} ${subscriptionTier === "premium" ? '' : 'title="Category suggestions are a Premium feature"'}>Check category with AI${subscriptionTier === "premium" ? '' : ' (Premium)'}</button>
-          </div>
-          <p class="classification-help">AI suggestions are optional. Review the reason before applying a change.</p>
+          <p class="classification-help">Category checking is required for everyone before publishing. Use Check before publishing to review credibility and category together.</p>
           <p id="category-check-status" class="media-row-status" role="status"></p>
           <div id="category-suggestion" class="ai-suggestion" hidden></div>
         </div>
@@ -241,7 +223,7 @@ function render() {
           ${!isPublished ? `<button class="article-editor__btn article-editor__btn--primary" id="publish-btn" type="button" disabled>Publish</button>` : ""}
           ${isEditing ? `<button class="article-editor__btn article-editor__btn--danger" id="delete-btn" type="button">Delete ${isPublished ? "Article" : "Draft"}</button>` : ""}
         </div>
-        <p class="publish-lock" id="publish-lock">Run the required credibility check to unlock publishing.</p>
+        <p class="publish-lock" id="publish-lock">Run Check before publishing to unlock publishing.</p>
         <p id="editor-status" class="media-row-status"></p>
       </div>
 
@@ -253,7 +235,6 @@ function render() {
   `;
 
   document.getElementById('field-category').addEventListener('change', handleArticleInput);
-  document.getElementById('check-category-btn').addEventListener('click', handleCategoryCheck);
   document.getElementById("save-draft-btn").addEventListener("click", handleSaveDraft);
   document.getElementById("check-credibility-btn").addEventListener("click", handleCredibilityCheck);
   document.querySelectorAll("[data-ai-task]").forEach((button) => {
@@ -278,111 +259,74 @@ function render() {
   if (removeBtn) removeBtn.addEventListener("click", handleImageRemove);
 
   renderCredibilityResult();
-  if (categorySuggestion && categorySuggestion.snapshot !== categoryFingerprint()) categorySuggestion = null;
   if (aiSuggestion && aiSuggestion.snapshot !== articleFingerprint()) aiSuggestion = null;
   if (writingUndo && writingUndo.applied !== readForm().content) writingUndo = null;
   renderCategorySuggestion();
   renderAiSuggestion();
   renderWritingUndo();
-  const categoryButton = document.getElementById('check-category-btn');
-  const canCheckCategory = subscriptionTier === "premium" && categories.length;
-  categoryButton.disabled = categoryChecking || !canCheckCategory;
-  categoryButton.textContent = categoryChecking
-    ? 'Checking category…'
-    : `Check category with AI${canCheckCategory ? '' : ' (Premium)'}`;
   document.querySelectorAll('[data-ai-task]').forEach(button => { button.disabled = writingChecking; });
-  if (categoryChecking) setCategoryStatus('Reviewing the article topic…');
   if (writingChecking) setAiStatus('Generating a suggestion…');
   updatePublishingState();
 }
 
-function categoryFingerprint(values = readForm()) {
-  return JSON.stringify([values.title.trim(), values.content.trim(), values.categoryId || null]);
+function setCategoryStatus(message,isError=false){
+ const slot=document.getElementById('category-check-status');if(!slot)return;slot.textContent=message;slot.classList.toggle('is-error',isError);
 }
-
-function setCategoryStatus(message, isError = false) {
-  const status = document.getElementById('category-check-status');
-  if (!status) return;
-  status.textContent = message;
-  status.classList.toggle('is-error', isError);
+function setCategoryReview(record,fingerprint) {
+ categoryReview=record?{...record,reason:record.reason??record.ai_reason}:null;
+ categoryReviewFingerprint=fingerprint;
 }
-
-function renderCategorySuggestion() {
-  const slot = document.getElementById('category-suggestion');
-  slot.hidden = !categorySuggestion;
-  slot.innerHTML = '';
-  if (!categorySuggestion) return;
-  const { category, reason, matches } = categorySuggestion;
-  slot.innerHTML = `<p class="ai-suggestion__label">${!category ? 'No clear category suggestion' : matches ? 'Current category looks appropriate' : `Suggested category: ${escapeHtml(category.name)}`}</p>
-    <p>${escapeHtml(reason)}</p>
-    ${category && !matches ? '<button class="ai-apply-btn" type="button" data-apply-category>Use suggested category</button>' : ''}
-    <button class="ai-apply-btn" type="button" data-dismiss-category>Dismiss</button>`;
-  slot.querySelector('[data-dismiss-category]').addEventListener('click', () => {
-    categorySuggestion = null;
-    renderCategorySuggestion();
-    setCategoryStatus('');
-  });
-  slot.querySelector('[data-apply-category]')?.addEventListener('click', () => {
-    if (!categorySuggestion || categorySuggestion.snapshot !== categoryFingerprint()) {
-      categorySuggestion = null;
-      renderCategorySuggestion();
-      setCategoryStatus('The article changed. Check the category again.', true);
-      return;
-    }
-    const picker = document.getElementById('field-category');
-    picker.value = String(category.id);
-    if (picker.value !== String(category.id)) {
-      setCategoryStatus('Categories have changed. Reload the editor and try again.', true);
-      return;
-    }
-    handleArticleInput();
-    setCategoryStatus(`Category changed to ${category.name}. Save your draft to keep it; recheck credibility before publishing.`);
-    picker.focus();
-  });
+function renderCategorySuggestion(){
+ const slot=document.getElementById('category-suggestion');if(!slot)return;
+ slot.hidden=!categoryReview;slot.innerHTML='';if(!categoryReview)return;
+ const same=categoryReviewFingerprint===articleFingerprint(),expired=Date.parse(categoryReview.expires_at)<=Date.now();
+ if(!same){
+  slot.innerHTML='<p>The submitted category review is for a different article version. Run a new check for your changes.</p>'+(categoryReview.snapshot?'<button class="ai-apply-btn" type="button" data-restore-review>Restore submitted version</button>':'');
+  slot.querySelector('[data-restore-review]')?.addEventListener('click',()=>{
+   const snap=categoryReview.snapshot;
+   document.getElementById('field-title').value=snap.title;document.getElementById('field-content').value=snap.content;
+   document.getElementById('field-category').value=String(snap.primary_category_id);
+   document.querySelectorAll('input[name="tagIds"]').forEach(input=>input.checked=snap.tag_ids.map(String).includes(input.value));
+   handleArticleInput();setCategoryStatus('Submitted version restored in the editor. Run Check before publishing to renew the credibility result.');
+  });return;
+ }
+ const approved=['ai_passed','approved'].includes(categoryReview.status),suggested=categories.find(c=>Number(c.id)===categoryReview.suggested_category_id);
+ const heading=expired?'Category check expired':categoryReview.status==='approved'?'Category approved by an administrator':categoryReview.status==='ai_passed'?'Selected category passed':categoryReview.status==='pending'?'Awaiting administrator category review':categoryReview.status==='rejected'?'Administrator requested a category change':'Category needs attention';
+ slot.innerHTML=`<p class="ai-suggestion__label">${escapeHtml(heading)}</p><p>${escapeHtml(categoryReview.reason||'')}</p>
+ ${categoryReview.review_note?`<p><strong>Administrator note:</strong> ${escapeHtml(categoryReview.review_note)}</p>`:''}
+ ${!approved&&suggested&&String(suggested.id)!==String(readForm().categoryId)?`<p>Suggested category: ${escapeHtml(suggested.name)}</p><button class="ai-apply-btn" type="button" data-apply-category>Use suggested category</button>`:''}
+ ${!approved&&!expired&&categoryReview.status==='needs_review'?'<label for="category-appeal-reason">Why does your selected category fit? (20–2000 characters)</label><textarea id="category-appeal-reason" minlength="20" maxlength="2000" rows="4"></textarea><button class="ai-apply-btn" type="button" data-request-review>Keep my category and request admin review</button>':''}
+ ${['pending','approved','rejected'].includes(categoryReview.status)?'<button class="ai-apply-btn" type="button" data-refresh-review>Check review status</button>':''}
+ <p>${approved?'Credibility must also pass for this exact version. An expired check needs to be run again.':'You can save a draft while resolving the category. Changing the article requires a fresh publishing check.'}</p>`;
+ slot.querySelector('[data-apply-category]')?.addEventListener('click',()=>{
+  document.getElementById('field-category').value=String(suggested.id);handleArticleInput();setCategoryStatus('Category changed. Run Check before publishing again for this version.');
+ });
+ slot.querySelector('[data-request-review]')?.addEventListener('click',handleCategoryAppeal);
+ slot.querySelector('[data-refresh-review]')?.addEventListener('click',async event=>{
+  const button=event.currentTarget;button.disabled=true;
+  try{const current=await getCategoryReview(categoryReview.id);setCategoryReview({...categoryReview,...current},categoryReviewFingerprint);renderCategorySuggestion();updatePublishingState();setCategoryStatus(current.status==='pending'?'Your category request is still pending.':'Category review status updated.');}
+  catch(error){setCategoryStatus(error.message,true);}finally{button.disabled=false;}
+ });
 }
-
-async function handleCategoryCheck() {
-  if (categoryChecking) return;
-  const values = readForm();
-  if (!values.title.trim() || !values.content.trim()) {
-    setCategoryStatus('Enter a title and article content before checking the category.', true);
-    return;
+async function handleCategoryAppeal(){
+ if(savingWorkspace||publishChecking)return;
+ const reason=document.getElementById('category-appeal-reason').value;
+ if(reason.trim().length<20){setCategoryStatus('Explain your choice in at least 20 characters.',true);return;}
+ const snapshot=articleFingerprint(),reviewId=categoryReview?.id;
+ const button=document.querySelector('[data-request-review]');button.disabled=true;savingWorkspace=true;
+ document.querySelectorAll('#save-draft-btn,#publish-btn').forEach(b=>b.disabled=true);
+ try{
+  if(snapshot!==categoryReviewFingerprint)throw new Error('The article changed. Run the publishing check again.');
+  if(article?.status!=='published'){
+   articleId=await saveArticleWorkspace(articleId,readForm(),false);
+   article={...article,id:articleId,status:'draft'};
+   window.history.replaceState(null,'',`article-editor.html?id=${articleId}`);
   }
-  categoryChecking = true;
-  categorySuggestion = null;
-  renderCategorySuggestion();
-  const token = ++categoryRequest;
-  const snapshot = categoryFingerprint(values);
-  const button = document.getElementById('check-category-btn');
-  button.disabled = true;
-  button.textContent = 'Checking category…';
-  setCategoryStatus('Reviewing the article topic…');
-  try {
-    const result = await suggestArticleCategory(values);
-    if (token !== categoryRequest) return;
-    if (snapshot !== categoryFingerprint()) {
-      setCategoryStatus('The article changed during checking. Run the check again.', true);
-      return;
-    }
-    const category = result.categoryId === null ? null : categories.find(item => Number(item.id) === result.categoryId);
-    if (result.categoryId !== null && !category) {
-      throw new Error('Categories have changed. Reload the editor and try again.');
-    }
-    categorySuggestion = { category, reason: result.reason, snapshot, matches: Boolean(category && String(category.id) === String(values.categoryId)) };
-    renderCategorySuggestion();
-    setCategoryStatus('Suggestion ready. Your category has not been changed.');
-  } catch (error) {
-    if (token === categoryRequest) setCategoryStatus(error.message, true);
-  } finally {
-    if (token === categoryRequest) {
-      categoryChecking = false;
-      const currentButton = document.getElementById('check-category-btn');
-      if (currentButton) {
-        currentButton.disabled = false;
-        currentButton.textContent = 'Check category with AI';
-      }
-    }
-  }
+  if(snapshot!==articleFingerprint())throw new Error('The article changed while saving. Check the new version before requesting a review.');
+  const record=await requestCategoryReview(reviewId,reason,articleId);
+  setCategoryReview({...categoryReview,...record},snapshot);renderCategorySuggestion();updatePublishingState();
+  setCategoryStatus('Category request submitted. The submitted version is saved for review; your article has not been published.');
+ }catch(error){setCategoryStatus(error.message,true);}finally{savingWorkspace=false;button.disabled=false;const save=document.getElementById('save-draft-btn');if(save)save.disabled=false;updatePublishingState();}
 }
 
 function invalidateCredibility() {
@@ -404,11 +348,8 @@ function handleArticleInput() {
   invalidateCredibility();
   if (writingUndo && readForm().content !== writingUndo.applied) writingUndo = null;
   renderWritingUndo();
-  if (categorySuggestion && categorySuggestion.snapshot !== categoryFingerprint()) {
-    categorySuggestion = null;
-    renderCategorySuggestion();
-    setCategoryStatus('The article changed. Check the category again for a fresh suggestion.');
-  }
+  renderCategorySuggestion();
+  updatePublishingState();
 
   if (aiSuggestion) {
     aiSuggestion = null;
@@ -429,21 +370,26 @@ function updatePublishingState() {
   if (!lock) return;
 
   if (passed) {
-    lock.textContent = `Credibility score ${credibilityResult.score}% — publishing is unlocked.`;
+    lock.textContent = `Credibility ${credibilityResult.score}% and category approved — publishing is unlocked.`;
     lock.className = "publish-lock is-ready";
   } else if (credibilityResult?.criticalIssue) {
     lock.textContent = "A critical issue was found — publishing remains locked until the article is revised and rechecked.";
     lock.className = "publish-lock is-blocked";
+  } else if (credibilityResult && verifiedFingerprint===articleFingerprint() && categoryReview && !['ai_passed','approved'].includes(categoryReview.status)) {
+    lock.textContent='Category checking has not passed. Choose a suitable category and recheck, or request administrator review.';
+    lock.className='publish-lock is-blocked';
+  } else if (credibilityResult && Date.parse(credibilityResult.expiresAt)<=Date.now()) {
+    lock.textContent='Publishing checks expired. Run Check before publishing again.';lock.className='publish-lock is-blocked';
   } else if (credibilityResult) {
     lock.textContent = `Credibility score ${credibilityResult.score}% — revise the article and recheck before publishing.`;
     lock.className = "publish-lock is-blocked";
   } else if (credibilityWasInvalidated) {
-    lock.textContent = "The article changed after checking. Run the credibility check again.";
+    lock.textContent = "The article changed after checking. Run Check before publishing again.";
     lock.className = "publish-lock is-blocked";
   } else {
     lock.textContent = isPublished
-      ? "Run the required credibility check before saving changes to this published article."
-      : "Run the required credibility check to unlock publishing.";
+      ? "Run Check before publishing before saving changes to this published article."
+      : "Run Check before publishing to unlock publishing.";
     lock.className = "publish-lock";
   }
 }
@@ -475,7 +421,7 @@ function renderCredibilityResult() {
     <div class="credibility-score ${passed ? "is-pass" : "is-fail"}">
       <div class="credibility-score__number"><strong>${credibilityResult.score}</strong><span>%</span></div>
       <div>
-        <strong>${passed ? "Assessment passed" : "Revision required"}</strong>
+        <strong>${passed ? "Credibility passed" : "Credibility needs revision"}</strong>
         <p>${escapeHtml(credibilityResult.summary)}</p>
       </div>
     </div>
@@ -489,49 +435,22 @@ function renderCredibilityResult() {
 }
 
 async function handleCredibilityCheck() {
-  const values = readForm();
-  const button = document.getElementById("check-credibility-btn");
-  const status = document.getElementById("credibility-status");
-
-  if (!values.title.trim() || !values.content.trim()) {
-    status.textContent = "Add a title and article content before checking credibility.";
-    status.classList.add("is-error");
-    return;
-  }
-
-  button.disabled = true;
-  button.textContent = "Checking…";
-  status.textContent = "Running a preliminary AI credibility assessment…";
-  status.classList.remove("is-error");
-
-  try {
-    const fingerprintAtRequest = articleFingerprint(values);
-    const result = await checkArticleCredibility(values);
-
-    if (fingerprintAtRequest !== articleFingerprint()) {
-      throw new Error("The article changed while it was being checked. Please run the check again.");
-    }
-
-    if (result.score >= CREDIBILITY_THRESHOLD && !result.criticalIssue && !result.receiptId) {
-      throw new Error('The AI assessment completed, but the backend has not issued a verified publishing receipt. Save a draft; the backend team must update the credibility function before publishing.');
-    }
-    credibilityResult = result;
-    verifiedFingerprint = fingerprintAtRequest;
-    credibilityWasInvalidated = false;
-    status.textContent = result.score >= CREDIBILITY_THRESHOLD && !result.criticalIssue
-      ? "Check passed. Publishing is now available for this version."
-      : result.criticalIssue
-        ? "A critical issue was found. Revise the article and check again before publishing."
-        : "The score is below the publishing threshold. Revise the article and check again.";
-    renderCredibilityResult();
-    updatePublishingState();
-  } catch (err) {
-    status.textContent = err.message;
-    status.classList.add("is-error");
-  } finally {
-    button.disabled = false;
-    button.textContent = credibilityResult ? "Run Check Again" : "Run Credibility Check";
-  }
+ if(publishChecking)return;
+ const values=readForm(),button=document.getElementById('check-credibility-btn'),status=document.getElementById('credibility-status');
+ if(!values.title.trim()||!values.content.trim()||values.categoryIds.length!==1){status.textContent='Add a title, article content and one category before checking.';status.classList.add('is-error');return;}
+ publishChecking=true;const token=++publishRequest,fingerprint=articleFingerprint(values);
+ credibilityResult=null;verifiedFingerprint=null;setCategoryReview(null,null);setCategoryStatus('');renderCredibilityResult();renderCategorySuggestion();updatePublishingState();
+ button.disabled=true;button.textContent='Checking credibility and category…';status.textContent='Reviewing credibility and the selected category…';status.classList.remove('is-error');
+ try{
+  const result=await checkArticleCredibility(values);
+  if(token!==publishRequest)return;
+  if(fingerprint!==articleFingerprint())throw new Error('The article changed while checking. Run the check again for the new version.');
+  credibilityResult=result;verifiedFingerprint=fingerprint;credibilityWasInvalidated=false;
+  setCategoryReview(result.categoryReview,fingerprint);
+  renderCredibilityResult();renderCategorySuggestion();updatePublishingState();
+  status.textContent=hasCurrentPassingCheck()?'Credibility and category passed. Publishing is available for this version.':'Checks completed. Review the credibility and category results before publishing.';
+ }catch(error){if(token===publishRequest){status.textContent=error.message;status.classList.add('is-error');}}
+ finally{if(token===publishRequest){publishChecking=false;button.disabled=false;button.textContent='Check before publishing';}}
 }
 
 function renderAiSuggestion() {
@@ -625,7 +544,7 @@ function renderWritingUndo() {
     document.getElementById('field-content').value = writingUndo.original;
     writingUndo = null;
     handleArticleInput();
-    setAiStatus('Original content restored. Save when ready; a new credibility check is required before publishing.');
+    setAiStatus('Original content restored. Save when ready; a new publishing check is required before publishing.');
   });
 }
 
@@ -675,6 +594,10 @@ async function reloadArticle() {
   }
   setPageTitle(article.status === "published" ? "Edit Article" : "Edit Draft");
   render();
+  try {
+   const review=await getArticleCategoryReview(articleId);
+   if(review){const snap=review.snapshot;setCategoryReview(review,publishingFingerprint({title:snap.title,content:snap.content,categoryIds:snap.category_ids.map(String),tagIds:snap.tag_ids.map(String)}));renderCategorySuggestion();updatePublishingState();}
+  } catch(error){setCategoryStatus(error.message,true);}
   return true;
 }
 
@@ -683,7 +606,7 @@ async function handleSaveDraft() {
   const isPublished = article?.status === "published";
 
   if (isPublished && !hasCurrentPassingCheck()) {
-    setStatus("Run and pass the credibility check before saving changes to a published article.", true);
+    setStatus("Run and pass the publishing checks before saving changes to a published article.", true);
     document.getElementById("credibility-check").scrollIntoView({ behavior: "smooth", block: "start" });
     return;
   }
@@ -726,7 +649,7 @@ async function saveWorkspace(values, publish) {
 
 async function handlePublish() {
   if (!hasCurrentPassingCheck()) {
-    setStatus('Run and pass the credibility check for the current article before publishing.', true);
+    setStatus('Run and pass the publishing checks for the current article before publishing.', true);
     document.getElementById('credibility-check').scrollIntoView({behavior:'smooth',block:'start'});
     return;
   }

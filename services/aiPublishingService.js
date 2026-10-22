@@ -122,37 +122,37 @@ export async function requestWritingAssistance({ task, title, content, categoryI
 }
 
 export async function checkArticleCredibility({ title, content, categoryId, categoryIds = [], tagIds = [] }) {
-  const { data, error } = await supabase.functions.invoke(CREDIBILITY_FUNCTION, {
-    body: {
-      title: title.trim(),
-      content: content.trim(),
-      category_id: categoryId ? Number(categoryId) : null,
-      category_ids: categoryIds.map(Number),
-      tag_ids: tagIds.map(Number)
+  if(!title?.trim()||title.trim().length>300||!content?.trim()||content.trim().length>20000||categoryIds.length!==1
+   || !Number.isSafeInteger(Number(categoryId))||Number(categoryId)<=0||Number(categoryIds[0])!==Number(categoryId)
+   || tagIds.length>100||tagIds.some(id=>!Number.isSafeInteger(Number(id))||Number(id)<=0)) throw new Error('Provide a title, content, one category and valid tags before checking.');
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),60000);
+  try {
+    const { data, error } = await supabase.functions.invoke(CREDIBILITY_FUNCTION, {
+      body: { title:title.trim(),content:content.trim(),category_id:categoryId?Number(categoryId):null,
+        category_ids:categoryIds.map(Number),tag_ids:tagIds.map(Number)},signal:controller.signal
+    });
+    if(error || data?.error) {
+      if(error?.context && typeof error.context.json==='function') {
+        const detail=await error.context.json().catch(()=>null);
+        if(detail?.error)throw new Error(detail.error);
+      }
+      throw new Error(data?.error || 'Publishing checks are temporarily unavailable. Keep your draft and retry.');
     }
-  });
-
-  if (error) {
-    throw functionError(error, "Credibility checking");
-  }
-
-  const score = Number(data?.score ?? data?.credibility_score);
-  if (!Number.isFinite(score) || score < 0 || score > 100) {
-    throw new Error("Credibility checking returned an invalid score.");
-  }
-
-  const criticalIssue = normaliseCriticalIssue(data);
-
-  return {
-    receiptId: data.receipt_id || null,
-    score: Math.round(score),
-    summary: data.summary ?? data.explanation ?? "The credibility check is complete.",
-    issues: Array.isArray(data.issues) ? data.issues.filter(Boolean) : [],
-    sources: normaliseSources(data),
-    criticalIssue: criticalIssue.found,
-    criticalIssueMessage: criticalIssue.message,
-    checkedAt: data.checked_at ?? new Date().toISOString()
-  };
+    const score=Number(data?.score),category=data?.category_review;
+    if(!Number.isFinite(score)||score<0||score>100 || !data.receipt_id || !Number.isFinite(Date.parse(data.expires_at)) || !category?.id
+      || !['ai_passed','needs_review','pending','approved','rejected'].includes(category.status)
+      || (category.suggested_category_id!==null && (!Number.isSafeInteger(category.suggested_category_id)||category.suggested_category_id<=0))
+      || typeof category.reason!=='string'||!category.reason.trim()||!Number.isFinite(Date.parse(category.expires_at))) {
+      throw new Error('The publishing check is incomplete. Keep your draft and run the check again.');
+    }
+    const issue=normaliseCriticalIssue(data);
+    return {receiptId:data.receipt_id,expiresAt:data.expires_at,categoryReview:category,score:Math.round(score),summary:data.summary??data.explanation??'Check complete.',
+      issues:Array.isArray(data.issues)?data.issues.filter(Boolean):[],sources:normaliseSources(data),criticalIssue:issue.found,criticalIssueMessage:issue.message,
+      checkedAt:new Date().toISOString()};
+  } catch(error) {
+    if(controller.signal.aborted)throw new Error('The publishing check took too long. Your text is unchanged; save a draft and retry.');
+    throw error;
+  } finally {clearTimeout(timer);}
 }
 
 /** Optional topic classification; it never writes to an article or publishes it. */

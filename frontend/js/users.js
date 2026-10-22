@@ -1,5 +1,5 @@
-import { requireAdmin } from "./auth.js?v=upgrade-success-20261022";
-import { getAllProfiles, setUserRole, setUserSubscriptionTier } from "../../services/userManagementService.js?v=upgrade-success-20261022";
+import { requireAdmin } from "./auth.js?v=required-category-20261022";
+import { getAllProfiles, setUserRole, setUserSubscriptionTier } from "../../services/userManagementService.js?v=required-category-20261022";
 import { escapeHtml, forbiddenStateHtml } from "./format.js";
 
 let currentAdminId = null;

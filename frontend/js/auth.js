@@ -1,4 +1,4 @@
-import { sidebarHtml } from "./sidebar.js?v=required-category-20261022";
+import { sidebarHtml } from "./sidebar.js?v=for-you-compass-20261023";
 import { supabase } from "../../config/supabaseClient.js";
 import { upgradeMyAccountToPremium } from "../../services/userManagementService.js?v=required-category-20261022";
 

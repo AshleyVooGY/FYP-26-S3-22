@@ -295,11 +295,15 @@ function renderCategorySuggestion(){
  slot.innerHTML=`<p class="ai-suggestion__label">${escapeHtml(heading)}</p><p>${escapeHtml(categoryReview.reason||'')}</p>
  ${categoryReview.review_note?`<p><strong>Administrator note:</strong> ${escapeHtml(categoryReview.review_note)}</p>`:''}
  ${!approved&&suggested&&String(suggested.id)!==String(readForm().categoryId)?`<p>Suggested category: ${escapeHtml(suggested.name)}</p><button class="ai-apply-btn" type="button" data-apply-category>Use suggested category</button>`:''}
- ${!approved&&!expired&&categoryReview.status==='needs_review'?'<label for="category-appeal-reason">Why does your selected category fit? (20–2000 characters)</label><textarea id="category-appeal-reason" minlength="20" maxlength="2000" rows="4"></textarea><button class="ai-apply-btn" type="button" data-request-review>Keep my category and request admin review</button>':''}
+ ${!approved&&!expired&&categoryReview.status==='needs_review'?'<details class="category-appeal"><summary>Disagree with the category suggestion?</summary><p>Explain why your selected category fits. An administrator can review this version while you keep it as a draft.</p><label for="category-appeal-reason">Why does your selected category fit? (20–2000 characters)</label><textarea id="category-appeal-reason" minlength="20" maxlength="2000" rows="4"></textarea><button class="ai-apply-btn" type="button" data-request-review>Request administrator review</button></details>':''}
  ${['pending','approved','rejected'].includes(categoryReview.status)?'<button class="ai-apply-btn" type="button" data-refresh-review>Check review status</button>':''}
  <p>${approved?'Credibility must also pass for this exact version. An expired check needs to be run again.':'You can save a draft while resolving the category. Changing the article requires a fresh publishing check.'}</p>`;
- slot.querySelector('[data-apply-category]')?.addEventListener('click',()=>{
-  document.getElementById('field-category').value=String(suggested.id);handleArticleInput();setCategoryStatus('Category changed. Run Check before publishing again for this version.');
+ slot.querySelector('[data-apply-category]')?.addEventListener('click',async event=>{
+  if(savingWorkspace||publishChecking)return;
+  event.currentTarget.disabled=true;
+  document.getElementById('field-category').value=String(suggested.id);
+  handleArticleInput();
+  await handleCredibilityCheck();
  });
  slot.querySelector('[data-request-review]')?.addEventListener('click',handleCategoryAppeal);
  slot.querySelector('[data-refresh-review]')?.addEventListener('click',async event=>{
@@ -368,6 +372,11 @@ function updatePublishingState() {
   if (publishBtn) publishBtn.disabled = !passed;
   if (saveBtn && isPublished) saveBtn.disabled = !passed;
   if (!lock) return;
+  if (publishChecking && !credibilityResult) {
+    lock.textContent = 'Checking credibility and category…';
+    lock.className = 'publish-lock';
+    return;
+  }
 
   if (passed) {
     lock.textContent = `Credibility ${credibilityResult.score}% and category approved — publishing is unlocked.`;
@@ -439,7 +448,7 @@ async function handleCredibilityCheck() {
  const values=readForm(),button=document.getElementById('check-credibility-btn'),status=document.getElementById('credibility-status');
  if(!values.title.trim()||!values.content.trim()||values.categoryIds.length!==1){status.textContent='Add a title, article content and one category before checking.';status.classList.add('is-error');return;}
  publishChecking=true;const token=++publishRequest,fingerprint=articleFingerprint(values);
- credibilityResult=null;verifiedFingerprint=null;setCategoryReview(null,null);setCategoryStatus('');renderCredibilityResult();renderCategorySuggestion();updatePublishingState();
+ credibilityResult=null;verifiedFingerprint=null;credibilityWasInvalidated=false;setCategoryReview(null,null);setCategoryStatus('');renderCredibilityResult();renderCategorySuggestion();updatePublishingState();
  button.disabled=true;button.textContent='Checking credibility and category…';status.textContent='Reviewing credibility and the selected category…';status.classList.remove('is-error');
  try{
   const result=await checkArticleCredibility(values);
@@ -450,7 +459,7 @@ async function handleCredibilityCheck() {
   renderCredibilityResult();renderCategorySuggestion();updatePublishingState();
   status.textContent=hasCurrentPassingCheck()?'Credibility and category passed. Publishing is available for this version.':'Checks completed. Review the credibility and category results before publishing.';
  }catch(error){if(token===publishRequest){status.textContent=error.message;status.classList.add('is-error');}}
- finally{if(token===publishRequest){publishChecking=false;button.disabled=false;button.textContent='Check before publishing';}}
+ finally{if(token===publishRequest){publishChecking=false;button.disabled=false;button.textContent='Check before publishing';updatePublishingState();}}
 }
 
 function renderAiSuggestion() {

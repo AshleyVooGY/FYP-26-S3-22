@@ -88,3 +88,11 @@
 .news-card-link,.news-card-link:hover,.news-card-link:active,.news-card-link:visited { color:var(--text-primary); text-decoration:none; cursor:pointer; }
 a.article-card { display:block; }
 .news-card-link:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+
+/* Categories pagination, scoped to the browse page. */
+#categories-app .categories-pagination { display:flex; flex-direction:column; align-items:center; gap:10px; margin:24px 0 8px; }
+#categories-app .categories-pagination p { margin:0; color:var(--text-secondary); font-size:13px; text-align:center; }
+#categories-app .categories-pagination .is-error { color:#e88998; }
+#browse-pagination { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:14px; }
+#browse-pagination[hidden], #browse-retry[hidden] { display:none; }
+#browse-page { font-size:13px; color:var(--text-secondary); }

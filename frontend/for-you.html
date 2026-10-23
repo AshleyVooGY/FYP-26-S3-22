@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>For You — News Release System</title>
   <link rel="stylesheet" href="css/shell.css" />
-  <link rel="stylesheet" href="features-01-02-10/features.css" />
-  <link rel="stylesheet" href="css/for-you.css" />
+  <link rel="stylesheet" href="features-01-02-10/features.css?v=categories-pagination-20261023" />
+  <link rel="stylesheet" href="css/for-you.css?v=news-pages-20261023" />
 </head>
 <body>
   <header class="topbar">
@@ -110,12 +110,15 @@
       <p id="feed-status" role="status" aria-live="polite">Loading your news…</p>
       <div id="feed-state"></div>
       <div id="feed-grid" class="article-grid"></div>
-      <div class="feed-actions"><button class="button" type="button" id="feed-more" hidden>Load more</button><button class="button" type="button" id="feed-refresh" hidden>Refresh recommendations</button></div>
+      <div class="feed-actions">
+        <nav id="feed-pagination" aria-label="Recommended news pages" hidden><button class="button" type="button" id="feed-previous">Previous</button><span id="feed-page" aria-live="polite"></span><button class="button" type="button" id="feed-next">Next</button></nav>
+        <button class="button" type="button" id="feed-refresh" hidden>Refresh recommendations</button>
+      </div>
     </main>
   </div>
 
   <div id="toast-region" class="toast-region" aria-live="polite"></div>
   <script type="module" src="js/auth.js?v=required-category-20261022"></script>
-  <script type="module" src="js/for-you.js?v=required-category-20261022"></script>
+  <script type="module" src="js/for-you.js?v=news-page-totals-20261023"></script>
 </body>
 </html>

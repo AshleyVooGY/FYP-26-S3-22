@@ -40,13 +40,28 @@ export async function saveNewsPreferences(categoryIds,tagIds,useActivity=true) {
     if(error) throw error;
   } catch(error) { throw failure(error); }
 }
-export async function getPersonalizedNews(cursor=null) {
+export async function getPersonalizedNews(cursor=null,pageSize=24) {
+  if(!Number.isSafeInteger(pageSize)||pageSize<1||pageSize>24)throw new Error('Invalid news page size.');
   try {
-    const {data,error}=await supabase.rpc('get_my_news_feed',{p_cursor:cursor,p_limit:24});
+    const {data,error}=await supabase.rpc('get_my_news_feed',{p_cursor:cursor,p_limit:pageSize});
     if(error) throw error;
-    if(!data || typeof data.has_preferences!=='boolean' || !Array.isArray(data.articles) || data.articles.length>24 ||
+    if(!data || typeof data.has_preferences!=='boolean' || !Array.isArray(data.articles) || data.articles.length>pageSize ||
       data.articles.some(a=>!Number.isSafeInteger(Number(a.id))||Number(a.id)<=0) ||
       (data.next_cursor!==null && (typeof data.next_cursor!=='object'||Array.isArray(data.next_cursor)))) throw new Error('Unable to read the recommendations. Please refresh and try again.');
-    return {feedType:data.feed_type,hasPreferences:data.has_preferences,articles:data.articles,cursor:data.next_cursor};
+    let total = data.articles.length;
+    const sessionId = data.next_cursor?.session || cursor?.session;
+    if (sessionId) {
+      if (typeof sessionId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId)) throw new Error('Unable to read the recommendation page count. Please refresh.');
+      // The existing snapshot fixes this round's recommendation order and total.
+      // RLS permits reading only the current user's own feed session.
+      const {data:session,error:sessionError} = await supabase.from('news_feed_sessions')
+        .select('article_ids').eq('id',sessionId).maybeSingle();
+      if(sessionError)throw sessionError;
+      if(!Array.isArray(session?.article_ids)||session.article_ids.length>1000||session.article_ids.some(id=>!Number.isSafeInteger(Number(id))||Number(id)<=0))throw new Error('Unable to read the recommendation page count. Please refresh.');
+      total=session.article_ids.length;
+    } else if (cursor || data.next_cursor) {
+      throw new Error('Unable to read the recommendation page count. Please refresh.');
+    }
+    return {feedType:data.feed_type,hasPreferences:data.has_preferences,articles:data.articles,cursor:data.next_cursor,total};
   } catch(error) { throw failure(error); }
 }

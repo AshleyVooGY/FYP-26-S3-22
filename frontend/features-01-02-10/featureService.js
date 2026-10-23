@@ -70,6 +70,58 @@ export async function getArticlesByClassification(type, id) {
   return data ?? [];
 }
 
+// Keep paging in the Data API so RLS and published-only filtering apply to
+// both the rows and their exact total. Empty embeds avoid large ID lists.
+export async function getBrowseArticlesPage({ type = "all", id = null, cursor = null } = {}) {
+  const pageSize = 6;
+  if (!["all", "category", "tag"].includes(type)) throw new Error("Invalid news filter.");
+  const filterId = Number(id);
+  if (type !== "all" && (!Number.isSafeInteger(filterId) || filterId <= 0)) throw new Error("Invalid classification.");
+  if (cursor && (!Number.isSafeInteger(Number(cursor.id)) || Number(cursor.id) <= 0 ||
+    (cursor.publishedAt !== null && (typeof cursor.publishedAt !== "string" ||
+      !/^\d{4}-\d{2}-\d{2}T[\d:.]+(?:Z|[+-]\d{2}:\d{2})$/.test(cursor.publishedAt) || !Number.isFinite(Date.parse(cursor.publishedAt)))))) {
+    throw new Error("Unable to continue this news list. Refresh and try again.");
+  }
+  const relation = type === "category" ? ",browse_categories:article_categories()" : type === "tag" ? ",browse_tags:article_tags()" : "";
+  const columns = "id,title,content,featured_image_url,published_at,view_count,reaction_count,category:categories!articles_category_id_fkey(name)";
+  function filteredQuery(select, options, after = null) {
+    let query = supabase.from("articles").select(select + relation, options).eq("status", "published");
+    const groups = [];
+    if (type === "category") {
+      query = query.eq("browse_categories.category_id", filterId);
+      // Preserve primary-category OR junction-category matches for older rows.
+      groups.push(`or(category_id.eq.${filterId},browse_categories.not.is.null)`);
+    } else if (type === "tag") {
+      query = query.eq("browse_tags.tag_id", filterId).not("browse_tags", "is", null);
+    }
+    if (after) {
+      if (after.publishedAt === null) query = query.is("published_at", null).lt("id", after.id);
+      else groups.push(`or(published_at.lt.${after.publishedAt},and(published_at.eq.${after.publishedAt},id.lt.${after.id}),published_at.is.null)`);
+    }
+    if (groups.length) query = query.or(groups.length === 1 ? groups[0].slice(3, -1) : `and(${groups.join(",")})`);
+    return query;
+  }
+  try {
+    const [rows, totals] = await Promise.all([
+      filteredQuery(columns, undefined, cursor)
+        .order("published_at", { ascending: false, nullsFirst: false })
+        .order("id", { ascending: false }).limit(pageSize + 1),
+      filteredQuery("id", { count: "exact", head: true })
+    ]);
+    throwIfError(rows.error);
+    throwIfError(totals.error);
+    if (!Array.isArray(rows.data) || !Number.isSafeInteger(totals.count) || totals.count < 0) throw new Error("Unable to read the news list. Please retry.");
+    const articles = rows.data.slice(0, pageSize), last = articles.at(-1);
+    return {
+      articles,
+      total: totals.count,
+      nextCursor: rows.data.length > pageSize && last ? { publishedAt: last.published_at, id: last.id } : null
+    };
+  } catch (error) {
+    throw new Error(error?.message || "Unable to load news. Please try again.");
+  }
+}
+
 export async function searchArticles(filters = {}) {
   const { data, error } = await supabase.rpc("search_news_articles", {
     p_keyword: filters.keyword?.trim() || null,

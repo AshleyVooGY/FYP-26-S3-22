@@ -1,4 +1,4 @@
-.feed-actions { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin:24px 0; }
+.feed-actions { display:flex; flex-direction:column; align-items:center; gap:12px; margin:24px 0; }
 #feed-status { color:var(--text-secondary); margin:16px 0; }
 #feed-status.is-error { color:var(--danger, #e87878); }
 
@@ -19,3 +19,7 @@
  .topbar__actions .user-chip #user-label { max-width:70px; overflow:hidden; text-overflow:ellipsis; }
  .topbar__actions .btn-publish { padding:8px 10px; font-size:13px; }
 }
+
+#feed-pagination { display:flex; align-items:center; gap:14px; flex-wrap:wrap; justify-content:center; }
+#feed-pagination[hidden], #feed-refresh[hidden] { display:none; }
+#feed-page { color:var(--text-secondary); font-size:13px; }

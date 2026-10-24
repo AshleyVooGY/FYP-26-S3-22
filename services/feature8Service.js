@@ -30,6 +30,26 @@ export async function getTags() {
   return data;
 }
 
+/**
+ * Resolve a tag name to its id, creating the tag if it doesn't already
+ * exist. Used to apply an AI-suggested tag that may be new — ordinary
+ * users cannot otherwise create tags (see get_or_create_tag()).
+ */
+export async function getOrCreateTag(name) {
+  const { data, error } = await supabase.rpc("get_or_create_tag", { p_name: name });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) {
+    throw new Error(`Could not create the tag "${name}".`);
+  }
+
+  return { id: row.id, name: row.name };
+}
+
 function normaliseIds(ids = []) {
   return [...new Set(ids.map(Number).filter((id) => Number.isInteger(id) && id > 0))];
 }

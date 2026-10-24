@@ -163,11 +163,7 @@ async function getReactionCounts(
 
 
     /*
-       Start all six reactions at zero.
-
-       The SQL function only returns reaction
-       types that currently have at least one
-       reaction.
+        Initialize all six reactions at zero.  
     */
 
     const counts = {};
@@ -377,7 +373,7 @@ async function removeReaction(
 
 
 /* ==========================================================
-   FORMAT NUMBER
+    NUMBER FORMATTING
 ========================================================== */
 
 function formatReactionCount(
@@ -575,7 +571,7 @@ function setLoadingState(
 
 
 /* ==========================================================
-   SHOW ERROR
+   WHEN THERE IS AN ERROR (ERROR MESSAGE)
 ========================================================== */
 
 function showReactionError(

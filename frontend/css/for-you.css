@@ -1,0 +1,25 @@
+.feed-actions { display:flex; flex-direction:column; align-items:center; gap:12px; margin:24px 0; }
+#feed-status { color:var(--text-secondary); margin:16px 0; }
+#feed-status.is-error { color:var(--danger, #e87878); }
+
+/* This stylesheet is loaded only by the two personalization pages. */
+.topbar__nav { min-width:0; overflow-x:auto; }
+.topbar__nav a { white-space:nowrap; flex-shrink:0; }
+@media (max-width:1050px) {
+ .topbar { flex-wrap:wrap; gap:14px; }
+ .topbar__nav { order:3; flex-basis:100%; }
+ .topbar__actions { margin-left:auto; }
+}
+@media (max-width:700px) {
+ .topbar { padding:12px 14px; }
+ .topbar__actions { width:100%; gap:8px; }
+ .topbar-search-form { flex:1; min-width:0; }
+ .topbar__search { width:100%; min-width:0; }
+ .topbar__actions .icon-btn { display:none; }
+ .topbar__actions .user-chip #user-label { max-width:70px; overflow:hidden; text-overflow:ellipsis; }
+ .topbar__actions .btn-publish { padding:8px 10px; font-size:13px; }
+}
+
+#feed-pagination { display:flex; align-items:center; gap:14px; flex-wrap:wrap; justify-content:center; }
+#feed-pagination[hidden], #feed-refresh[hidden] { display:none; }
+#feed-page { color:var(--text-secondary); font-size:13px; }

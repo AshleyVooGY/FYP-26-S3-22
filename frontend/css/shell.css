@@ -212,6 +212,10 @@ button {
   gap: 2px;
 }
 
+.sidebar__nav a[hidden] {
+  display: none;
+}
+
 .sidebar__nav a {
   display: flex;
   align-items: center;
@@ -241,6 +245,16 @@ button {
 .sidebar__nav a.is-disabled:hover {
   background: transparent;
   color: var(--text-secondary);
+}
+
+.sidebar__nav a[data-upgrade-tier] {
+  color: #f2c96d;
+  font-weight: 700;
+}
+
+.sidebar__nav a[data-upgrade-tier]:hover {
+  background: rgba(242, 201, 109, 0.1);
+  color: #f2c96d;
 }
 
 .sidebar__icon {

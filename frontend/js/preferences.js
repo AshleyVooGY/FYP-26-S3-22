@@ -1,4 +1,5 @@
-import { supabase } from "../../config/supabaseClient.js";
+import { getCurrentUser as authCurrentUser } from "./auth.js?v=required-category-20261022";
+import { getNewsPreferences, saveNewsPreferences } from "../../services/personalizationService.js?v=required-category-20261022";
 
 import { ICONS } from "./icons.js";
 
@@ -41,6 +42,12 @@ let selectedInterests = [];
 let originalInterests = [];
 
 let currentUser = null;
+let allTags = [];
+let selectedTags = [];
+let originalTags = [];
+let originalActivity = true;
+let loadedPreferences;
+let preferencesSaving = false;
 
 
 // ==========================================================
@@ -91,226 +98,37 @@ const userLabel =
 // AUTHENTICATION
 // ==========================================================
 
-async function getCurrentUser() {
-
-    const {
-        data,
-        error
-    } = await supabase.auth.getUser();
-
-
-    if (error) {
-
-        console.error(
-            "Unable to get current user:",
-            error
-        );
-
-        return null;
-
-    }
-
-
-    return data?.user ?? null;
-
-}
-
+async function getCurrentUser() { return authCurrentUser(); }
 
 // ==========================================================
 // LOAD CATEGORIES
 // ==========================================================
 
 async function loadCategories() {
-
-    const {
-        data,
-        error
-    } = await supabase
-        .from("categories")
-        .select("id, name")
-        .order("id");
-
-
-    if (error) {
-
-        console.error(
-            "Unable to load categories:",
-            error
-        );
-
-        throw error;
-
-    }
-
-
-    categories =
-        (data || []).map(
-            category => ({
-
-                id:
-                    category.id,
-
-                name:
-                    category.name,
-
-                icon:
-                    categoryIcons[
-                        category.name
-                    ] ??
-                    "<span>●</span>"
-
-            })
-        );
-
+ loadedPreferences=await getNewsPreferences();
+ categories=loadedPreferences.categories.map(category=>({...category,id:Number(category.id),icon:categoryIcons[category.name] || ICONS.cpu}));
+ allTags=loadedPreferences.tags;
+ originalActivity=loadedPreferences.useActivity;
+ document.getElementById('use-reading-activity').checked=originalActivity;
+ selectedTags=[...loadedPreferences.tagIds]; originalTags=[...selectedTags];
+ renderTagPreferences();
 }
-
 
 // ==========================================================
 // LOAD USER PREFERENCES
 // ==========================================================
 
-async function loadUserPreferences() {
-
-    if (!currentUser) {
-
-        return [];
-
-    }
-
-
-    const {
-        data,
-        error
-    } = await supabase
-        .from("user_preferences")
-        .select("category_id")
-        .eq(
-            "user_id",
-            currentUser.id
-        );
-
-
-    if (error) {
-
-        console.error(
-            "Unable to load user preferences:",
-            error
-        );
-
-        throw error;
-
-    }
-
-
-    return (
-        data || []
-    ).map(
-        row =>
-            Number(
-                row.category_id
-            )
-    );
-
-}
-
+async function loadUserPreferences() { return [...loadedPreferences.categoryIds]; }
 
 // ==========================================================
 // RENDER INTEREST CARDS
 // ==========================================================
 
 function renderInterestCards() {
-
-    if (!interestGrid) {
-
-        return;
-
-    }
-
-
-    if (categories.length === 0) {
-
-        interestGrid.innerHTML = `
-
-            <p class="state-message">
-                No categories available.
-            </p>
-
-        `;
-
-        return;
-
-    }
-
-
-    interestGrid.innerHTML =
-        categories
-            .map(
-                category => {
-
-                    const selected =
-                        selectedInterests.includes(
-                            category.id
-                        );
-
-
-                    return `
-
-                        <div
-                            class="interest-card
-                            ${selected ? "selected" : ""}"
-                            data-category-id="${category.id}"
-                        >
-
-                            <div class="check-box">
-                                ${selected ? "✓" : ""}
-                            </div>
-
-
-                            <div class="category-icon">
-                                ${category.icon}
-                            </div>
-
-
-                            <div class="category-name">
-                                ${escapeHtml(
-                                    category.name
-                                )}
-                            </div>
-
-                        </div>
-
-                    `;
-
-                }
-            )
-            .join("");
-
-
-    document
-        .querySelectorAll(
-            ".interest-card"
-        )
-        .forEach(
-            card => {
-
-                card.addEventListener(
-                    "click",
-                    () => {
-
-                        toggleInterest(
-                            Number(
-                                card.dataset.categoryId
-                            )
-                        );
-
-                    }
-                );
-
-            }
-        );
-
+ if (!interestGrid) return;
+ interestGrid.innerHTML=categories.length ? categories.map(category=>`<button type="button" class="interest-card ${selectedInterests.includes(category.id)?'selected':''}" data-category-id="${category.id}" aria-pressed="${selectedInterests.includes(category.id)}"><span class="check-box">${selectedInterests.includes(category.id)?'✓':''}</span><span class="category-icon">${category.icon}</span><span class="category-name">${escapeHtml(category.name)}</span></button>`).join('') : '<p class="state-message">No categories available.</p>';
+ interestGrid.querySelectorAll('[data-category-id]').forEach(card=>card.addEventListener('click',()=>{if(!preferencesSaving)toggleInterest(Number(card.dataset.categoryId));}));
 }
-
 
 // ==========================================================
 // TOGGLE INTEREST
@@ -341,6 +159,7 @@ function toggleInterest(
     }
 
 
+    setPreferenceStatus('Unsaved changes. Save preferences to update For You.');
     renderInterestCards();
 
     renderPreferenceList();
@@ -606,9 +425,7 @@ if (addInterestButton) {
 
             if (!categoryId) {
 
-                alert(
-                    "Please choose a category."
-                );
+                setPreferenceStatus('Please choose a category.', true);
 
                 return;
 
@@ -647,111 +464,21 @@ if (addInterestButton) {
 // ==========================================================
 
 async function saveCurrentPreferences() {
-
-    if (!currentUser) {
-
-        alert(
-            "Please log in before saving your preferences."
-        );
-
-        return false;
-
-    }
-
-
-    if (
-        selectedInterests.length === 0
-    ) {
-
-        alert(
-            "Please select at least one interest."
-        );
-
-        return false;
-
-    }
-
-
-    // ------------------------------------------------------
-    // Delete current preferences
-    // ------------------------------------------------------
-
-    const {
-        error:
-            deleteError
-    } = await supabase
-        .from("user_preferences")
-        .delete()
-        .eq(
-            "user_id",
-            currentUser.id
-        );
-
-
-    if (deleteError) {
-
-        console.error(
-            "Unable to remove old preferences:",
-            deleteError
-        );
-
-        throw deleteError;
-
-    }
-
-
-    // ------------------------------------------------------
-    // Prepare rows
-    // ------------------------------------------------------
-
-    const rows =
-        selectedInterests.map(
-            categoryId => ({
-
-                user_id:
-                    currentUser.id,
-
-                category_id:
-                    categoryId
-
-            })
-        );
-
-
-    // ------------------------------------------------------
-    // Insert new preferences
-    // ------------------------------------------------------
-
-    const {
-        error:
-            insertError
-    } = await supabase
-        .from("user_preferences")
-        .insert(
-            rows
-        );
-
-
-    if (insertError) {
-
-        console.error(
-            "Unable to save preferences:",
-            insertError
-        );
-
-        throw insertError;
-
-    }
-
-
-    originalInterests =
-        [...selectedInterests];
-
-
-    return true;
-
+ if (preferencesSaving) return false;
+ if (!currentUser) { setPreferenceStatus('Please sign in before saving preferences.',true); return false; }
+ preferencesSaving=true;
+ const categorySnapshot=[...selectedInterests],tagSnapshot=[...selectedTags],activitySnapshot=document.getElementById('use-reading-activity').checked;
+ document.getElementById('preference-fields').disabled=true;
+ setPreferenceStatus('Saving preferences…');
+ try {
+  await saveNewsPreferences(categorySnapshot,tagSnapshot,activitySnapshot);
+  originalInterests=categorySnapshot; originalTags=tagSnapshot; originalActivity=activitySnapshot;
+  return true;
+ } finally {
+  preferencesSaving=false;
+  document.getElementById('preference-fields').disabled=false;
+ }
 }
-
 
 // ==========================================================
 // SAVE INITIAL PREFERENCES
@@ -776,9 +503,7 @@ if (savePreferencesButton) {
                 }
 
 
-                alert(
-                    "Preferences saved successfully!"
-                );
+                setPreferenceStatus('Preferences saved successfully!');
 
 
                 showManagePage();
@@ -790,9 +515,7 @@ if (savePreferencesButton) {
                 );
 
 
-                alert(
-                    "Unable to save preferences. Please try again."
-                );
+                setPreferenceStatus(error.message || 'Unable to save preferences. Please try again.', true);
 
             }
 
@@ -843,6 +566,7 @@ if (saveChangesButton) {
                 }
 
 
+                showManagePage();
                 showSuccessMessage();
 
             } catch (error) {
@@ -852,9 +576,7 @@ if (saveChangesButton) {
                 );
 
 
-                alert(
-                    "Unable to save preferences. Please try again."
-                );
+                setPreferenceStatus(error.message || 'Unable to save preferences. Please try again.', true);
 
             }
 
@@ -878,6 +600,9 @@ if (cancelButton) {
                 [...originalInterests];
 
 
+            selectedTags = [...originalTags];
+            document.getElementById('use-reading-activity').checked=originalActivity;
+            renderTagPreferences();
             renderInterestCards();
 
             renderPreferenceList();
@@ -885,6 +610,7 @@ if (cancelButton) {
             renderSelectedInterestTags();
 
             populateInterestSelect();
+            setPreferenceStatus('Changes cancelled. Your saved preferences are unchanged.');
 
         }
     );
@@ -896,33 +622,7 @@ if (cancelButton) {
 // SUCCESS MESSAGE
 // ==========================================================
 
-function showSuccessMessage() {
-
-    if (!successMessage) {
-
-        return;
-
-    }
-
-
-    successMessage.classList.remove(
-        "hidden"
-    );
-
-
-    setTimeout(
-        () => {
-
-            successMessage.classList.add(
-                "hidden"
-            );
-
-        },
-        2500
-    );
-
-}
-
+function showSuccessMessage() { setPreferenceStatus('Preferences saved. Your For You feed is ready.'); }
 
 // ==========================================================
 // SHOW MANAGE PAGE
@@ -1026,135 +726,40 @@ function escapeHtml(
 // INITIALISE
 // ==========================================================
 
-async function initialise() {
-
-    try {
-
-        // ----------------------------------------------------
-        // Authentication
-        // ----------------------------------------------------
-
-        currentUser =
-            await getCurrentUser();
-
-
-        updateUserLabel();
-
-
-        if (!currentUser) {
-
-            alert(
-                "Please log in before accessing your preferences."
-            );
-
-
-            window.location.href =
-                "login.html";
-
-
-            return;
-
-        }
-
-
-        console.log(
-            "Logged-in user:",
-            currentUser.id
-        );
-
-
-        // ----------------------------------------------------
-        // Load categories
-        // ----------------------------------------------------
-
-        await loadCategories();
-
-
-        // ----------------------------------------------------
-        // Load saved preferences
-        // ----------------------------------------------------
-
-        selectedInterests =
-            await loadUserPreferences();
-
-
-        originalInterests =
-            [...selectedInterests];
-
-
-        // ----------------------------------------------------
-        // Render
-        // ----------------------------------------------------
-
-        renderInterestCards();
-
-        renderPreferenceList();
-
-        renderSelectedInterestTags();
-
-        populateInterestSelect();
-
-
-        // ----------------------------------------------------
-        // If user has preferences, show manage page
-        // Otherwise show setup page
-        // ----------------------------------------------------
-
-        if (
-            selectedInterests.length > 0
-        ) {
-
-            showManagePage();
-
-        } else {
-
-            if (setupPage) {
-
-                setupPage.classList.remove(
-                    "hidden"
-                );
-
-            }
-
-            if (managePage) {
-
-                managePage.classList.add(
-                    "hidden"
-                );
-
-            }
-
-        }
-
-
-    } catch (error) {
-
-        console.error(
-            "Feature 7 initialisation failed:",
-            error
-        );
-
-
-        if (interestGrid) {
-
-            interestGrid.innerHTML = `
-
-                <p class="state-message is-error">
-
-                    Unable to load your preferences.
-
-                    Please check your login and
-                    Supabase connection.
-
-                </p>
-
-            `;
-
-        }
-
-    }
-
+function setPreferenceStatus(message,isError=false) {
+ const status=document.getElementById('preferences-status');
+ status.textContent=message; status.classList.toggle('is-error',isError);
 }
-
-
+function renderTagPreferences() {
+ const field=document.getElementById('tag-preferences');
+ field.innerHTML=allTags.length ? allTags.map(tag=>`<label class="preference-tag"><input type="checkbox" value="${Number(tag.id)}" ${selectedTags.includes(Number(tag.id))?'checked':''}> ${escapeHtml(tag.name)}</label>`).join('') : '<p>No tags available yet. You can still follow categories.</p>';
+ field.querySelectorAll('input').forEach(input=>input.addEventListener('change',()=>{
+  const id=Number(input.value);
+  selectedTags=input.checked ? [...selectedTags,id] : selectedTags.filter(item=>item!==id);
+  setPreferenceStatus('Unsaved changes. Save preferences to update For You.');
+ }));
+}
+async function initialise() {
+ const fields=document.getElementById('preference-fields');
+ fields.disabled=true;
+ document.getElementById('preferences-retry').hidden=true;
+ setPreferenceStatus('Loading your preferences…');
+ try {
+  currentUser=await getCurrentUser();
+  if(!currentUser){ window.location.href='login.html'; return; }
+  updateUserLabel();
+  await loadCategories();
+  selectedInterests=await loadUserPreferences(); originalInterests=[...selectedInterests];
+  renderInterestCards(); renderPreferenceList(); renderSelectedInterestTags(); populateInterestSelect();
+  if(selectedInterests.length || selectedTags.length) showManagePage();
+  else { setupPage.classList.remove('hidden');managePage.classList.add('hidden'); }
+  setPreferenceStatus('Choose categories and tags for For You. You can clear all selections at any time.');
+  fields.disabled=false;
+ } catch(error) {
+  setPreferenceStatus(error.message || 'Unable to load preferences. Please try again.',true);
+  document.getElementById('preferences-retry').hidden=false;
+ }
+}
+document.getElementById('use-reading-activity').addEventListener('change',()=>setPreferenceStatus('Unsaved changes. Save preferences to update For You.'));
+document.getElementById('preferences-retry').addEventListener('click',initialise);
 initialise();

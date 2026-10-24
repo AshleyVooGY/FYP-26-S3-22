@@ -18,6 +18,84 @@ export async function getCategories() {
 }
 
 /**
+ * Retrieve every tag used by the article editor.
+ */
+export async function getTags() {
+  const { data, error } = await supabase.from("tags").select("id, name").order("name");
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
+}
+
+function normaliseIds(ids = []) {
+  return [...new Set(ids.map(Number).filter((id) => Number.isInteger(id) && id > 0))];
+}
+
+async function getArticleLinks(articleId) {
+  const [categoryResult, tagResult] = await Promise.all([
+    supabase.from("article_categories").select("category_id").eq("article_id", articleId),
+    supabase.from("article_tags").select("tag_id").eq("article_id", articleId)
+  ]);
+
+  if (categoryResult.error) throw new Error(categoryResult.error.message);
+  if (tagResult.error) throw new Error(tagResult.error.message);
+
+  return {
+    categoryIds: normaliseIds((categoryResult.data ?? []).map((row) => row.category_id)),
+    tagIds: normaliseIds((tagResult.data ?? []).map((row) => row.tag_id))
+  };
+}
+
+async function manageArticleLink(articleId, linkType, linkId, action) {
+  const { error } = await supabase.rpc("manage_article_link", {
+    p_article_id: Number(articleId),
+    p_link_type: linkType,
+    p_link_id: Number(linkId),
+    p_action: action
+  });
+
+  if (error) {
+    throw new Error(`Could not ${action} the ${linkType} link: ${error.message}`);
+  }
+}
+
+async function syncLinkType(articleId, linkType, previousIds, nextIds) {
+  const previous = normaliseIds(previousIds);
+  const next = normaliseIds(nextIds);
+  const previousSet = new Set(previous);
+  const nextSet = new Set(next);
+
+  const removals = previous.filter((id) => !nextSet.has(id));
+  const additions = next.filter((id) => !previousSet.has(id));
+
+  // Keep the operations sequential so a useful error identifies the exact
+  // relationship that failed instead of returning an opaque Promise error.
+  for (const id of removals) {
+    await manageArticleLink(articleId, linkType, id, "remove");
+  }
+  for (const id of additions) {
+    await manageArticleLink(articleId, linkType, id, "add");
+  }
+}
+
+async function syncArticleLinks(articleId, categoryIds, tagIds, previousLinks = null) {
+  const current = previousLinks ?? (await getArticleLinks(articleId));
+  await syncLinkType(articleId, "category", current.categoryIds, categoryIds);
+  await syncLinkType(articleId, "tag", current.tagIds, tagIds);
+}
+
+/**
+ * Synchronise an article's many-to-many classifications through the
+ * ownership-checking backend RPC.
+ */
+export async function saveArticleLinks(articleId, categoryIds = [], tagIds = []) {
+  await syncArticleLinks(articleId, categoryIds, tagIds);
+}
+
+/**
  * Retrieve one of the current user's own articles, draft or published.
  *
  * The author is filtered explicitly rather than left to RLS: without
@@ -45,7 +123,14 @@ export async function getMyArticleById(articleId) {
     throw new Error(error.message);
   }
 
-  return data;
+  if (!data) return null;
+
+  const links = await getArticleLinks(articleId);
+  return {
+    ...data,
+    category_ids: normaliseIds([...(data.category_id ? [data.category_id] : []), ...links.categoryIds]),
+    tag_ids: links.tagIds
+  };
 }
 
 /**
@@ -89,10 +174,12 @@ function validateArticleInput({ title, content }) {
 }
 
 /**
- * Create a new article owned by the current user, as a draft or published directly.
+ * Create a new draft owned by the current user. Publishing happens only after
+ * its category and tag relationships have been saved successfully.
  */
-export async function createArticle({ title, content, categoryId, publish }) {
+export async function createArticle({ title, content, categoryIds = [] }) {
   validateArticleInput({ title, content });
+  const nextCategoryIds = normaliseIds(categoryIds);
 
   const {
     data: { user }
@@ -107,10 +194,12 @@ export async function createArticle({ title, content, categoryId, publish }) {
     .insert({
       title: title.trim(),
       content: content.trim(),
-      category_id: categoryId ? Number(categoryId) : null,
+      // Keep the legacy field in sync until every existing page has migrated
+      // to article_categories.
+      category_id: nextCategoryIds[0] ?? null,
       author_id: user.id,
-      status: publish ? "published" : "draft",
-      published_at: publish ? new Date().toISOString() : null
+      status: "draft",
+      published_at: null
     })
     .select("id")
     .single();
@@ -125,15 +214,15 @@ export async function createArticle({ title, content, categoryId, publish }) {
 /**
  * Update an article the current user owns (draft or already published).
  */
-export async function updateArticle(articleId, { title, content, categoryId }) {
+export async function updateArticle(articleId, { title, content, categoryIds = [] }) {
   validateArticleInput({ title, content });
-
+  const nextCategoryIds = normaliseIds(categoryIds);
   const { error } = await supabase
     .from("articles")
     .update({
       title: title.trim(),
       content: content.trim(),
-      category_id: categoryId ? Number(categoryId) : null
+      category_id: nextCategoryIds[0] ?? null
     })
     .eq("id", articleId);
 
@@ -187,7 +276,7 @@ export async function uploadArticleImage(articleId, file, previousImageUrl = nul
   }
 
   const extension = file.name.split(".").pop();
-  const path = `${articleId}/${Date.now()}.${extension}`;
+  const path = `${articleId}/${crypto.randomUUID()}.${extension}`;
 
   const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: true });
 
@@ -198,10 +287,27 @@ export async function uploadArticleImage(articleId, file, previousImageUrl = nul
   const { data: publicUrlData } = supabase.storage.from(BUCKET).getPublicUrl(path);
   const imageUrl = publicUrlData.publicUrl;
 
-  const { error: updateError } = await supabase.from("articles").update({ featured_image_url: imageUrl }).eq("id", articleId);
-
-  if (updateError) {
-    throw new Error(updateError.message);
+  let attachmentConfirmed = false;
+  try {
+    const { data: updated, error: updateError } = await supabase.from("articles")
+      .update({ featured_image_url: imageUrl }).eq("id", articleId).select("id").maybeSingle();
+    attachmentConfirmed = true;
+    if (updateError) throw new Error(updateError.message);
+    if (!updated) throw new Error("The article could not be updated. Reload and try again.");
+  } catch (error) {
+    // A lost response can follow a committed update. Do not delete a file
+    // that the database may already reference when the outcome is unknown.
+    if (!attachmentConfirmed) {
+      throw new Error("Could not confirm the image update. Reload the editor before uploading again.");
+    }
+    // Keep the old image and remove only this attempt's unlinked upload.
+    try {
+      const { error: cleanupError } = await supabase.storage.from(BUCKET).remove([path]);
+      if (cleanupError) throw cleanupError;
+    } catch {
+      throw new Error(`${error.message} The unused upload could not be cleaned up; please contact an administrator.`);
+    }
+    throw error;
   }
 
   const previousPath = previousImageUrl ? storagePathFromUrl(previousImageUrl) : null;
@@ -218,13 +324,36 @@ export async function uploadArticleImage(articleId, file, previousImageUrl = nul
 export async function removeArticleImage(articleId, imageUrl) {
   const path = storagePathFromUrl(imageUrl);
 
+  // Detach first: a denied database update must never delete the displayed file.
+  const { data: updated, error } = await supabase.from("articles")
+    .update({ featured_image_url: null }).eq("id", articleId).select("id").maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!updated) throw new Error("The article could not be updated. Reload and try again.");
+
   if (path) {
-    await supabase.storage.from(BUCKET).remove([path]);
+    const { error: cleanupError } = await supabase.storage.from(BUCKET).remove([path]);
+    if (cleanupError) throw new Error("Image detached, but the stored file could not be removed. Reload the editor and contact an administrator.");
   }
+}
 
-  const { error } = await supabase.from("articles").update({ featured_image_url: null }).eq("id", articleId);
-
+/** Save the workspace in one database transaction; requires the demo-readiness migration. */
+export async function saveArticleWorkspace(articleId, values, publish = false, receiptId = null) {
+  validateArticleInput(values);
+  const categoryIds = normaliseIds(values.categoryIds);
+  if (categoryIds.length > 1) throw new Error('Choose only one category for this article.');
+  if (publish && categoryIds.length !== 1) throw new Error('Select a category before publishing.');
+  const { data, error } = await supabase.rpc('save_my_article_workspace', {
+    p_article_id: articleId ? Number(articleId) : null,
+    p_title: values.title.trim(), p_content: values.content.trim(),
+    p_category_ids: categoryIds, p_tag_ids: normaliseIds(values.tagIds),
+    p_publish: publish, p_receipt_id: publish ? receiptId : null
+  });
   if (error) {
+    if (['PGRST202','42883'].includes(error.code)) {
+      throw new Error('Saving is not available until the backend deploys the demo-readiness migration. Your text is still in the editor.');
+    }
     throw new Error(error.message);
   }
+  if (!data) throw new Error('The server did not confirm the save. Keep this page open and retry.');
+  return data;
 }

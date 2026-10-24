@@ -1,67 +1,35 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Categories, Search and Recommendations — News Release System</title>
-  <link rel="stylesheet" href="../css/shell.css">
-  <link rel="stylesheet" href="./features.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Redirecting — News Release System</title>
+  <link rel="stylesheet" href="../css/shell.css" />
 </head>
 <body>
-  <header class="topbar">
-    <a class="topbar__brand" href="#browse" aria-label="Feature home">
-      <span class="topbar__brand-icon" aria-hidden="true">▣</span>
-      <span>NEWS RELEASE SYSTEM</span>
-    </a>
+  <main class="content">
+    <p class="state-message">Opening the updated News Release System…</p>
+    <noscript>
+      <p><a href="../categories.html">Continue to Categories</a></p>
+    </noscript>
+  </main>
+  <script>
+    (() => {
+      const hash = window.location.hash.slice(1);
+      const query = new URLSearchParams(window.location.search);
+      let target = "../categories.html";
 
-    <nav class="topbar__nav" aria-label="Primary navigation">
-      <a href="#browse" data-nav="browse">Home</a>
-      <div class="category-menu">
-        <button id="category-menu-button" class="category-menu__button" type="button" aria-expanded="false">
-          Categories <span aria-hidden="true">⌄</span>
-        </button>
-        <div id="category-menu" class="category-menu__panel" hidden>
-          <button type="button" data-open-browse>Browse categories &amp; tags</button>
-          <button type="button" data-open-manage>Manage categories &amp; tags</button>
-        </div>
-      </div>
-      <span class="nav-placeholder">Trending</span>
-      <span class="nav-placeholder">Bookmarks</span>
-    </nav>
+      if (hash.startsWith("article/")) {
+        target = `../article.html?id=${encodeURIComponent(hash.split("/")[1] || "")}`;
+      } else if (hash === "search" || query.has("q")) {
+        const keyword = query.get("q");
+        target = `../search.html${keyword ? `?q=${encodeURIComponent(keyword)}` : ""}`;
+      } else if (hash === "manage") {
+        target = "../categories.html?mode=manage";
+      }
 
-    <div class="topbar__actions">
-      <form id="quick-search-form" class="quick-search" role="search">
-        <input id="quick-search" class="topbar__search" type="search" placeholder="Search news..." aria-label="Search news">
-        <button class="sr-only" type="submit">Submit search</button>
-      </form>
-      <button class="icon-btn" type="button" aria-label="Notifications">♧</button>
-      <span class="btn-publish">+ Publish</span>
-      <span class="user-chip">
-        <span class="user-chip__avatar" aria-hidden="true">●</span>
-        <span id="user-label">Guest</span>
-      </span>
-    </div>
-  </header>
-
-  <div class="layout">
-    <aside class="sidebar">
-      <nav class="sidebar__nav" aria-label="Account navigation">
-        <a href="#browse" data-side="browse"><span class="sidebar__icon">▦</span>Dashboard</a>
-        <span class="sidebar-link is-disabled"><span class="sidebar__icon">◇</span>My Articles</span>
-        <span class="sidebar-link is-disabled"><span class="sidebar__icon">✎</span>Drafts</span>
-        <span class="sidebar-link is-disabled"><span class="sidebar__icon">▱</span>Bookmarks</span>
-        <span class="sidebar-link is-disabled"><span class="sidebar__icon">◉</span>History</span>
-        <span class="sidebar-link is-disabled"><span class="sidebar__icon">⌘</span>Preferences</span>
-        <span class="sidebar-link is-disabled"><span class="sidebar__icon">⚙</span>Settings</span>
-      </nav>
-    </aside>
-
-    <main id="app" class="content" tabindex="-1" aria-live="polite">
-      <div class="loading-panel">Loading news…</div>
-    </main>
-  </div>
-
-  <div id="toast-region" class="toast-region" aria-live="polite"></div>
-  <script type="module" src="./app.js"></script>
+      window.location.replace(target);
+    })();
+  </script>
 </body>
 </html>

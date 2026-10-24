@@ -1,0 +1,6 @@
+
+.topbar-search-form { display:flex; align-items:center; gap:4px; margin:0; }
+.topbar-search-button { display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; flex-shrink:0; border:1px solid var(--border); border-radius:6px; background:var(--bg-input); color:var(--text-secondary); cursor:pointer; }
+.topbar-search-button svg { width:19px; height:19px; }
+.topbar-search-button:hover { color:var(--text-primary); border-color:var(--accent); }
+.topbar-search-button:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }

@@ -1,4 +1,4 @@
-import { signUp, getCurrentUser } from "./auth.js";
+import { signUp, getCurrentUser } from "./auth.js?v=required-category-20261022";
 
 const form = document.getElementById("signup-form");
 const submitBtn = document.getElementById("submit-btn");
@@ -14,11 +14,12 @@ form.addEventListener("submit", async (event) => {
   const displayName = document.getElementById("display-name").value.trim();
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
+  const tier = document.querySelector('input[name="tier"]:checked')?.value === "premium" ? "premium" : "free";
 
   submitBtn.disabled = true;
   messageSlot.innerHTML = "";
 
-  const { data, error } = await signUp(email, password, displayName);
+  const { data, error } = await signUp(email, password, displayName, tier);
 
   submitBtn.disabled = false;
 
@@ -29,8 +30,7 @@ form.addEventListener("submit", async (event) => {
 
   // With email confirmation enabled, Supabase returns no session yet.
   if (!data.session) {
-    showMessage("Account created. Check your email to confirm before logging in.", false);
-    form.reset();
+    window.location.href = "login.html?confirmEmail=1";
     return;
   }
 

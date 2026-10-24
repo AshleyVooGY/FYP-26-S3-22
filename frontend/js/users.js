@@ -1,5 +1,5 @@
-import { requireAdmin } from "./auth.js";
-import { getAllProfiles, setUserRole } from "../../services/userManagementService.js";
+import { requireAdmin } from "./auth.js?v=required-category-20261022";
+import { getAllProfiles, setUserRole, setUserSubscriptionTier } from "../../services/userManagementService.js?v=required-category-20261022";
 import { escapeHtml, forbiddenStateHtml } from "./format.js";
 
 let currentAdminId = null;
@@ -7,6 +7,7 @@ let currentAdminId = null;
 function rowHtml(p) {
   const isAdmin = p.role === "system_admin";
   const isSelf = p.id === currentAdminId;
+  const isPremium = p.subscription_tier === "premium";
 
   return `
     <tr>
@@ -17,6 +18,12 @@ function rowHtml(p) {
           ${isAdmin ? "Demote to User" : "Promote to Admin"}
         </button>
       </td>
+      <td><span class="plan-badge plan-badge--${isPremium ? "premium" : "free"}">${isPremium ? "Premium" : "Free"}</span></td>
+      <td>
+        <button class="article-action is-live" data-id="${p.id}" data-next-tier="${isPremium ? "free" : "premium"}">
+          ${isPremium ? "Downgrade to Free" : "Upgrade to Premium"}
+        </button>
+      </td>
     </tr>
   `;
 }
@@ -25,7 +32,7 @@ async function render(profiles) {
   document.getElementById("users-slot").innerHTML = `
     <div class="analytics-panel">
       <table class="data-table">
-        <thead><tr><th>Name</th><th>Role</th><th></th></tr></thead>
+        <thead><tr><th>Name</th><th>Role</th><th></th><th>Plan</th><th></th></tr></thead>
         <tbody>${profiles.map(rowHtml).join("")}</tbody>
       </table>
     </div>
@@ -39,6 +46,19 @@ async function render(profiles) {
         await reload();
       } catch (err) {
         alert(`Could not update role: ${err.message}`);
+        btn.disabled = false;
+      }
+    });
+  });
+
+  document.querySelectorAll("[data-next-tier]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      btn.disabled = true;
+      try {
+        await setUserSubscriptionTier(btn.dataset.id, btn.dataset.nextTier);
+        await reload();
+      } catch (err) {
+        alert(`Could not update plan: ${err.message}`);
         btn.disabled = false;
       }
     });

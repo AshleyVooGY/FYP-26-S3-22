@@ -1,6 +1,10 @@
 import { supabase } from "../../config/supabaseClient.js";
 
 import {
+    requireAuth
+} from "./auth.js?v=required-category-20261022";
+
+import {
     getArticleById,
     getTrendingArticles,
     recordArticleView
@@ -16,6 +20,10 @@ import {
     setupReactions
 } from "./reactions.js";
 
+import {
+    getRecommendations
+} from "../features-01-02-10/featureService.js";
+
 
 /* ==========================================================
    GET ARTICLE ID FROM URL
@@ -26,6 +34,207 @@ const params = new URLSearchParams(
 );
 
 const articleId = params.get("id");
+
+
+/* ==========================================================
+   ARTICLE READ ALOUD
+========================================================== */
+
+let speechChunks = [];
+let speechChunkIndex = 0;
+let speechSession = 0;
+let speechState = "idle";
+let speechUtterance = null;
+let speechStartTimer = null;
+
+function splitSpeechText(text, maxLength = 240) {
+    const normalized = String(text || "").replace(/\s+/g, " ").trim();
+    if (!normalized || !/[\p{L}\p{N}]/u.test(normalized)) return [];
+    const sentences = normalized.match(/[^.!?。！？]+[.!?。！？]*|[.!?。！？]+/gu) || [];
+    const chunks = [];
+    let current = "";
+    for (const sentence of sentences) {
+        let characters = Array.from(sentence.trim());
+        // Hard-bound long sentences too, including Chinese text without spaces.
+        while (characters.length > maxLength) {
+            if (current) { chunks.push(current); current = ""; }
+            let cut = characters.slice(0, maxLength + 1).lastIndexOf(" ");
+            if (cut < maxLength / 3) cut = maxLength;
+            chunks.push(characters.slice(0, cut).join("").trim());
+            characters = Array.from(characters.slice(cut).join("").trim());
+        }
+        const rest = characters.join("");
+        if (!rest) continue;
+        if (current && Array.from(`${current} ${rest}`).length > maxLength) {
+            chunks.push(current); current = "";
+        }
+        current = current ? `${current} ${rest}` : rest;
+    }
+    if (current) chunks.push(current);
+    return chunks;
+}
+
+function supportsReadAloud() {
+    return Boolean(window.speechSynthesis && typeof window.SpeechSynthesisUtterance === "function");
+}
+
+function updateReadAloudControls(message = "Ready to read.") {
+    const readButton = document.getElementById("read-aloud-btn");
+    const stopButton = document.getElementById("stop-reading-btn");
+    const status = document.getElementById("read-aloud-status");
+    if (status) status.textContent = message;
+    if (!readButton || !stopButton) return;
+    readButton.disabled = !supportsReadAloud() || speechState === "starting";
+    stopButton.disabled = speechState === "idle";
+    if (speechState === "starting") {
+        readButton.textContent = "Starting…";
+        readButton.setAttribute("aria-label", "Starting article reading");
+    } else if (speechState === "reading") {
+        readButton.textContent = "⏸ Pause";
+        readButton.setAttribute("aria-label", "Pause article reading");
+    } else if (speechState === "paused") {
+        readButton.textContent = "▶ Resume";
+        readButton.setAttribute("aria-label", "Resume article reading");
+    } else {
+        readButton.textContent = "🔊 Read Aloud";
+        readButton.setAttribute("aria-label", "Read article aloud");
+    }
+}
+
+function clearSpeechStartTimer() {
+    if (speechStartTimer !== null) clearTimeout(speechStartTimer);
+    speechStartTimer = null;
+}
+
+function stopReadAloud(message = "Reading stopped.") {
+    // Invalidate old callbacks before cancel(), which may dispatch synchronously.
+    speechSession += 1;
+    clearSpeechStartTimer();
+    if (speechUtterance) {
+        speechUtterance.onstart = null;
+        speechUtterance.onend = null;
+        speechUtterance.onerror = null;
+    }
+    speechUtterance = null;
+    speechChunks = [];
+    speechChunkIndex = 0;
+    speechState = "idle";
+    if (window.speechSynthesis) {
+        try {
+            window.speechSynthesis.cancel();
+            // cancel() does not clear the engine's paused flag in every browser.
+            if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+        } catch { /* Controls must still recover. */ }
+    }
+    updateReadAloudControls(message);
+}
+
+function speakNextChunk(sessionId) {
+    if (sessionId !== speechSession || speechState === "paused") return;
+    if (speechChunkIndex >= speechChunks.length) {
+        stopReadAloud("Finished reading article.");
+        return;
+    }
+    try {
+        const utterance = new window.SpeechSynthesisUtterance(speechChunks[speechChunkIndex]);
+        // Keep the active utterance alive until completion or cancellation.
+        speechUtterance = utterance;
+        let started = false;
+        utterance.lang = document.documentElement.lang || "en-US";
+        utterance.rate = 1;
+        utterance.pitch = 1;
+        speechState = "starting";
+        updateReadAloudControls("Starting article reading…");
+        clearSpeechStartTimer();
+        speechStartTimer = setTimeout(() => {
+            if (sessionId === speechSession && speechUtterance === utterance && speechState === "starting") {
+                stopReadAloud("Speech could not start. Check your browser voice settings and try again.");
+            }
+        }, 8000);
+        utterance.onstart = () => {
+            if (sessionId !== speechSession || speechUtterance !== utterance) return;
+            clearSpeechStartTimer();
+            started = true;
+            speechState = "reading";
+            updateReadAloudControls("Reading article aloud.");
+        };
+        utterance.onend = () => {
+            if (sessionId !== speechSession || speechUtterance !== utterance) return;
+            clearSpeechStartTimer();
+            if (!started) {
+                stopReadAloud("Speech ended before audio started. Check your browser voices and try again.");
+                return;
+            }
+            speechUtterance = null;
+            speechChunkIndex += 1;
+            // A pause at a chunk boundary must not enqueue the next chunk.
+            if (speechState !== "paused") speakNextChunk(sessionId);
+        };
+        utterance.onerror = event => {
+            if (sessionId !== speechSession || speechUtterance !== utterance) return;
+            const message = event.error === "not-allowed"
+                ? "Your browser blocked speech. Allow audio and try again."
+                : "Unable to read this article aloud. Check your browser voices and try again.";
+            stopReadAloud(message);
+        };
+        window.speechSynthesis.speak(utterance);
+    } catch {
+        stopReadAloud("Unable to start reading. Please try again.");
+    }
+}
+
+function startReadAloud(article) {
+    if (!supportsReadAloud()) {
+        updateReadAloudControls("Read Aloud is not supported by this browser.");
+        return;
+    }
+    const text = [article?.title, article?.content]
+        .filter(value => typeof value === "string" && value.trim()).join(". ");
+    const chunks = splitSpeechText(text);
+    stopReadAloud("");
+    if (!chunks.length) {
+        updateReadAloudControls("There is no article content to read.");
+        return;
+    }
+    speechChunks = chunks;
+    speakNextChunk(speechSession);
+}
+
+function setupReadAloud(article) {
+    const readButton = document.getElementById("read-aloud-btn");
+    const stopButton = document.getElementById("stop-reading-btn");
+    if (!readButton || !stopButton) return;
+    if (!supportsReadAloud()) {
+        updateReadAloudControls("Read Aloud is not supported by this browser.");
+        return;
+    }
+    readButton.addEventListener("click", () => {
+        try {
+            if (speechState === "starting") return;
+            if (speechState === "reading") {
+                speechState = "paused";
+                window.speechSynthesis.pause();
+                updateReadAloudControls("Reading paused.");
+            } else if (speechState === "paused") {
+                speechState = "reading";
+                window.speechSynthesis.resume();
+                if (speechUtterance) {
+                    updateReadAloudControls("Reading article aloud.");
+                } else {
+                    speakNextChunk(speechSession);
+                }
+            } else {
+                startReadAloud(article);
+            }
+        } catch {
+            stopReadAloud("Unable to control reading. Stop and try again.");
+        }
+    });
+    stopButton.addEventListener("click", () => stopReadAloud());
+    updateReadAloudControls();
+}
+
+window.addEventListener("pagehide", () => stopReadAloud(""));
 
 
 /* ==========================================================
@@ -830,6 +1039,56 @@ function renderArticle(
 
 
                 <!-- ======================================
+                     READING ACCESSIBILITY - READ ALOUD
+                ======================================= -->
+
+                <section
+                    class="article-read-aloud"
+                    aria-label="Article read aloud controls"
+                >
+
+                    <div>
+
+                        <strong>
+                            Listen to this article
+                        </strong>
+
+                        <p
+                            id="read-aloud-status"
+                            aria-live="polite"
+                        >
+                            Ready to read.
+                        </p>
+
+                    </div>
+
+                    <div class="article-read-aloud__actions">
+
+                        <button
+                            type="button"
+                            class="article-action article-action--control is-live"
+                            id="read-aloud-btn"
+                            aria-label="Read article aloud"
+                        >
+                            🔊 Read Aloud
+                        </button>
+
+                        <button
+                            type="button"
+                            class="article-action article-action--control is-live"
+                            id="stop-reading-btn"
+                            aria-label="Stop article reading"
+                            disabled
+                        >
+                            ■ Stop
+                        </button>
+
+                    </div>
+
+                </section>
+
+
+                <!-- ======================================
                      FEATURE 4 - REACTIONS
                      Created by reactions.js
                 ======================================= -->
@@ -900,7 +1159,7 @@ function renderArticle(
                     class="rail-title"
                 >
 
-                    More Trending
+                    Recommended For You
 
                 </p>
 
@@ -996,6 +1255,15 @@ function renderArticle(
         articleId
     );
 
+
+    /* ------------------------------------------------------
+       READING ACCESSIBILITY - READ ALOUD
+    ------------------------------------------------------ */
+
+    setupReadAloud(
+        article
+    );
+
 }
 
 
@@ -1004,6 +1272,18 @@ function renderArticle(
 ========================================================== */
 
 async function init() {
+
+    /* ------------------------------------------------------
+       GUESTS ARE REDIRECTED TO THE MARKETING LANDING PAGE
+    ------------------------------------------------------ */
+
+    const user = await requireAuth("welcome.html");
+
+    if (!user) {
+
+        return;
+    }
+
 
     /* ------------------------------------------------------
        CHECK ARTICLE ID
@@ -1070,29 +1350,33 @@ async function init() {
 
 
         /* --------------------------------------------------
-           LOAD TRENDING ARTICLES
+           LOAD RECOMMENDED ARTICLES (FEATURE 10)
         -------------------------------------------------- */
 
         try {
 
-            const trending =
-                await getTrendingArticles(
+            const recommended =
+                await getRecommendations(
+                    articleId,
                     6
                 );
 
 
             renderRail(
-                trending,
+                recommended,
                 articleId
             );
 
 
         } catch {
 
-            renderRail(
-                [],
-                articleId
-            );
+            /* Keep the existing trending rail as a graceful fallback. */
+            try {
+                const trending = await getTrendingArticles(6);
+                renderRail(trending, articleId);
+            } catch {
+                renderRail([], articleId);
+            }
 
         }
 

@@ -520,9 +520,8 @@ async function init() {
 
         if (!user) {
 
-            showError(
-                "Please log in to view your bookmarks."
-            );
+            window.location.href =
+                "welcome.html";
 
             return;
         }

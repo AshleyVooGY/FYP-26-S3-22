@@ -1,4 +1,4 @@
-import { requireAdmin } from "./auth.js";
+import { requireAdmin } from "./auth.js?v=required-category-20261022";
 import {
   getAnalyticsOverview,
   getArticleViewStats,

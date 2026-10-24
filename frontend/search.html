@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Search News — News Release System</title>
+  <link rel="stylesheet" href="css/shell.css" />
+  <link rel="stylesheet" href="features-01-02-10/features.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="topbar__brand" href="index.html">
+      <span class="topbar__brand-icon" aria-hidden="true">▣</span>
+      <span>NEWS RELEASE SYSTEM</span>
+    </a>
+    <nav class="topbar__nav" aria-label="Primary navigation">
+      <a href="index.html">Home</a>
+      <a href="categories.html">Categories ▾</a>
+      <a href="trending.html">Trending</a>
+      <a href="bookmarks.html">Bookmarks</a>
+    </nav>
+    <div class="topbar__actions">
+      <form action="search.html" method="get" role="search">
+        <input id="top-search" class="topbar__search" name="q" type="search" placeholder="Search news..." aria-label="Search news" />
+      </form>
+      <button class="icon-btn" type="button" title="Coming soon" aria-label="Notifications">♧</button>
+      <a class="btn-publish is-live" href="article-editor.html">+ Publish</a>
+      <a href="login.html" class="user-chip" id="user-chip">
+        <span class="user-chip__avatar" aria-hidden="true">●</span>
+        <span id="user-label">User</span>
+      </a>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar" aria-label="Account navigation"></aside>
+
+    <main id="search-app" class="content" tabindex="-1" aria-live="polite">
+      <div class="loading-panel">Loading search…</div>
+    </main>
+  </div>
+
+  <script type="module" src="js/auth.js?v=required-category-20261022"></script>
+  <script type="module" src="js/search.js?v=required-category-20261022"></script>
+</body>
+</html>

@@ -77,6 +77,68 @@
   border-color: var(--accent);
 }
 
+.plan-picker {
+  border: none;
+  padding: 0;
+  margin: 0 0 16px;
+}
+
+.plan-picker legend {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  padding: 0;
+}
+
+.plan-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.plan-option:last-child {
+  margin-bottom: 0;
+}
+
+.plan-option:hover {
+  border-color: var(--accent);
+}
+
+.plan-option:has(input:checked) {
+  border-color: var(--accent);
+  background: rgba(108, 92, 231, 0.08);
+}
+
+.plan-option input {
+  margin-top: 3px;
+  accent-color: var(--accent);
+  flex-shrink: 0;
+}
+
+.plan-option__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.plan-option__name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.plan-option__desc {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
 .auth-submit {
   width: 100%;
   background: var(--accent);

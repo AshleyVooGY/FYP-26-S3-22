@@ -2,12 +2,13 @@ import { requireAuth } from "./auth.js?v=required-category-20261022";
 import {
   getCategories,
   getTags,
+  getOrCreateTag,
   getMyArticleById,
   saveArticleWorkspace,
   deleteArticle,
   uploadArticleImage,
   removeArticleImage
-} from "../../services/feature8Service.js?v=single-category-20261019";
+} from "../../services/feature8Service.js?v=apply-tags-20261024";
 import {
   CREDIBILITY_THRESHOLD,
   getSubscriptionTier,
@@ -485,7 +486,7 @@ function renderAiSuggestion() {
   } else if (aiSuggestion.summary) {
     body = `<p class="ai-suggestion__label">Suggested summary</p><p>${escapeHtml(aiSuggestion.summary)}</p><button class="ai-apply-btn" type="button" data-copy-value="summary">Copy summary</button>`;
   } else if (aiSuggestion.tags.length) {
-    body = `<p class="ai-suggestion__label">Suggested tags</p><div class="ai-tag-list">${aiSuggestion.tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div><button class="ai-apply-btn" type="button" data-copy-value="tags">Copy tags</button>`;
+    body = `<p class="ai-suggestion__label">Suggested tags</p><div class="ai-tag-list">${aiSuggestion.tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div><button class="ai-apply-btn" type="button" data-apply-tags>Apply tags</button><button class="ai-apply-btn" type="button" data-copy-value="tags">Copy tags</button><p class="classification-help">Applying creates any tag that doesn't already exist yet.</p>`;
   } else if (aiSuggestion.content) {
     body = `<p class="ai-suggestion__label">Review polished article</p>
       <p>Check names, dates, numbers and quotations before applying. AI editing can make mistakes.</p>
@@ -513,6 +514,7 @@ function renderAiSuggestion() {
       setAiStatus("Title applied. Review it before continuing.");
     });
   });
+  slot.querySelector("[data-apply-tags]")?.addEventListener("click", handleApplyTags);
   slot.querySelector("[data-apply-content]")?.addEventListener("click", () => {
     if (aiSuggestion.snapshot !== articleFingerprint()) { handleArticleInput(); return; }
     const original = document.getElementById("field-content").value;
@@ -541,6 +543,57 @@ function renderAiSuggestion() {
     renderAiSuggestion();
     setAiStatus("");
   });
+}
+
+let tagsApplying = false;
+
+/**
+ * Applies the current AI tag suggestion to the article's tag picker,
+ * creating any tag that doesn't exist yet (get_or_create_tag, which any
+ * Registered User may call — see author-tag-creation.sql). Already-checked
+ * tags are kept; suggested tags are added on top rather than replacing them.
+ */
+async function handleApplyTags() {
+  if (tagsApplying || !aiSuggestion?.tags?.length) return;
+  if (aiSuggestion.snapshot !== articleFingerprint()) {
+    handleArticleInput();
+    return;
+  }
+
+  tagsApplying = true;
+  const applyButton = document.querySelector("[data-apply-tags]");
+  if (applyButton) {
+    applyButton.disabled = true;
+    applyButton.textContent = "Applying…";
+  }
+  setAiStatus("Applying suggested tags…");
+
+  try {
+    const resolvedIds = [];
+    for (const tagName of aiSuggestion.tags) {
+      const tag = await getOrCreateTag(tagName);
+      resolvedIds.push(String(tag.id));
+      if (!tags.some((item) => String(item.id) === String(tag.id))) {
+        tags.push(tag);
+      }
+    }
+    tags.sort((a, b) => a.name.localeCompare(b.name));
+
+    const currentlyChecked = [...document.querySelectorAll('input[name="tagIds"]:checked')].map((input) => input.value);
+    const nextSelected = [...new Set([...currentlyChecked, ...resolvedIds])];
+    const picker = document.getElementById("tag-options");
+    picker.innerHTML = classificationOptionsHtml(tags, nextSelected, "tagIds", "No tags are available.");
+    picker.querySelectorAll('input[name="tagIds"]').forEach((input) => input.addEventListener("change", handleArticleInput));
+
+    handleArticleInput();
+    aiSuggestion = null;
+    renderAiSuggestion();
+    setAiStatus("Tags applied. Save your draft to keep them; recheck credibility before publishing.");
+  } catch (error) {
+    setAiStatus(error.message, true);
+  } finally {
+    tagsApplying = false;
+  }
 }
 
 function renderWritingUndo() {

@@ -1,5 +1,5 @@
 import { getCurrentUser as authCurrentUser } from "./auth.js?v=required-category-20261022";
-import { getNewsPreferences, saveNewsPreferences } from "../../services/personalizationService.js?v=required-category-20261022";
+import { getNewsPreferences, saveNewsPreferences } from "../../services/personalizationService.js?v=news-page-totals-20261023";
 
 import { ICONS } from "./icons.js";
 

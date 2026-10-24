@@ -1,6 +1,6 @@
 import { requireAdmin } from './auth.js?v=required-category-20261022';
 import { getCategoryReviewQueue,decideCategoryReview } from '../../services/publishingReviewService.js?v=required-category-20261022';
-import { getCategories } from '../../services/feature8Service.js';
+import { getCategories } from '../../services/feature8Service.js?v=apply-tags-20261024';
 import { escapeHtml,forbiddenStateHtml } from './format.js';
 const list=document.getElementById('category-review-list'),status=document.getElementById('review-status'),more=document.getElementById('review-more'),refresh=document.getElementById('review-refresh');
 let viewer=null,cursor=null,loading=false,categories=[];

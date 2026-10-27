@@ -8,7 +8,7 @@ import {
   deleteArticle,
   uploadArticleImage,
   removeArticleImage
-} from "../../services/feature8Service.js?v=apply-tags-20261024";
+} from "../../services/feature8Service.js?v=editor-input-protection-20261027";
 import {
   CREDIBILITY_THRESHOLD,
   getSubscriptionTier,
@@ -25,6 +25,60 @@ let article = null;
 let categories = [];
 let tags = [];
 let currentUser = null;
+let savedFormState = null;
+let allowEditorNavigation = false;
+let imageOperationPending = false;
+let savingWorkspace = false;
+
+// Track exact displayed input, including whitespace; publishing checks use
+// their own normalised fingerprint and are deliberately kept separate.
+function formState(values) {
+  return JSON.stringify({ title: values.title, content: values.content,
+    categoryIds: values.categoryIds.map(String).sort(), tagIds: values.tagIds.map(String).sort() });
+}
+function hasUnsavedEditorChanges() {
+  return savedFormState !== null && document.getElementById('field-title')
+    && formState(readForm()) !== savedFormState;
+}
+function shouldWarnBeforeLeaving() {
+  return !allowEditorNavigation && (hasUnsavedEditorChanges() || savingWorkspace || imageOperationPending);
+}
+window.addEventListener('beforeunload', event => {
+  if (!shouldWarnBeforeLeaving()) return;
+  event.preventDefault();
+  event.returnValue = '';
+});
+document.addEventListener('click', event => {
+  const link = event.target.closest?.('a[href]');
+  if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey
+    || link.target === '_blank' || link.hasAttribute('download') || !shouldWarnBeforeLeaving()) return;
+  const target = new URL(link.href, location.href);
+  if (!link.hasAttribute('data-logout') && (target.href === location.href ||
+    (target.origin === location.origin && target.pathname === location.pathname && target.search === location.search && target.hash))) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  showEditorLeavePrompt(link);
+}, true);
+function showEditorLeavePrompt(link) {
+  let dialog = document.getElementById('editor-leave-dialog');
+  if (dialog?.open) return;
+  if (!dialog) {
+    dialog = document.createElement('dialog');
+    dialog.id = 'editor-leave-dialog';
+    dialog.setAttribute('aria-labelledby', 'editor-leave-title');
+    dialog.innerHTML = '<h2 id="editor-leave-title">Leave this editor?</h2><p>You have unsaved changes or an operation in progress. Stay to keep editing, or leave without saving your current changes.</p><div class="article-editor__actions"><button type="button" class="article-editor__btn" data-stay-editor>Keep editing</button><button type="button" class="article-editor__btn article-editor__btn--danger" data-leave-editor>Leave editor</button></div>';
+    document.body.append(dialog);
+  }
+  dialog.querySelector('[data-stay-editor]').onclick = () => dialog.close();
+  dialog.querySelector('[data-leave-editor]').onclick = () => {
+    dialog.close();
+    allowEditorNavigation = true;
+    link.click();
+    window.setTimeout(() => { allowEditorNavigation = false; }, 1500);
+  };
+  dialog.showModal();
+}
+
 let subscriptionTier = "free";
 let credibilityResult = null;
 let verifiedFingerprint = null;
@@ -145,6 +199,25 @@ function aiWritingPanelHtml() {
   `;
 }
 
+function articleImageHtml() {
+  if (!articleId) return '<span>Featured Image</span><p class="state-message article-image-note">Save your article as a draft first, then you can add an image.</p>';
+  return `<span>Featured Image</span>
+    <div class="media-thumb article-editor__thumb">${thumbHtml(article ?? {})}</div>
+    <div class="media-actions">
+      <label class="media-upload-btn">${article?.featured_image_url ? 'Replace' : 'Upload'} Image
+        <input type="file" id="field-image" accept="image/png,image/jpeg,image/webp,image/gif" hidden ${imageOperationPending ? 'disabled' : ''} />
+      </label>
+      <button class="article-action ${article?.featured_image_url ? 'is-live' : ''}" id="remove-image-btn" type="button" ${!article?.featured_image_url || imageOperationPending ? 'disabled' : ''}>Remove</button>
+    </div>`;
+}
+function renderArticleImage() {
+  const region = document.getElementById('article-image-region');
+  if (!region) return;
+  region.innerHTML = articleImageHtml();
+  document.getElementById('field-image')?.addEventListener('change', handleImageUpload);
+  document.getElementById('remove-image-btn')?.addEventListener('click', handleImageRemove);
+}
+
 function render() {
   const slot = document.getElementById("editor-slot");
   const isEditing = Boolean(articleId);
@@ -197,24 +270,8 @@ function render() {
           <textarea id="field-content" rows="14" placeholder="Write your article...">${escapeHtml(article?.content ?? "")}</textarea>
         </label>
 
-        <div class="article-editor__field">
-          <span>Featured Image</span>
-          ${
-            isEditing
-              ? `
-                <div class="media-thumb article-editor__thumb">${thumbHtml(article ?? {})}</div>
-                <div class="media-actions">
-                  <label class="media-upload-btn">
-                    ${article?.featured_image_url ? "Replace" : "Upload"} Image
-                    <input type="file" id="field-image" accept="image/png,image/jpeg,image/webp,image/gif" hidden />
-                  </label>
-                  <button class="article-action ${article?.featured_image_url ? "is-live" : ""}" id="remove-image-btn" type="button" ${article?.featured_image_url ? "" : "disabled"}>
-                    Remove
-                  </button>
-                </div>
-              `
-              : `<p class="state-message article-image-note">Save your article as a draft first, then you can add an image.</p>`
-          }
+        <div class="article-editor__field" id="article-image-region">
+          ${articleImageHtml()}
         </div>
 
         <div class="article-editor__actions">
@@ -259,6 +316,7 @@ function render() {
   const removeBtn = document.getElementById("remove-image-btn");
   if (removeBtn) removeBtn.addEventListener("click", handleImageRemove);
 
+  if (savedFormState === null) savedFormState = formState(readForm());
   renderCredibilityResult();
   if (aiSuggestion && aiSuggestion.snapshot !== articleFingerprint()) aiSuggestion = null;
   if (writingUndo && writingUndo.applied !== readForm().content) writingUndo = null;
@@ -323,8 +381,10 @@ async function handleCategoryAppeal(){
  try{
   if(snapshot!==categoryReviewFingerprint)throw new Error('The article changed. Run the publishing check again.');
   if(article?.status!=='published'){
-   articleId=await saveArticleWorkspace(articleId,readForm(),false);
+   const reviewValues = readForm();
+   articleId=await saveArticleWorkspace(articleId,reviewValues,false);
    article={...article,id:articleId,status:'draft'};
+   savedFormState = formState({ ...reviewValues, title: reviewValues.title.trim(), content: reviewValues.content.trim() });
    window.history.replaceState(null,'',`article-editor.html?id=${articleId}`);
   }
   if(snapshot!==articleFingerprint())throw new Error('The article changed while saving. Check the new version before requesting a review.');
@@ -370,8 +430,8 @@ function updatePublishingState() {
   const lock = document.getElementById("publish-lock");
   const isPublished = article?.status === "published";
 
-  if (publishBtn) publishBtn.disabled = !passed;
-  if (saveBtn && isPublished) saveBtn.disabled = !passed;
+  if (publishBtn) publishBtn.disabled = !passed || savingWorkspace || imageOperationPending;
+  if (saveBtn) saveBtn.disabled = savingWorkspace || imageOperationPending || (isPublished && !passed);
   if (!lock) return;
   if (publishChecking && !credibilityResult) {
     lock.textContent = 'Checking credibility and category…';
@@ -560,6 +620,8 @@ async function handleApplyTags() {
     return;
   }
 
+  const suggestion = aiSuggestion;
+  const snapshot = suggestion.snapshot;
   tagsApplying = true;
   const applyButton = document.querySelector("[data-apply-tags]");
   if (applyButton) {
@@ -569,13 +631,20 @@ async function handleApplyTags() {
   setAiStatus("Applying suggested tags…");
 
   try {
-    const resolvedIds = [];
-    for (const tagName of aiSuggestion.tags) {
-      const tag = await getOrCreateTag(tagName);
-      resolvedIds.push(String(tag.id));
-      if (!tags.some((item) => String(item.id) === String(tag.id))) {
-        tags.push(tag);
+    const resolvedTags = [];
+    for (const tagName of suggestion.tags) {
+      if (aiSuggestion !== suggestion || snapshot !== articleFingerprint()) {
+        throw new Error("The article or suggestion changed. Request tag suggestions again for the current version.");
       }
+      const tag = await getOrCreateTag(tagName);
+      resolvedTags.push(tag);
+    }
+    if (aiSuggestion !== suggestion || snapshot !== articleFingerprint()) {
+      throw new Error("The article or suggestion changed. Request tag suggestions again for the current version.");
+    }
+    const resolvedIds = resolvedTags.map((tag) => String(tag.id));
+    for (const tag of resolvedTags) {
+      if (!tags.some((item) => String(item.id) === String(tag.id))) tags.push(tag);
     }
     tags.sort((a, b) => a.name.localeCompare(b.name));
 
@@ -593,6 +662,10 @@ async function handleApplyTags() {
     setAiStatus(error.message, true);
   } finally {
     tagsApplying = false;
+    if (applyButton?.isConnected) {
+      applyButton.disabled = false;
+      applyButton.textContent = "Apply tags";
+    }
   }
 }
 
@@ -676,9 +749,8 @@ async function handleSaveDraft() {
   await saveWorkspace(values, isPublished);
 }
 
-let savingWorkspace = false;
 async function saveWorkspace(values, publish) {
-  if (savingWorkspace) return;
+  if (savingWorkspace || imageOperationPending) return;
   if (!values.title.trim() || !values.content.trim()) {
     setStatus('Enter a title and article content before saving.', true);
     return;
@@ -687,24 +759,66 @@ async function saveWorkspace(values, publish) {
     setStatus('Select a category before publishing.', true);
     return;
   }
+  const wasPublished = article?.status === 'published';
+  const submittedState = formState(values);
   savingWorkspace = true;
-  document.querySelectorAll('#save-draft-btn,#publish-btn').forEach(button => { button.disabled = true; });
+  document.querySelectorAll('#save-draft-btn,#publish-btn,#delete-btn').forEach(button => { button.disabled = true; });
   setStatus(publish ? 'Saving verified article…' : 'Saving draft…');
   try {
     articleId = await saveArticleWorkspace(articleId, values, publish, credibilityResult?.receiptId);
     window.history.replaceState(null, '', `article-editor.html?id=${articleId}`);
-    if (publish) {
-      window.location.href = 'my-articles.html';
+    const changedWhileSaving = formState(readForm()) !== submittedState;
+    article = { ...article, id: articleId, title: values.title.trim(), content: values.content.trim(),
+      category_id: values.categoryIds[0] ? Number(values.categoryIds[0]) : null,
+      category_ids: values.categoryIds.map(Number), tag_ids: values.tagIds.map(Number),
+      status: publish ? 'published' : 'draft' };
+    savedFormState = formState({ ...values, title: values.title.trim(), content: values.content.trim() });
+    if (publish && !changedWhileSaving) {
+      allowEditorNavigation = true;
+      window.location.href = `my-articles.html?success=${wasPublished ? 'updated' : 'published'}`;
       return;
     }
-    await reloadArticle();
-    setStatus('Draft saved with its categories and tags.');
+    if (!changedWhileSaving) {
+      // Match the confirmed normalised save without replacing the input nodes.
+      document.getElementById('field-title').value = values.title.trim();
+      document.getElementById('field-content').value = values.content.trim();
+    }
+    renderArticleImage();
+    if (!document.getElementById('delete-btn')) {
+      const actions = document.querySelector('.article-editor__actions');
+      if (actions) {
+        const deleteButton = document.createElement('button');
+        deleteButton.id = 'delete-btn'; deleteButton.type = 'button';
+        deleteButton.className = 'article-editor__btn article-editor__btn--danger';
+        deleteButton.textContent = publish ? 'Delete Article' : 'Delete Draft';
+        deleteButton.addEventListener('click', handleDelete);
+        actions.append(deleteButton);
+      }
+    }
+    setPageTitle(publish ? 'Edit Article' : 'Edit Draft');
+    const introTitle = document.querySelector('.article-editor__intro h2');
+    if (introTitle) introTitle.textContent = publish ? 'Update published article' : 'Continue your draft';
+    if (publish) {
+      document.getElementById('publish-btn')?.remove();
+      document.getElementById('save-draft-btn').textContent = 'Save Verified Changes';
+      const label = document.querySelector('.article-state'); if (label) label.textContent = 'Published';
+      const intro = document.querySelector('.article-editor__intro h2'); if (intro) intro.textContent = 'Update published article';
+      const deleteButton = document.getElementById('delete-btn'); if (deleteButton) deleteButton.textContent = 'Delete Article';
+      // The receipt was consumed for the submitted version.
+      credibilityResult = null; verifiedFingerprint = null; credibilityWasInvalidated = true;
+      renderCredibilityResult();
+    }
+    setStatus(changedWhileSaving
+      ? (publish ? 'The submitted version was published. Your newer edits are still here and are not saved; check and save them separately.'
+        : 'Draft saved. Your newer edits are still here and have not been saved yet.')
+      : 'Draft saved with its category and tags.');
   } catch (error) {
     setStatus(error.message, true);
   } finally {
     savingWorkspace = false;
     const saveButton = document.getElementById('save-draft-btn');
     if (saveButton) saveButton.disabled = false;
+    const deleteButton = document.getElementById('delete-btn'); if (deleteButton) deleteButton.disabled = false;
     updatePublishingState();
   }
 }
@@ -719,9 +833,11 @@ async function handlePublish() {
 }
 
 async function handleDelete() {
+  if (savingWorkspace || imageOperationPending) return;
   if (!confirm("Delete this article? This cannot be undone.")) return;
   try {
     await deleteArticle(articleId);
+    allowEditorNavigation = true;
     window.location.href = article.status === "published" ? "my-articles.html" : "drafts.html";
   } catch (err) {
     setStatus(err.message, true);
@@ -730,26 +846,37 @@ async function handleDelete() {
 
 async function handleImageUpload(event) {
   const file = event.target.files?.[0];
-  if (!file) return;
-
-  setStatus("Uploading…");
+  if (!file || imageOperationPending || savingWorkspace) return;
+  imageOperationPending = true;
+  renderArticleImage(); updatePublishingState();
+  setStatus('Uploading…');
   try {
-    await uploadArticleImage(articleId, file, article?.featured_image_url ?? null);
-    await reloadArticle();
-    setStatus("Image updated.");
+    const imageUrl = await uploadArticleImage(articleId, file, article?.featured_image_url ?? null);
+    article = { ...article, featured_image_url: imageUrl };
+    setStatus('Image updated. Your current text and tag selections have been kept.');
   } catch (err) {
     setStatus(err.message, true);
+  } finally {
+    imageOperationPending = false;
+    renderArticleImage(); updatePublishingState();
   }
 }
 
 async function handleImageRemove() {
-  setStatus("Removing…");
+  if (imageOperationPending || savingWorkspace) return;
+  imageOperationPending = true;
+  renderArticleImage(); updatePublishingState();
+  setStatus('Removing…');
   try {
     await removeArticleImage(articleId, article.featured_image_url);
-    await reloadArticle();
-    setStatus("Image removed.");
+    article = { ...article, featured_image_url: null };
+    setStatus('Image removed. Your current text and tag selections have been kept.');
   } catch (err) {
+    if (err.imageDetached) article = { ...article, featured_image_url: null };
     setStatus(err.message, true);
+  } finally {
+    imageOperationPending = false;
+    renderArticleImage(); updatePublishingState();
   }
 }
 

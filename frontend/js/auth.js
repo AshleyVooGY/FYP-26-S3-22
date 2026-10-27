@@ -1,3 +1,4 @@
+import { setupNotifications } from './notifications.js?v=notifications-20261027';
 import { sidebarHtml } from "./sidebar.js?v=for-you-compass-20261023";
 import { supabase } from "../../config/supabaseClient.js";
 import { upgradeMyAccountToPremium } from "../../services/userManagementService.js?v=required-category-20261022";
@@ -210,6 +211,7 @@ async function renderUserChip() {
   if (label) {
     const user = await getCurrentUser();
 
+    setupNotifications(user);
     if (user) {
       label.textContent = user.user_metadata?.display_name || user.email || "Account";
       if (chip) {

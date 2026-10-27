@@ -1,3 +1,4 @@
+import { setupComments } from './comments.js?v=comments-20261027';
 import { supabase } from "../../config/supabaseClient.js";
 
 import {
@@ -1107,8 +1108,9 @@ function renderArticle(
 
                     <button
                         type="button"
-                        class="article-action"
-                        title="Coming soon"
+                        class="article-action is-live"
+                        id="comment-btn"
+                        aria-controls="article-comments"
                     >
 
                         💬 Comment
@@ -1146,6 +1148,7 @@ function renderArticle(
                 </div>
 
 
+                <section id="article-comments" class="article-comments" aria-labelledby="comments-heading"></section>
             </article>
 
 
@@ -1254,6 +1257,7 @@ function renderArticle(
     setupReactions(
         articleId
     );
+    setupComments(articleId);
 
 
     /* ------------------------------------------------------

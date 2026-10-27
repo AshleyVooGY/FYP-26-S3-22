@@ -1,5 +1,5 @@
 import { getCurrentUser } from "./auth.js?v=required-category-20261022";
-import { getTrendingArticles, getPopularArticles } from "../../services/feature5Service.js";
+import { getTrendingArticles } from "../../services/feature5Service.js?v=activity-windows-20261027";
 import { escapeHtml, formatCount } from "./format.js";
 
 const HEADLINE_COUNT = 3;
@@ -8,7 +8,7 @@ function renderHeadlines(articles) {
   const slot = document.getElementById("headline-slot");
 
   if (!articles || articles.length === 0) {
-    slot.innerHTML = '<p class="state-message">Check back soon for today\'s top stories.</p>';
+    slot.innerHTML = '<p class="state-message">No recorded activity in the last 24 hours yet.</p>';
     return;
   }
 
@@ -28,13 +28,7 @@ function renderHeadlines(articles) {
 async function loadHeadlines() {
   try {
     const trending = await getTrendingArticles(HEADLINE_COUNT);
-    if (trending && trending.length > 0) {
-      renderHeadlines(trending);
-      return;
-    }
-
-    const popular = await getPopularArticles(HEADLINE_COUNT);
-    renderHeadlines(popular);
+    renderHeadlines(trending);
   } catch {
     renderHeadlines(null);
   }

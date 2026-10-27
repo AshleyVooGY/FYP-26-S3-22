@@ -1,5 +1,5 @@
 import { requireAuth } from "./auth.js?v=required-category-20261022";
-import { getTrendingArticles, getPopularArticles } from "../../services/feature5Service.js";
+import { getTrendingArticles } from "../../services/feature5Service.js?v=activity-windows-20261027";
 import { formatCount, formatRelativeTime, escapeHtml, thumbHtml } from "./format.js";
 import { renderPagination as renderPaginationControl } from "./pagination.js";
 
@@ -7,30 +7,12 @@ const PAGE_SIZE = 5;
 const FETCH_LIMIT = 50;
 
 const TABS = [
-  {
-    key: "trending",
-    label: "Trending Now",
-    fetch: () => getTrendingArticles(FETCH_LIMIT),
-    note: "Ranked from articles published in the last 7 days."
-  },
-  {
-    key: "popular-today",
-    label: "Popular Today",
-    fetch: () => getPopularArticles(FETCH_LIMIT),
-    note: "Ranked by overall popularity across all published articles."
-  },
-  {
-    key: "popular-week",
-    label: "This Week",
-    fetch: () => getPopularArticles(FETCH_LIMIT),
-    note: "Ranked by overall popularity across all published articles."
-  },
-  {
-    key: "popular-month",
-    label: "This Month",
-    fetch: () => getPopularArticles(FETCH_LIMIT),
-    note: "Ranked by overall popularity across all published articles."
-  }
+  { key: 'trending', label: 'Trending Now', fetch: () => getTrendingArticles(FETCH_LIMIT, '24h'),
+    note: 'Ranked by activity in the last 24 hours. Counts shown are lifetime totals.' },
+  { key: 'week', label: 'This Week', fetch: () => getTrendingArticles(FETCH_LIMIT, '7d'),
+    note: 'Ranked by activity in the last 7 days. Counts shown are lifetime totals.' },
+  { key: 'month', label: 'This Month', fetch: () => getTrendingArticles(FETCH_LIMIT, '30d'),
+    note: 'Ranked by activity in the last 30 days. Counts shown are lifetime totals.' }
 ];
 
 const state = {
@@ -115,7 +97,7 @@ function renderRows() {
   const pageItems = sorted.slice(start, start + PAGE_SIZE);
 
   if (pageItems.length === 0) {
-    listEl.innerHTML = '<p class="state-message">No articles to show yet.</p>';
+    listEl.innerHTML = '<p class="state-message">No recorded activity in this time range yet. Try another time range.</p>';
     return;
   }
 
@@ -125,20 +107,24 @@ function renderRows() {
 }
 
 async function renderList() {
+  const requestedTab = state.tabKey;
   const listEl = document.getElementById("rank-list");
 
   if (!state.cache[state.tabKey]) {
     listEl.innerHTML = '<p class="state-message">Loading…</p>';
+    document.getElementById('pagination').innerHTML = '';
     try {
       const tab = TABS.find((t) => t.key === state.tabKey);
       state.cache[state.tabKey] = await tab.fetch();
     } catch (err) {
+      if (state.tabKey !== requestedTab) return;
       listEl.innerHTML = `<p class="state-message is-error">Could not load articles: ${escapeHtml(err.message)}</p>`;
       document.getElementById("pagination").innerHTML = "";
       return;
     }
   }
 
+  if (state.tabKey !== requestedTab) return;
   renderRows();
   renderPagination(state.cache[state.tabKey].length);
 }
@@ -146,7 +132,10 @@ async function renderList() {
 document.getElementById("sort-select").addEventListener("change", (e) => {
   state.sort = e.target.value;
   state.page = 1;
-  renderRows();
+  if (state.cache[state.tabKey]) {
+    renderRows();
+    renderPagination(state.cache[state.tabKey].length);
+  }
 });
 
 async function init() {

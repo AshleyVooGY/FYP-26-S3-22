@@ -65,6 +65,18 @@ async function init() {
   const user = await requireAuth();
   if (!user) return;
 
+  const url = new URL(window.location.href);
+  const success = url.searchParams.get('success');
+  if (success === 'published' || success === 'updated') {
+    // Consume the redirect feedback so refresh does not repeat it.
+    url.searchParams.delete('success');
+    window.history.replaceState(window.history.state, '', url);
+    const feedback = document.getElementById('article-success');
+    feedback.textContent = success === 'published'
+      ? 'Article published successfully.' : 'Article updated successfully.';
+    feedback.hidden = false;
+  }
+
   const slot = document.getElementById("my-articles-slot");
   slot.innerHTML = '<p class="state-message">Loading…</p>';
 

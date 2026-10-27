@@ -1,0 +1,17 @@
+.notification-bell { position: relative; cursor: pointer; }
+.notification-bell[hidden], .notification-panel[hidden], .notification-panel [hidden], .notification-badge[hidden] { display: none !important; }
+.notification-badge { position: absolute; right: -5px; top: -5px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 10px; background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; }
+.notification-panel { position: fixed; z-index: 1000; top: 72px; right: 20px; width: min(420px, calc(100vw - 32px)); max-height: calc(100vh - 100px); overflow: auto; box-sizing: border-box; padding: 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-panel); color: var(--text-primary); box-shadow: 0 12px 36px rgb(0 0 0 / 30%); }
+.notification-panel header, .notification-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.notification-panel h2 { margin: 0; font-size: 1.125em; }
+.notification-panel button { color: var(--text-primary); background: var(--bg-panel-alt); border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; cursor: pointer; font: inherit; font-size: .875em; }
+.notification-panel button:disabled { opacity: .55; cursor: default; }
+.notification-panel button:focus-visible, .notification-item:focus-visible, .notification-bell:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.notification-actions { margin-top: 14px; }
+.notification-status { min-height: 1em; margin: 10px 0; color: var(--text-secondary); font-size: .875em; }
+.notification-status.is-error { color: #f08a8a; }
+.notification-item { display: block; padding: 12px; margin: 4px 0; border-radius: 6px; color: inherit; text-decoration: none; overflow-wrap: anywhere; line-height: 1.5; }
+.notification-item.is-unread { background: var(--bg-panel-alt); border-left: 3px solid var(--accent); }
+.notification-item:hover { background: var(--bg-input); color: inherit; text-decoration: none; }
+.notification-item small { display: block; color: var(--text-secondary); margin-top: 5px; font-size: .8em; }
+.notification-empty { padding: 18px 0; color: var(--text-secondary); }

@@ -352,7 +352,11 @@ export async function removeArticleImage(articleId, imageUrl) {
 
   if (path) {
     const { error: cleanupError } = await supabase.storage.from(BUCKET).remove([path]);
-    if (cleanupError) throw new Error("Image detached, but the stored file could not be removed. Reload the editor and contact an administrator.");
+    if (cleanupError) {
+      const cleanupFailure = new Error("Image removed from the article, but the stored file could not be cleaned up. Please contact an administrator.");
+      cleanupFailure.imageDetached = true;
+      throw cleanupFailure;
+    }
   }
 }
 

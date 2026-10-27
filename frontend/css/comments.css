@@ -1,0 +1,23 @@
+.article-comments { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--border); scroll-margin-top: 90px; }
+.article-comments h2 { margin: 0 0 18px; font-size: 1.25em; }
+.comment-form label { display: block; font-weight: 600; margin-bottom: 8px; }
+.comment-form textarea { display: block; width: 100%; box-sizing: border-box; resize: vertical; padding: 12px; font: inherit; line-height: 1.6; color: var(--text-primary); background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius); }
+.comment-form textarea:focus-visible, .article-comments button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.comment-form__footer, .comment-item header, .comment-dialog-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.comment-form__footer { justify-content: space-between; margin-top: 10px; }
+.comment-form__footer span, .comment-item time { color: var(--text-secondary); font-size: .875em; }
+.comment-status { min-height: 1.5em; line-height: 1.5; color: var(--text-secondary); }
+.comment-status.is-error { color: #f08a8a; }
+.comment-item { border-top: 1px solid var(--border); padding: 18px 0; }
+.comment-item header { font-size: .95em; }
+.comment-item header button { margin-left: auto; }
+.comment-item .comment-body { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; margin: 10px 0 0; }
+.comment-delete-dialog { padding: 24px; border-radius: var(--radius); border: 1px solid var(--border); color: var(--text-primary); background: var(--bg-panel); font: inherit; width: min(30rem, calc(100vw - 32px)); }
+.comment-delete-dialog::backdrop { background: rgb(0 0 0 / 55%); }
+.comment-delete-dialog h3 { margin-top: 0; }
+.comment-dialog-actions { justify-content: flex-end; }
+
+.article-comments [hidden] { display: none !important; }
+.comment-form button[type="submit"] { padding: 10px 16px; min-height: 40px; border: 1px solid var(--accent); border-radius: var(--radius); background: var(--accent); color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+.comment-form button[type="submit"]:disabled { opacity: .65; cursor: wait; }
+.comment-dialog-actions button { padding: 8px 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-panel-alt); font: inherit; cursor: pointer; }

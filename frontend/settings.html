@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings — News Release System</title>
+  <link rel="stylesheet" href="css/shell.css" />
+  <link rel="stylesheet" href="css/settings.css?v=account-settings-20261027" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar__brand">
+      <span class="topbar__brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="16" rx="1.5"/><path d="M17 8.5h4V18a2 2 0 0 1-2 2h-2"/><line x1="6.5" y1="8.5" x2="13.5" y2="8.5"/><line x1="6.5" y1="12" x2="13.5" y2="12"/><line x1="6.5" y1="15.5" x2="11" y2="15.5"/></svg></span>
+      <span>NEWS RELEASE SYSTEM</span>
+    </div>
+    <nav class="topbar__nav">
+      <a href="index.html">Home</a>
+      <a href="categories.html">Categories ▾</a>
+      <a href="trending.html">Trending</a>
+      <a href="bookmarks.html" class="" >Bookmarks</a>
+    </nav>
+    <div class="topbar__actions">
+      <input class="topbar__search" type="search" placeholder="Search news..." aria-label="Search news" />
+      <button class="icon-btn" title="Coming soon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 6.5-2.5 8.5-2.5 8.5h17S18 14.5 18 8z"/><path d="M13.7 20a2 2 0 0 1-3.4 0"/></svg></button>
+      <a class="btn-publish is-live" href="article-editor.html">+ Publish</a>
+      <a href="login.html" class="user-chip" id="user-chip">
+        <span class="user-chip__avatar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-1.5A4.5 4.5 0 0 0 15.5 15h-7A4.5 4.5 0 0 0 4 19.5V21"/><circle cx="12" cy="7.5" r="4"/></svg></span>
+        <span id="user-label">Guest</span>
+      </a>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar" aria-label="Account navigation"></aside>
+    <main class="content settings-content">
+      <h1 class="section-title">Settings</h1>
+      <p class="settings-description">Manage your display name and account security.</p>
+      <p id="settings-loading" role="status">Loading account settings…</p>
+      <button class="settings-button" id="settings-retry" type="button" hidden>Try again</button>
+      <div id="settings-forms" hidden>
+        <section class="settings-panel" aria-labelledby="profile-heading">
+          <h2 id="profile-heading">Display name</h2>
+          <p>This name appears on your articles, comments and account profile.</p>
+          <form id="display-name-form">
+            <label for="display-name">Display name</label>
+            <input id="display-name" name="displayName" type="text" maxlength="60" required autocomplete="nickname" aria-describedby="name-help" />
+            <p id="name-help" class="settings-help">1–60 characters. Names do not have to be unique.</p>
+            <button class="settings-button is-primary" id="save-name" type="submit">Save display name</button>
+            <p id="name-status" class="settings-status" role="status" aria-live="polite"></p>
+          </form>
+        </section>
+        <section class="settings-panel" aria-labelledby="security-heading">
+          <h2 id="security-heading">Reset password</h2>
+          <p>We will send a secure reset link to your login email. Open the link to set a new password.</p>
+          <p id="reset-destination" class="settings-help" hidden>The reset link opens our published website.</p>
+          <p>Login email: <strong id="settings-email"></strong></p>
+          <button class="settings-button" id="send-reset" type="button">Send reset email</button>
+          <p id="reset-status" class="settings-status" role="status" aria-live="polite"></p>
+        </section>
+      </div>
+    </main>
+  </div>
+  <script type="module" src="js/settings.js?v=account-settings-20261027"></script>
+</body>
+</html>

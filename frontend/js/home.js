@@ -1,9 +1,9 @@
-import { requireAuth } from "./auth.js?v=required-category-20261022";
+import { requireAuth } from "./auth.js?v=account-settings-20261027";
 import {
   getTrendingArticles,
   getPopularArticles,
   getLatestArticles
-} from "../../services/feature5Service.js?v=activity-windows-20261027";
+} from "../../services/feature5Service.js?v=account-settings-20261027";
 import { formatCount, formatRelativeTime, escapeHtml, thumbHtml } from "./format.js";
 
 function renderFeatured(article) {

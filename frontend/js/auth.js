@@ -1,5 +1,5 @@
 import { setupNotifications } from './notifications.js?v=notifications-20261027';
-import { sidebarHtml } from "./sidebar.js?v=for-you-compass-20261023";
+import { sidebarHtml } from "./sidebar.js?v=account-settings-20261027";
 import { supabase } from "../../config/supabaseClient.js";
 import { upgradeMyAccountToPremium } from "../../services/userManagementService.js?v=required-category-20261022";
 

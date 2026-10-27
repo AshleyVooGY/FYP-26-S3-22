@@ -4,7 +4,7 @@ import {
 
 import {
     getArticleById
-} from "../../services/feature5Service.js";
+} from "../../services/feature5Service.js?v=account-settings-20261027";
 
 import {
     formatCount,

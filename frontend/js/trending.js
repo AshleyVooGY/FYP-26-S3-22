@@ -1,5 +1,5 @@
-import { requireAuth } from "./auth.js?v=required-category-20261022";
-import { getTrendingArticles } from "../../services/feature5Service.js?v=activity-windows-20261027";
+import { requireAuth } from "./auth.js?v=account-settings-20261027";
+import { getTrendingArticles } from "../../services/feature5Service.js?v=account-settings-20261027";
 import { formatCount, formatRelativeTime, escapeHtml, thumbHtml } from "./format.js";
 import { renderPagination as renderPaginationControl } from "./pagination.js";
 

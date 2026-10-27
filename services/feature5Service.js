@@ -32,8 +32,8 @@ export async function getPopularArticles(limit = 10) {
 
 /**
  * Retrieve a single published article, including its category name.
- * The author's display name is included when readable under RLS
- * (profiles are only visible to their own owner), otherwise null.
+ * A narrow author RPC resolves bylines when another user's profile is
+ * private under RLS. It exposes a display name for a published article only.
  */
 export async function getArticleById(articleId) {
   const { data, error } = await supabase
@@ -50,6 +50,12 @@ export async function getArticleById(articleId) {
     throw new Error(error.message);
   }
 
+  if (!data.author) {
+    try {
+      const authorResult = await supabase.rpc('get_published_article_author', { p_article_id: articleId });
+      if (!authorResult.error) data.author = authorResult.data;
+    } catch { /* Keep articles readable if the optional byline lookup is unavailable. */ }
+  }
   return data;
 }
 

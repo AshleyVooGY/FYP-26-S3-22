@@ -3,13 +3,13 @@ import { supabase } from "../../config/supabaseClient.js";
 
 import {
     requireAuth
-} from "./auth.js?v=required-category-20261022";
+} from "./auth.js?v=account-settings-20261027";
 
 import {
     getArticleById,
     getTrendingArticles,
     recordArticleView
-} from "../../services/feature5Service.js";
+} from "../../services/feature5Service.js?v=account-settings-20261027";
 
 import {
     formatCount,

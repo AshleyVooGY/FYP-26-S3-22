@@ -1,4 +1,4 @@
-import { requireAuth } from "./auth.js?v=required-category-20261022";
+import { requireAuth } from "./auth.js?v=account-settings-20261027";
 import { getReadingHistory } from "../../services/readingHistoryService.js";
 import { formatCount, formatRelativeTime, escapeHtml, thumbHtml } from "./format.js";
 

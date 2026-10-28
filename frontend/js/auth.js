@@ -73,7 +73,7 @@ export async function requireAdmin(redirectTo = "login.html") {
 // ==========================================================
 // APP SHELL WIRING
 // Any page that imports this module gets a working user-chip
-// (Guest -> link to login.html, signed in -> logout) and
+// (Guest -> link to login.html, signed in -> Settings) and
 // working [data-logout] links, without each page reimplementing it.
 // ==========================================================
 
@@ -215,9 +215,9 @@ async function renderUserChip() {
     if (user) {
       label.textContent = user.user_metadata?.display_name || user.email || "Account";
       if (chip) {
-        chip.href = "#";
-        chip.setAttribute("data-logout", "");
-        chip.title = "Log out";
+        chip.href = "settings.html";
+        chip.removeAttribute("data-logout");
+        chip.title = "Account settings";
       }
     } else {
       label.textContent = "Guest";

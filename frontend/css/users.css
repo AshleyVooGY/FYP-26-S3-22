@@ -1,0 +1,12 @@
+.user-account-id { display: block; color: var(--text-secondary); font-size: .8em; margin-top: 6px; overflow-wrap: anywhere; }
+#user-change-dialog { width: min(34rem, calc(100vw - 32px)); box-sizing: border-box; padding: 24px; border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-primary); background: var(--bg-panel); font: inherit; }
+#user-change-dialog::backdrop { background: rgb(0 0 0 / 55%); }
+#user-change-dialog h2 { margin-top: 0; font-size: 1.25em; }
+#user-change-dialog p { line-height: 1.6; }
+.user-confirm-change { font-weight: 700; }
+.user-confirm-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 12px; }
+#user-confirm-submit { background: var(--accent); color: white; }
+#user-change-dialog button:disabled { opacity: .6; cursor: wait; }
+#user-change-status:empty, #user-confirm-error:empty { display: none; }
+.user-confirm-actions .article-action { padding: 10px 16px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-panel-alt); color: var(--text-primary); font: inherit; line-height: 1.4; cursor: pointer; }
+.user-confirm-actions .article-action:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }

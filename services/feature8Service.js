@@ -282,19 +282,19 @@ function storagePathFromUrl(url) {
   return index === -1 ? null : url.slice(index + marker.length);
 }
 
-/**
- * Upload a featured image for an article the current user owns and attach it.
- * If the article already had an image, the old file is removed from storage
- * once the new one is safely attached.
- */
-export async function uploadArticleImage(articleId, file, previousImageUrl = null) {
+/** Validate a selected file before previewing or uploading it. */
+export function validateArticleImage(file) {
   if (!ALLOWED_TYPES.includes(file.type)) {
     throw new Error("Only PNG, JPEG, WEBP or GIF images are allowed.");
   }
   if (file.size > MAX_FILE_BYTES) {
     throw new Error("Image must be smaller than 5MB.");
   }
+}
 
+/** Upload and attach an image; clean up the replaced file after attachment. */
+export async function uploadArticleImage(articleId, file, previousImageUrl = null) {
+  validateArticleImage(file);
   const extension = file.name.split(".").pop();
   const path = `${articleId}/${crypto.randomUUID()}.${extension}`;
 

@@ -7,8 +7,9 @@ import {
   saveArticleWorkspace,
   deleteArticle,
   uploadArticleImage,
+  validateArticleImage,
   removeArticleImage
-} from "../../services/feature8Service.js?v=editor-input-protection-20261027";
+} from "../../services/feature8Service.js?v=required-image-20261029";
 import {
   CREDIBILITY_THRESHOLD,
   getSubscriptionTier,
@@ -42,6 +43,17 @@ let savedFormState = null;
 let allowEditorNavigation = false;
 let imageOperationPending = false;
 let savingWorkspace = false;
+let pendingImageFile = null;
+let pendingImagePreview = null;
+
+function clearPendingImage() {
+  if (pendingImagePreview) URL.revokeObjectURL(pendingImagePreview);
+  pendingImageFile = null;
+  pendingImagePreview = null;
+}
+function hasFeaturedImage() {
+  return Boolean(pendingImageFile || article?.featured_image_url?.trim());
+}
 
 // Track exact displayed input, including whitespace; publishing checks use
 // their own normalised fingerprint and are deliberately kept separate.
@@ -50,7 +62,7 @@ function formState(values) {
     categoryIds: values.categoryIds.map(String).sort(), tagIds: values.tagIds.map(String).sort() });
 }
 function hasUnsavedEditorChanges() {
-  return savedFormState !== null && document.getElementById('field-title')
+  return Boolean(pendingImageFile) || savedFormState !== null && document.getElementById('field-title')
     && formState(readForm()) !== savedFormState;
 }
 function shouldWarnBeforeLeaving() {
@@ -206,7 +218,7 @@ function credibilityPanelHtml() {
         <span class="plan-badge plan-badge--${subscriptionTier}">${planName} plan</span>
       </div>
       <p class="ai-panel__description">
-        Credibility must reach ${CREDIBILITY_THRESHOLD}% with no critical issues, and the selected category must pass AI checking or receive administrator approval.
+        A featured image is required. Credibility must reach ${CREDIBILITY_THRESHOLD}% with no critical issues, and the selected category must pass AI checking or receive administrator approval.
         Editing the title, category, tags or article content after a check automatically invalidates the result.
       </p>
       <p class="plan-description">${planDescription}. The required publishing check is available to all signed-in users (up to 20 checks per hour). Publishing results expire after 30 minutes.</p>
@@ -246,14 +258,16 @@ function aiWritingPanelHtml() {
 }
 
 function articleImageHtml() {
-  if (!articleId) return '<span>Featured Image</span><p class="state-message article-image-note">Save your article as a draft first, then you can add an image.</p>';
+  const image = pendingImagePreview || article?.featured_image_url;
+  const published = article?.status === 'published';
   return `<span>Featured Image</span>
-    <div class="media-thumb article-editor__thumb">${thumbHtml(article ?? {})}</div>
+    <div class="media-thumb article-editor__thumb">${thumbHtml({ featured_image_url: image })}</div>
+    <p class="state-message article-image-note">${pendingImageFile ? 'Image selected. It will upload when you save or publish.' : published ? 'Published articles must keep a featured image. You can replace it.' : 'Optional for drafts. Required before publishing. Choose an image now; no draft save is needed first.'}</p>
     <div class="media-actions">
-      <label class="media-upload-btn">${article?.featured_image_url ? 'Replace' : 'Upload'} Image
-        <input type="file" id="field-image" accept="image/png,image/jpeg,image/webp,image/gif" hidden ${imageOperationPending ? 'disabled' : ''} />
+      <label class="media-upload-btn">${image ? 'Replace' : 'Upload'} Image
+        <input type="file" id="field-image" accept="image/png,image/jpeg,image/webp,image/gif" hidden ${imageOperationPending || savingWorkspace ? 'disabled' : ''} />
       </label>
-      <button class="article-action ${article?.featured_image_url ? 'is-live' : ''}" id="remove-image-btn" type="button" ${!article?.featured_image_url || imageOperationPending ? 'disabled' : ''}>Remove</button>
+      ${published ? '' : `<button class="article-action ${image ? 'is-live' : ''}" id="remove-image-btn" type="button" ${!image || imageOperationPending || savingWorkspace ? 'disabled' : ''}>${pendingImageFile && article?.featured_image_url ? 'Cancel selected image' : 'Remove'}</button>`}
     </div>`;
 }
 function renderArticleImage() {
@@ -472,13 +486,14 @@ function handleArticleInput() {
 
 function updatePublishingState() {
   const passed = hasCurrentPassingCheck();
+  const hasImage = hasFeaturedImage();
   const publishBtn = document.getElementById("publish-btn");
   const saveBtn = document.getElementById("save-draft-btn");
   const lock = document.getElementById("publish-lock");
   const isPublished = article?.status === "published";
 
-  if (publishBtn) publishBtn.disabled = !passed || savingWorkspace || imageOperationPending;
-  if (saveBtn) saveBtn.disabled = savingWorkspace || imageOperationPending || (isPublished && !passed);
+  if (publishBtn) publishBtn.disabled = !passed || !hasImage || savingWorkspace || imageOperationPending;
+  if (saveBtn) saveBtn.disabled = savingWorkspace || imageOperationPending || (isPublished && (!passed || !hasImage));
   if (!lock) return;
   if (publishChecking && !credibilityResult) {
     lock.textContent = 'Checking credibility and category…';
@@ -486,7 +501,10 @@ function updatePublishingState() {
     return;
   }
 
-  if (passed) {
+  if (!hasImage) {
+    lock.textContent = 'Choose a featured image before publishing. Drafts can be saved without an image.';
+    lock.className = 'publish-lock is-blocked';
+  } else if (passed) {
     lock.textContent = `Credibility ${credibilityResult.score}% and category approved — publishing is unlocked.`;
     lock.className = "publish-lock is-ready";
   } else if (credibilityResult?.criticalIssue) {
@@ -565,7 +583,7 @@ async function handleCredibilityCheck() {
   credibilityResult=result;verifiedFingerprint=fingerprint;credibilityWasInvalidated=false;
   setCategoryReview(result.categoryReview,fingerprint);
   renderCredibilityResult();renderCategorySuggestion();updatePublishingState();
-  status.textContent=hasCurrentPassingCheck()?'Credibility and category passed. Publishing is available for this version.':'Checks completed. Review the credibility and category results before publishing.';
+  status.textContent=hasCurrentPassingCheck()?'Credibility and category passed for this version.':'Checks completed. Review the credibility and category results before publishing.';
  }catch(error){if(token===publishRequest){status.textContent=error.message;status.classList.add('is-error');}}
  finally{if(token===publishRequest){publishChecking=false;button.disabled=false;button.textContent='Check before publishing';updatePublishingState();}}
 }
@@ -593,7 +611,7 @@ function renderAiSuggestion() {
   } else if (aiSuggestion.summary) {
     body = `<p class="ai-suggestion__label">Suggested summary</p><p>${escapeHtml(aiSuggestion.summary)}</p><button class="ai-apply-btn" type="button" data-copy-value="summary">Copy summary</button>`;
   } else if (aiSuggestion.tags.length) {
-    body = `<p class="ai-suggestion__label">Suggested tags</p><div class="ai-tag-list">${aiSuggestion.tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div><button class="ai-apply-btn" type="button" data-apply-tags>Apply tags</button><button class="ai-apply-btn" type="button" data-copy-value="tags">Copy tags</button><p class="classification-help">Applying creates any tag that doesn't already exist yet.</p>`;
+    body = `<p class="ai-suggestion__label">Suggested tags</p><div class="ai-tag-list">${aiSuggestion.tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div><button class="ai-apply-btn" type="button" data-apply-tags>Apply tags</button><p class="classification-help">Applying creates any tag that doesn't already exist yet.</p>`;
   } else if (aiSuggestion.content) {
     body = `<p class="ai-suggestion__label">Review polished article</p>
       <p>Check names, dates, numbers and quotations before applying. AI editing can make mistakes.</p>
@@ -794,7 +812,11 @@ async function handleSaveDraft() {
     return;
   }
 
-  await saveWorkspace(values, isPublished);
+  const saved = await saveWorkspace(values, isPublished);
+  if (saved && !isPublished && !hasUnsavedEditorChanges()) {
+    allowEditorNavigation = true;
+    window.location.href = 'drafts.html';
+  }
 }
 
 async function saveWorkspace(values, publish) {
@@ -807,12 +829,31 @@ async function saveWorkspace(values, publish) {
     setStatus('Select a category before publishing.', true);
     return false;
   }
+  if (publish && !hasFeaturedImage()) {
+    setStatus('Choose a featured image before publishing.', true);
+    return false;
+  }
   const wasPublished = article?.status === 'published';
   const submittedState = formState(values);
   savingWorkspace = true;
   document.querySelectorAll('#save-draft-btn,#publish-btn,#delete-btn').forEach(button => { button.disabled = true; });
+  renderArticleImage();
   setStatus(publish ? 'Saving verified article…' : 'Saving draft…');
   try {
+    // New uploads use an owned draft ID for the existing Storage policies.
+    // This is internal to the single save/publish action; no prior user save is required.
+    if (pendingImageFile) {
+      if (!articleId) {
+        articleId = await saveArticleWorkspace(null, values, false);
+        article = { ...article, id: articleId, status: 'draft' };
+        updateEditorBackLink(article);
+        window.history.replaceState(null, '', savedEditorUrl(articleId));
+      }
+      setStatus('Uploading selected image…');
+      const imageUrl = await uploadArticleImage(articleId, pendingImageFile, article?.featured_image_url ?? null);
+      article = { ...article, featured_image_url: imageUrl };
+      clearPendingImage();
+    }
     articleId = await saveArticleWorkspace(articleId, values, publish, credibilityResult?.receiptId);
     const changedWhileSaving = formState(readForm()) !== submittedState;
     article = { ...article, id: articleId, title: values.title.trim(), content: values.content.trim(),
@@ -867,6 +908,7 @@ async function saveWorkspace(values, publish) {
     return false;
   } finally {
     savingWorkspace = false;
+    renderArticleImage();
     const saveButton = document.getElementById('save-draft-btn');
     if (saveButton) saveButton.disabled = false;
     const deleteButton = document.getElementById('delete-btn'); if (deleteButton) deleteButton.disabled = false;
@@ -898,23 +940,27 @@ async function handleDelete() {
 async function handleImageUpload(event) {
   const file = event.target.files?.[0];
   if (!file || imageOperationPending || savingWorkspace) return;
-  imageOperationPending = true;
-  renderArticleImage(); updatePublishingState();
-  setStatus('Uploading…');
   try {
-    const imageUrl = await uploadArticleImage(articleId, file, article?.featured_image_url ?? null);
-    article = { ...article, featured_image_url: imageUrl };
-    setStatus('Image updated. Your current text and tag selections have been kept.');
-  } catch (err) {
-    setStatus(err.message, true);
-  } finally {
-    imageOperationPending = false;
-    renderArticleImage(); updatePublishingState();
+    validateArticleImage(file);
+    clearPendingImage();
+    pendingImageFile = file;
+    pendingImagePreview = URL.createObjectURL(file);
+    setStatus('Image selected. Save or publish to upload it. Your current inputs have been kept.');
+  } catch (error) {
+    setStatus(error.message, true);
   }
+  renderArticleImage();
+  updatePublishingState();
 }
 
 async function handleImageRemove() {
-  if (imageOperationPending || savingWorkspace) return;
+  if (imageOperationPending || savingWorkspace || article?.status === 'published') return;
+  if (pendingImageFile) {
+    clearPendingImage();
+    renderArticleImage(); updatePublishingState();
+    setStatus('Selected image cancelled. Your current inputs have been kept.');
+    return;
+  }
   imageOperationPending = true;
   renderArticleImage(); updatePublishingState();
   setStatus('Removing…');

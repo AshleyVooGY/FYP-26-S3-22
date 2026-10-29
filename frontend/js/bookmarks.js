@@ -66,52 +66,7 @@ async function getCurrentUser() {
 }
 
 
-// ==========================================================
-// UPDATE USER LABEL
-// ==========================================================
-
-async function updateUserLabel(
-    user
-) {
-
-    const label =
-        document.getElementById(
-            "user-label"
-        );
-
-    const chip =
-        document.getElementById(
-            "user-chip"
-        );
-
-
-    if (!label) {
-
-        return;
-    }
-
-
-    if (user) {
-
-        label.textContent =
-            user.email ?? "Account";
-
-
-        if (chip) {
-
-            chip.href = "#";
-
-        }
-
-    } else {
-
-        label.textContent =
-            "Guest";
-
-    }
-
-}
-
+// The shared auth.js module owns the account name and Settings link.
 
 // ==========================================================
 // SHOW ERROR
@@ -506,12 +461,6 @@ async function init() {
         const user =
             await getCurrentUser();
 
-
-        // Update top-right user name
-
-        await updateUserLabel(
-            user
-        );
 
 
         // --------------------------------------------------

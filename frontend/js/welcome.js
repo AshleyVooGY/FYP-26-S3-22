@@ -1,4 +1,4 @@
-import { getCurrentUser } from "./auth.js?v=account-settings-20261027";
+import { getCurrentUser } from "./auth.js?v=account-name-20261029";
 import { getTrendingArticles } from "../../services/feature5Service.js?v=account-settings-20261027";
 import { escapeHtml, formatCount } from "./format.js";
 

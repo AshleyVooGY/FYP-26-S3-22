@@ -12,6 +12,20 @@ function settingsError(error) {
     ? 'Account settings are being set up. Please try again later.'
     : error?.message || 'Unable to update your account. Please try again.');
 }
+/** Read only the signed-in account's Settings name; never expose email in the header. */
+export async function getMyDisplayName(user) {
+  if (!user) return 'Guest';
+  const fallback = typeof user.user_metadata?.display_name === 'string'
+    ? user.user_metadata.display_name.trim() : '';
+  try {
+    const { data, error } = await supabase.from('profiles')
+      .select('display_name').eq('id', user.id).maybeSingle();
+    const name = typeof data?.display_name === 'string' ? data.display_name.trim() : '';
+    if (!error && name) return name;
+  } catch { /* A profile read failure must not break the shared navigation. */ }
+  return fallback || 'Account';
+}
+
 export async function getMyAccountSettings() {
   try {
     const { data: { user }, error } = await supabase.auth.getUser();

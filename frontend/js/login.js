@@ -1,4 +1,4 @@
-import { signIn, getCurrentUser } from "./auth.js?v=account-settings-20261027";
+import { signIn, getCurrentUser } from "./auth.js?v=account-name-20261029";
 
 const form = document.getElementById("login-form");
 const submitBtn = document.getElementById("submit-btn");

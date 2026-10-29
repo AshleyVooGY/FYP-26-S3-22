@@ -1,4 +1,4 @@
-import { requireAdmin } from "./auth.js?v=account-settings-20261027";
+import { requireAdmin } from "./auth.js?v=account-name-20261029";
 import { getAllProfiles, setUserRole, setUserSubscriptionTier } from "../../services/userManagementService.js?v=required-category-20261022";
 import { escapeHtml, forbiddenStateHtml } from "./format.js";
 

@@ -1,3 +1,4 @@
+import { getMyDisplayName } from '../../services/accountSettingsService.js?v=account-name-20261029';
 import { setupNotifications } from './notifications.js?v=notifications-20261027';
 import { sidebarHtml } from "./sidebar.js?v=account-settings-20261027";
 import { supabase } from "../../config/supabaseClient.js";
@@ -213,7 +214,8 @@ async function renderUserChip() {
 
     setupNotifications(user);
     if (user) {
-      label.textContent = user.user_metadata?.display_name || user.email || "Account";
+      label.textContent = "Account";
+      label.textContent = await getMyDisplayName(user);
       if (chip) {
         chip.href = "settings.html";
         chip.removeAttribute("data-logout");

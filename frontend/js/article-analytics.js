@@ -1,4 +1,4 @@
-import { requireAdmin } from "./auth.js?v=account-settings-20261027";
+import { requireAdmin } from "./auth.js?v=account-name-20261029";
 import { getArticleAnalyticsSummary, getArticleViewTrend } from "../../services/feature6Service.js";
 import { formatCount, formatRelativeTime, escapeHtml, forbiddenStateHtml } from "./format.js";
 

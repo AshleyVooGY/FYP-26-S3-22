@@ -1,4 +1,4 @@
-import { getCurrentUser as authCurrentUser } from "./auth.js?v=account-settings-20261027";
+import { getCurrentUser as authCurrentUser } from "./auth.js?v=account-name-20261029";
 import { getNewsPreferences, saveNewsPreferences } from "../../services/personalizationService.js?v=news-page-totals-20261023";
 
 import { ICONS } from "./icons.js";
@@ -89,9 +89,6 @@ const saveChangesButton =
 
 const successMessage =
     document.getElementById("successMessage");
-
-const userLabel =
-    document.getElementById("user-label");
 
 
 // ==========================================================
@@ -657,35 +654,7 @@ function showManagePage() {
 }
 
 
-// ==========================================================
-// UPDATE USER LABEL
-// ==========================================================
-
-function updateUserLabel() {
-
-    if (!userLabel) {
-
-        return;
-
-    }
-
-
-    if (currentUser) {
-
-        userLabel.textContent =
-            currentUser.user_metadata?.display_name ||
-            currentUser.email ||
-            "Account";
-
-    } else {
-
-        userLabel.textContent =
-            "Guest";
-
-    }
-
-}
-
+// The shared auth module renders the Settings display name in the header.
 
 // ==========================================================
 // ESCAPE HTML
@@ -747,7 +716,6 @@ async function initialise() {
  try {
   currentUser=await getCurrentUser();
   if(!currentUser){ window.location.href='login.html'; return; }
-  updateUserLabel();
   await loadCategories();
   selectedInterests=await loadUserPreferences(); originalInterests=[...selectedInterests];
   renderInterestCards(); renderPreferenceList(); renderSelectedInterestTags(); populateInterestSelect();

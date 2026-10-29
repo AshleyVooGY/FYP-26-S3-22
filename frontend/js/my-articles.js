@@ -1,4 +1,4 @@
-import { requireAuth } from "./auth.js?v=account-settings-20261027";
+import { requireAuth } from "./auth.js?v=account-name-20261029";
 import { getMyArticles, deleteArticle } from "../../services/feature8Service.js?v=apply-tags-20261024";
 import { escapeHtml, formatCount, formatRelativeTime, thumbHtml } from "./format.js";
 

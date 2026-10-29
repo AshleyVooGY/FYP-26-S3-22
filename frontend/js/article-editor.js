@@ -1,4 +1,4 @@
-import { requireAuth } from "./auth.js?v=account-settings-20261027";
+import { requireAuth } from "./auth.js?v=account-name-20261029";
 import {
   getCategories,
   getTags,

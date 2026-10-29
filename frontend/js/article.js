@@ -3,7 +3,7 @@ import { supabase } from "../../config/supabaseClient.js";
 
 import {
     requireAuth
-} from "./auth.js?v=account-settings-20261027";
+} from "./auth.js?v=account-name-20261029";
 
 import {
     getArticleById,

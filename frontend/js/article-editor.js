@@ -320,13 +320,19 @@ function render() {
         <div class="article-editor__field">
           <span>Tags</span>
           <p class="classification-help">Choose up to 5 tags. Authors can add tags; administrators can rename or delete them.</p>
-          <div class="tag-tools"><span id="tag-count" role="status" aria-live="polite"></span><button type="button" class="tag-new-toggle" id="new-tag-toggle" aria-expanded="false" aria-controls="new-tag-controls">＋ New tag</button></div>
+          <div class="tag-tools"><span id="tag-count" role="status" aria-live="polite"></span></div>
+          <div class="tag-search-row">
+            <input id="tag-search" type="search" placeholder="Search tags…" aria-label="Search tags" aria-controls="tag-search-results" autocomplete="off" />
+            <button type="button" class="tag-new-toggle" id="new-tag-toggle" aria-expanded="false" aria-controls="new-tag-controls">＋ New tag</button>
+          </div>
+          <div id="tag-search-results" class="tag-search-results" role="group" aria-label="Matching tags" hidden></div>
+          <div id="selected-tags" class="tag-selected" aria-label="Selected tags"></div>
           <div id="new-tag-controls" class="tag-new-controls" hidden>
             <label for="new-tag-name">New tag name</label>
             <div class="tag-new-row"><input id="new-tag-name" type="text" maxlength="100" placeholder="e.g. Public Transport" /><button type="button" class="article-editor__btn" id="add-tag-btn">Add tag</button></div>
           </div>
           <p id="tag-status" class="classification-help" role="status" aria-live="polite"></p>
-          <div class="classification-picker" id="tag-options">
+          <div class="classification-picker" id="tag-options" hidden>
             ${classificationOptionsHtml(tags, selectedTagIds, "tagIds", "No tags are available.")}
           </div>
         </div>
@@ -369,6 +375,7 @@ function render() {
     document.getElementById(id).addEventListener("input", handleArticleInput);
   });
   bindTagPicker();
+  bindTagSearch();
   document.getElementById('new-tag-toggle').addEventListener('click', () => {
     const panel = document.getElementById('new-tag-controls');
     panel.hidden = !panel.hidden;
@@ -495,6 +502,64 @@ function updateTagCount() {
   const count = selectedTags().length;
   document.getElementById('tag-count').textContent = `${count}/${MAX_ARTICLE_TAGS} selected`;
   if (count > MAX_ARTICLE_TAGS) tagStatus('This older article has more than 5 tags. Keep up to 5 before saving.');
+  renderSelectedTags();
+  renderTagMatches();
+}
+function renderSelectedTags() {
+  const region = document.getElementById('selected-tags');
+  const ids = new Set(selectedTags().map(input => input.value));
+  const selected = tags.filter(tag => ids.has(String(tag.id)));
+  region.innerHTML = selected.length ? selected.map(tag => `<span class="tag-selected-chip"><span>${escapeHtml(tag.name)}</span><button type="button" data-remove-tag="${tag.id}" aria-label="Remove tag ${escapeHtml(tag.name)}">×</button></span>`).join('')
+    : '<span class="classification-picker__empty">No tags selected.</span>';
+}
+function renderTagMatches() {
+  const query = normaliseTagName(document.getElementById('tag-search').value);
+  const region = document.getElementById('tag-search-results');
+  region.hidden = !query;
+  if (!query) { region.innerHTML = ''; return; }
+  const ids = new Set(selectedTags().map(input => input.value));
+  const matching = tags.filter(tag => !ids.has(String(tag.id)) && normaliseTagName(tag.name).includes(query));
+  const full = ids.size >= MAX_ARTICLE_TAGS;
+  region.innerHTML = matching.length
+    ? `${full ? '<p class="classification-help">Remove a selected tag before adding another.</p>' : ''}<div class="tag-match-list">${matching.slice(0,10).map(tag => `<button type="button" class="tag-match" data-select-tag="${tag.id}" ${full ? 'disabled' : ''}>${escapeHtml(tag.name)}</button>`).join('')}</div>${matching.length > 10 ? `<p class="classification-help">Showing 10 of ${matching.length} matches. Keep typing to narrow your search.</p>` : ''}`
+    : '<p class="classification-help">No unselected tags match. Try another keyword or use ＋ New tag.</p>';
+}
+function bindTagSearch() {
+  const search = document.getElementById('tag-search');
+  search.addEventListener('input', renderTagMatches);
+  search.addEventListener('keydown', event => {
+    if (event.key === 'Escape') { search.value = ''; renderTagMatches(); }
+    if (event.key === 'ArrowDown') {
+      const first = document.querySelector('#tag-search-results [data-select-tag]:not(:disabled)');
+      if (first) { event.preventDefault(); first.focus(); }
+    }
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      document.querySelector('#tag-search-results [data-select-tag]:not(:disabled)')?.click();
+    }
+  });
+  document.getElementById('tag-search-results').addEventListener('click', event => {
+    const button = event.target.closest('[data-select-tag]');
+    if (!button || button.disabled) return;
+    const input = [...document.querySelectorAll('input[name="tagIds"]')].find(item => item.value === button.dataset.selectTag);
+    if (!input || input.checked) return;
+    if (selectedTags().length >= MAX_ARTICLE_TAGS) return tagStatus('Choose up to 5 tags. Remove one before adding another.');
+    input.checked = true;
+    search.value = '';
+    tagStatus();
+    handleArticleInput();
+    search.focus();
+  });
+  document.getElementById('selected-tags').addEventListener('click', event => {
+    const button = event.target.closest('[data-remove-tag]');
+    if (!button) return;
+    const input = selectedTags().find(item => item.value === button.dataset.removeTag);
+    if (!input) return;
+    input.checked = false;
+    tagStatus();
+    handleArticleInput();
+    search.focus();
+  });
 }
 function bindTagPicker() {
   document.querySelectorAll('input[name="tagIds"]').forEach(input => input.addEventListener('change', () => {
@@ -514,6 +579,7 @@ function selectResolvedTags(resolved) {
   const ids = [...new Set([...selectedTags().map(input => input.value), ...resolved.map(tag => String(tag.id))])];
   if (ids.length > MAX_ARTICLE_TAGS) throw new Error('Choose up to 5 tags. Remove a tag before applying these suggestions.');
   document.getElementById('tag-options').innerHTML = classificationOptionsHtml(tags, ids, 'tagIds', 'No tags are available.');
+  document.getElementById('tag-search').value = '';
   bindTagPicker();
   handleArticleInput();
 }
@@ -541,6 +607,7 @@ async function handleAddTag() {
     tagStatus('Tag selected. Save your article to keep it.');
     document.getElementById('new-tag-controls').hidden = true;
     document.getElementById('new-tag-toggle').setAttribute('aria-expanded', 'false');
+    document.getElementById('tag-search').focus();
   } catch (error) { tagStatus(error.message); }
   finally { addingTag = false; button.disabled = false; updatePublishingState(); }
 }

@@ -82,6 +82,7 @@
 }
 
 .article-editor__field input[type="text"],
+.article-editor__field input[type="search"],
 .article-editor__field select,
 .article-editor__field textarea {
   width: 100%;
@@ -230,3 +231,22 @@
 .tag-new-row { display:flex; gap:8px; align-items:center; }
 .tag-new-row input { min-width:0; flex:1; }
 .tag-new-toggle:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+
+/* Search existing tags without expanding the full shared tag list. */
+#tag-options[hidden], .tag-search-results[hidden] { display:none; }
+.tag-search-row { display:flex; align-items:center; gap:10px; }
+.tag-search-row input { flex:1; min-width:0; padding:8px 10px; font-size:12px; }
+.tag-search-row input::placeholder { color:var(--text-muted); opacity:1; }
+.tag-search-row input:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
+.tag-search-row .tag-new-toggle { flex-shrink:0; font-size:12px; font-weight:500; padding:6px 2px; }
+.tag-search-results { margin-top:8px; padding:10px; border:1px solid var(--border); border-radius:6px; background:var(--bg-input); }
+.tag-search-results .classification-help { margin:4px 0; }
+.tag-match-list, .tag-selected { display:flex; flex-wrap:wrap; gap:8px; }
+.tag-selected { margin-top:10px; }
+.tag-selected-chip { display:inline-flex; align-items:center; gap:6px; border-radius:999px; padding:4px 6px 4px 12px; background:var(--accent); color:#fff; font-size:12px; }
+.tag-selected-chip button { display:inline-flex; justify-content:center; align-items:center; width:24px; height:24px; padding:0; border:0; border-radius:50%; background:transparent; color:inherit; cursor:pointer; font-size:18px; }
+.tag-selected-chip button:hover { background:rgba(255,255,255,.18); }
+.tag-selected-chip button:focus-visible { outline:2px solid #fff; outline-offset:1px; }
+.tag-match { border:1px solid var(--border); border-radius:999px; padding:7px 12px; background:var(--bg-panel); color:var(--text-primary); cursor:pointer; font:inherit; font-size:12px; }
+.tag-match:hover, .tag-match:focus-visible { border-color:var(--accent); }
+.tag-match:disabled { opacity:.5; cursor:not-allowed; }

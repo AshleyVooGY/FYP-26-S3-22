@@ -40,7 +40,7 @@ export async function getArticleById(articleId) {
     .from("articles")
     .select(
       `id, title, content, featured_image_url, view_count, reaction_count,
-       published_at, category:categories!articles_category_id_fkey(name), author:profiles(display_name)`
+       published_at, category:categories!articles_category_id_fkey(name), author:profiles(display_name), article_tags(tag:tags(id,name))`
     )
     .eq("id", articleId)
     .eq("status", "published")

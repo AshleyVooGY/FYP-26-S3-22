@@ -9,7 +9,7 @@ import {
   uploadArticleImage,
   validateArticleImage,
   removeArticleImage
-} from "../../services/feature8Service.js?v=required-image-20261029";
+} from "../../services/feature8Service.js?v=article-tags-20261029";
 import {
   CREDIBILITY_THRESHOLD,
   getSubscriptionTier,
@@ -66,7 +66,7 @@ function hasUnsavedEditorChanges() {
     && formState(readForm()) !== savedFormState;
 }
 function shouldWarnBeforeLeaving() {
-  return !allowEditorNavigation && (hasUnsavedEditorChanges() || savingWorkspace || imageOperationPending);
+  return !allowEditorNavigation && (hasUnsavedEditorChanges() || savingWorkspace || imageOperationPending || addingTag || tagsApplying);
 }
 window.addEventListener('beforeunload', event => {
   if (!shouldWarnBeforeLeaving()) return;
@@ -319,7 +319,13 @@ function render() {
 
         <div class="article-editor__field">
           <span>Tags</span>
-          <p class="classification-help">Choose all tags that describe this article.</p>
+          <p class="classification-help">Choose up to 5 tags. Authors can add tags; administrators can rename or delete them.</p>
+          <div class="tag-tools"><span id="tag-count" role="status" aria-live="polite"></span><button type="button" class="tag-new-toggle" id="new-tag-toggle" aria-expanded="false" aria-controls="new-tag-controls">＋ New tag</button></div>
+          <div id="new-tag-controls" class="tag-new-controls" hidden>
+            <label for="new-tag-name">New tag name</label>
+            <div class="tag-new-row"><input id="new-tag-name" type="text" maxlength="100" placeholder="e.g. Public Transport" /><button type="button" class="article-editor__btn" id="add-tag-btn">Add tag</button></div>
+          </div>
+          <p id="tag-status" class="classification-help" role="status" aria-live="polite"></p>
           <div class="classification-picker" id="tag-options">
             ${classificationOptionsHtml(tags, selectedTagIds, "tagIds", "No tags are available.")}
           </div>
@@ -362,8 +368,16 @@ function render() {
   ["field-title", "field-content"].forEach((id) => {
     document.getElementById(id).addEventListener("input", handleArticleInput);
   });
-  document.querySelectorAll('input[name="tagIds"]').forEach((input) => {
-    input.addEventListener("change", handleArticleInput);
+  bindTagPicker();
+  document.getElementById('new-tag-toggle').addEventListener('click', () => {
+    const panel = document.getElementById('new-tag-controls');
+    panel.hidden = !panel.hidden;
+    document.getElementById('new-tag-toggle').setAttribute('aria-expanded', String(!panel.hidden));
+    if (!panel.hidden) document.getElementById('new-tag-name').focus();
+  });
+  document.getElementById('add-tag-btn').addEventListener('click', handleAddTag);
+  document.getElementById('new-tag-name').addEventListener('keydown', event => {
+    if (event.key === 'Enter') { event.preventDefault(); handleAddTag(); }
   });
 
   const publishBtn = document.getElementById("publish-btn");
@@ -470,7 +484,69 @@ function invalidateCredibility() {
   }
 }
 
+const MAX_ARTICLE_TAGS = 5;
+let addingTag = false;
+const selectedTags = () => [...document.querySelectorAll('input[name="tagIds"]:checked')];
+const normaliseTagName = name => String(name).trim().toLowerCase();
+function tagStatus(message = '') {
+  document.getElementById('tag-status').textContent = message;
+}
+function updateTagCount() {
+  const count = selectedTags().length;
+  document.getElementById('tag-count').textContent = `${count}/${MAX_ARTICLE_TAGS} selected`;
+  if (count > MAX_ARTICLE_TAGS) tagStatus('This older article has more than 5 tags. Keep up to 5 before saving.');
+}
+function bindTagPicker() {
+  document.querySelectorAll('input[name="tagIds"]').forEach(input => input.addEventListener('change', () => {
+    if (input.checked && selectedTags().length > MAX_ARTICLE_TAGS) {
+      input.checked = false;
+      tagStatus('Choose up to 5 tags. Remove one before adding another.');
+      return;
+    }
+    tagStatus();
+    handleArticleInput();
+  }));
+  updateTagCount();
+}
+function selectResolvedTags(resolved) {
+  for (const tag of resolved) if (!tags.some(item => String(item.id) === String(tag.id))) tags.push(tag);
+  tags.sort((a,b) => a.name.localeCompare(b.name));
+  const ids = [...new Set([...selectedTags().map(input => input.value), ...resolved.map(tag => String(tag.id))])];
+  if (ids.length > MAX_ARTICLE_TAGS) throw new Error('Choose up to 5 tags. Remove a tag before applying these suggestions.');
+  document.getElementById('tag-options').innerHTML = classificationOptionsHtml(tags, ids, 'tagIds', 'No tags are available.');
+  bindTagPicker();
+  handleArticleInput();
+}
+async function handleAddTag() {
+  if (addingTag || tagsApplying) return;
+  if (savingWorkspace || imageOperationPending) {
+    tagStatus('Wait for the save or image operation to finish before adding a tag.');
+    return;
+  }
+  const input = document.getElementById('new-tag-name');
+  const name = input.value.trim();
+  if (!name || name.length > 100) return tagStatus('Enter a tag name between 1 and 100 characters.');
+  const existing = tags.find(tag => normaliseTagName(tag.name) === normaliseTagName(name));
+  if (existing && selectedTags().some(item => item.value === String(existing.id))) return tagStatus('This tag is already selected.');
+  if (selectedTags().length >= MAX_ARTICLE_TAGS) return tagStatus('Choose up to 5 tags. Remove one before adding another.');
+  addingTag = true;
+  updatePublishingState();
+  const button = document.getElementById('add-tag-btn');
+  button.disabled = true;
+  tagStatus('Adding tag…');
+  try {
+    const tag = existing || await getOrCreateTag(name);
+    selectResolvedTags([tag]);
+    input.value = '';
+    tagStatus('Tag selected. Save your article to keep it.');
+    document.getElementById('new-tag-controls').hidden = true;
+    document.getElementById('new-tag-toggle').setAttribute('aria-expanded', 'false');
+  } catch (error) { tagStatus(error.message); }
+  finally { addingTag = false; button.disabled = false; updatePublishingState(); }
+}
+
 function handleArticleInput() {
+  updateTagCount();
   invalidateCredibility();
   if (writingUndo && readForm().content !== writingUndo.applied) writingUndo = null;
   renderWritingUndo();
@@ -492,8 +568,8 @@ function updatePublishingState() {
   const lock = document.getElementById("publish-lock");
   const isPublished = article?.status === "published";
 
-  if (publishBtn) publishBtn.disabled = !passed || !hasImage || savingWorkspace || imageOperationPending;
-  if (saveBtn) saveBtn.disabled = savingWorkspace || imageOperationPending || (isPublished && (!passed || !hasImage));
+  if (publishBtn) publishBtn.disabled = !passed || !hasImage || savingWorkspace || imageOperationPending || addingTag || tagsApplying;
+  if (saveBtn) saveBtn.disabled = savingWorkspace || imageOperationPending || addingTag || tagsApplying || (isPublished && (!passed || !hasImage));
   if (!lock) return;
   if (publishChecking && !credibilityResult) {
     lock.textContent = 'Checking credibility and category…';
@@ -570,8 +646,9 @@ function renderCredibilityResult() {
 }
 
 async function handleCredibilityCheck() {
- if(publishChecking)return;
+ if(publishChecking || addingTag || tagsApplying)return;
  const values=readForm(),button=document.getElementById('check-credibility-btn'),status=document.getElementById('credibility-status');
+ if(values.tagIds.length > MAX_ARTICLE_TAGS){status.textContent='Choose up to 5 tags before checking.';status.classList.add('is-error');return;}
  if(!values.title.trim()||!values.content.trim()||values.categoryIds.length!==1){status.textContent='Add a title, article content and one category before checking.';status.classList.add('is-error');return;}
  publishChecking=true;const token=++publishRequest,fingerprint=articleFingerprint(values);
  credibilityResult=null;verifiedFingerprint=null;credibilityWasInvalidated=false;setCategoryReview(null,null);setCategoryStatus('');renderCredibilityResult();renderCategorySuggestion();updatePublishingState();
@@ -679,7 +756,11 @@ let tagsApplying = false;
  * tags are kept; suggested tags are added on top rather than replacing them.
  */
 async function handleApplyTags() {
-  if (tagsApplying || !aiSuggestion?.tags?.length) return;
+  if (tagsApplying || addingTag || !aiSuggestion?.tags?.length) return;
+  if (savingWorkspace || imageOperationPending) {
+    setAiStatus('Wait for the save or image operation to finish before applying tags.', true);
+    return;
+  }
   if (aiSuggestion.snapshot !== articleFingerprint()) {
     handleArticleInput();
     return;
@@ -687,7 +768,14 @@ async function handleApplyTags() {
 
   const suggestion = aiSuggestion;
   const snapshot = suggestion.snapshot;
+  const names = [...new Map(suggestion.tags.map(name => [normaliseTagName(name), String(name).trim()])).values()];
+  const selectedNames = new Set(selectedTags().map(input => normaliseTagName(tags.find(tag => String(tag.id) === input.value)?.name || '')));
+  if (selectedTags().length + names.filter(name => !selectedNames.has(normaliseTagName(name))).length > MAX_ARTICLE_TAGS) {
+    setAiStatus('These suggestions would exceed 5 tags. Remove selected tags before applying them.', true);
+    return;
+  }
   tagsApplying = true;
+  updatePublishingState();
   const applyButton = document.querySelector("[data-apply-tags]");
   if (applyButton) {
     applyButton.disabled = true;
@@ -697,7 +785,7 @@ async function handleApplyTags() {
 
   try {
     const resolvedTags = [];
-    for (const tagName of suggestion.tags) {
+    for (const tagName of names) {
       if (aiSuggestion !== suggestion || snapshot !== articleFingerprint()) {
         throw new Error("The article or suggestion changed. Request tag suggestions again for the current version.");
       }
@@ -707,19 +795,7 @@ async function handleApplyTags() {
     if (aiSuggestion !== suggestion || snapshot !== articleFingerprint()) {
       throw new Error("The article or suggestion changed. Request tag suggestions again for the current version.");
     }
-    const resolvedIds = resolvedTags.map((tag) => String(tag.id));
-    for (const tag of resolvedTags) {
-      if (!tags.some((item) => String(item.id) === String(tag.id))) tags.push(tag);
-    }
-    tags.sort((a, b) => a.name.localeCompare(b.name));
-
-    const currentlyChecked = [...document.querySelectorAll('input[name="tagIds"]:checked')].map((input) => input.value);
-    const nextSelected = [...new Set([...currentlyChecked, ...resolvedIds])];
-    const picker = document.getElementById("tag-options");
-    picker.innerHTML = classificationOptionsHtml(tags, nextSelected, "tagIds", "No tags are available.");
-    picker.querySelectorAll('input[name="tagIds"]').forEach((input) => input.addEventListener("change", handleArticleInput));
-
-    handleArticleInput();
+    selectResolvedTags(resolvedTags);
     aiSuggestion = null;
     renderAiSuggestion();
     setAiStatus("Tags applied. Save your draft to keep them; recheck credibility before publishing.");
@@ -727,6 +803,7 @@ async function handleApplyTags() {
     setAiStatus(error.message, true);
   } finally {
     tagsApplying = false;
+    updatePublishingState();
     if (applyButton?.isConnected) {
       applyButton.disabled = false;
       applyButton.textContent = "Apply tags";
@@ -821,6 +898,14 @@ async function handleSaveDraft() {
 
 async function saveWorkspace(values, publish) {
   if (savingWorkspace || imageOperationPending) return false;
+  if (addingTag || tagsApplying) {
+    setStatus('Wait for the tags to finish applying, then save again.', true);
+    return false;
+  }
+  if (values.tagIds.length > MAX_ARTICLE_TAGS) {
+    setStatus('Choose up to 5 tags before saving.', true);
+    return false;
+  }
   if (!values.title.trim() || !values.content.trim()) {
     setStatus('Enter a title and article content before saving.', true);
     return false;

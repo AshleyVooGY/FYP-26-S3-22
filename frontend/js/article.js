@@ -9,7 +9,7 @@ import {
     getArticleById,
     getTrendingArticles,
     recordArticleView
-} from "../../services/feature5Service.js?v=account-settings-20261027";
+} from "../../services/feature5Service.js?v=article-tags-20261029";
 
 import {
     formatCount,
@@ -1038,6 +1038,8 @@ function renderArticle(
 
                 </div>
 
+
+                ${article.article_tags?.some(link => link.tag) ? `<nav class="article-topic-tags" aria-label="Article tags"><strong>Tags</strong>${article.article_tags.filter(link => link.tag).map(({tag}) => `<a href="categories.html?type=tag&amp;id=${encodeURIComponent(tag.id)}">#${escapeHtml(tag.name)}</a>`).join('')}</nav>` : ''}
 
                 <!-- ======================================
                      READING ACCESSIBILITY - READ ALOUD

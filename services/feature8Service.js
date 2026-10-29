@@ -32,8 +32,8 @@ export async function getTags() {
 
 /**
  * Resolve a tag name to its id, creating the tag if it doesn't already
- * exist. Used to apply an AI-suggested tag that may be new — ordinary
- * users cannot otherwise create tags (see get_or_create_tag()).
+ * exist. Both manual author input and AI suggestions use this interface.
+ * Renaming and deletion remain admin-only.
  */
 export async function getOrCreateTag(name) {
   const { data, error } = await supabase.rpc("get_or_create_tag", { p_name: name });
@@ -311,7 +311,10 @@ export async function uploadArticleImage(articleId, file, previousImageUrl = nul
   try {
     const { data: updated, error: updateError } = await supabase.from("articles")
       .update({ featured_image_url: imageUrl }).eq("id", articleId).select("id").maybeSingle();
-    attachmentConfirmed = true;
+    // PostgREST returns network failures as an error object too. Only a
+    // PostgreSQL error code proves the update statement was rolled back.
+    // Unknown outcomes must retain the upload: it may already be referenced.
+    attachmentConfirmed = !updateError || /^[0-9A-Z]{5}$/.test(updateError.code || '');
     if (updateError) throw new Error(updateError.message);
     if (!updated) throw new Error("The article could not be updated. Reload and try again.");
   } catch (error) {
@@ -364,6 +367,7 @@ export async function removeArticleImage(articleId, imageUrl) {
 export async function saveArticleWorkspace(articleId, values, publish = false, receiptId = null) {
   validateArticleInput(values);
   const categoryIds = normaliseIds(values.categoryIds);
+  if (normaliseIds(values.tagIds).length > 5) throw new Error('Choose up to 5 tags for this article.');
   if (categoryIds.length > 1) throw new Error('Choose only one category for this article.');
   if (publish && categoryIds.length !== 1) throw new Error('Select a category before publishing.');
   const { data, error } = await supabase.rpc('save_my_article_workspace', {

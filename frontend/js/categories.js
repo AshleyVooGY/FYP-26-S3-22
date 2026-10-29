@@ -153,6 +153,8 @@ async function renderBrowse() {
     app.querySelectorAll("[data-type]").forEach((button) => button.addEventListener("click", () => {
       state.type = button.dataset.type;
       state.id = button.dataset.id || null;
+      const query = state.id ? `?type=${state.type}&id=${encodeURIComponent(state.id)}` : '';
+      history.replaceState(null, '', `categories.html${query}`);
       renderBrowse();
     }));
     app.querySelector("[data-manage]")?.addEventListener("click", () => {
@@ -218,7 +220,7 @@ async function renderManage() {
   try {
     await loadClassifications();
     if (token !== requestToken) return;
-    app.innerHTML = `<header class="page-head"><div><h1>Manage Categories &amp; Tags</h1><p>Create, view, edit and delete article classifications.</p></div><button class="button" type="button" data-browse>Back to browse</button></header>
+    app.innerHTML = `<header class="page-head"><div><h1>Manage Categories &amp; Tags</h1><p>Administrators manage categories and can rename or delete tags. Authors can add tags while writing articles.</p></div><button class="button" type="button" data-browse>Back to browse</button></header>
       <div class="manage-grid"><section class="panel"><h2>Create category/tag</h2><form id="create-form"><div class="field"><label for="classification-name">Name</label><input id="classification-name" name="name" maxlength="60" placeholder="Enter a unique name" required></div><p class="field-label">Type</p><div class="button-row"><label><input type="radio" name="type" value="category" checked> Category</label><label><input type="radio" name="type" value="tag"> Tag</label></div><div class="button-row" style="margin-top:18px"><button class="button button--primary">Save</button><button class="button" type="reset">Cancel</button></div></form></section>
       <section class="panel"><h2>Existing categories and tags</h2><div style="overflow:auto"><table class="classification-table"><thead><tr><th>Name</th><th>Type</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody>${managementRows(state.categories, "category")}${managementRows(state.tags, "tag")}</tbody></table></div></section></div>`;
 
@@ -250,6 +252,10 @@ async function init() {
   const user = await requireAuth("welcome.html");
   if (!user) return;
   state.viewer = await getViewer();
+  const query = new URLSearchParams(location.search);
+  if (['tag', 'category'].includes(query.get('type')) && /^[1-9]\d*$/.test(query.get('id') || '')) {
+    state.type = query.get('type'); state.id = query.get('id');
+  }
   if (new URLSearchParams(location.search).get("mode") === "manage") {
     await renderManage();
   } else {

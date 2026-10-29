@@ -220,3 +220,13 @@
 
 /* Direct return to the list that opened this editor. */
 .editor-back-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 2px; }
+
+/* Compact author tag creation inside the existing picker. */
+.tag-tools { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:8px; font-size:12px; color:var(--text-muted); }
+.tag-new-toggle { border:0; padding:4px 0; background:transparent; color:var(--accent); cursor:pointer; font:inherit; }
+.tag-new-controls[hidden] { display:none; }
+.tag-new-controls { margin-bottom:10px; }
+.tag-new-controls label { display:block; margin-bottom:6px; font-size:12px; }
+.tag-new-row { display:flex; gap:8px; align-items:center; }
+.tag-new-row input { min-width:0; flex:1; }
+.tag-new-toggle:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }

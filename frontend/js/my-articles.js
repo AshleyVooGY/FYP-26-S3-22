@@ -16,7 +16,7 @@ function rowHtml(article) {
       <td class="is-numeric">${formatCount(article.view_count)}</td>
       <td>
         <div class="media-actions">
-          <a class="article-action is-live" href="article-editor.html?id=${article.id}">Edit</a>
+          <a class="article-action is-live" href="article-editor.html?id=${article.id}&from=my-articles">Edit</a>
           <button class="article-action is-live" data-delete="${article.id}" type="button">Delete</button>
         </div>
       </td>

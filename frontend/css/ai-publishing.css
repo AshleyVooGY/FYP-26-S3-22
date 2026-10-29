@@ -270,7 +270,7 @@
 
 .ai-tool-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   margin-top: 16px;
 }
@@ -441,3 +441,6 @@
 #editor-leave-dialog::backdrop { background: rgb(0 0 0 / 55%); }
 #editor-leave-dialog h2 { margin-top: 0; font-size: 1.25em; }
 #editor-leave-dialog p { line-height: 1.6; }
+
+#editor-leave-dialog [data-leave-error] { color: #e57373; }
+#editor-leave-dialog [data-leave-error]:empty { display: none; }

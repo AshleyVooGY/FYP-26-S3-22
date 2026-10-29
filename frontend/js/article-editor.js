@@ -21,6 +21,19 @@ import { escapeHtml, thumbHtml } from "./format.js";
 
 const params = new URLSearchParams(window.location.search);
 let articleId = params.get("id");
+const explicitEditorSource = ['drafts', 'my-articles'].includes(params.get('from')) ? params.get('from') : null;
+let editorSource = explicitEditorSource || 'my-articles';
+function updateEditorBackLink(loadedArticle = null) {
+  if (loadedArticle?.status === 'draft') editorSource = 'drafts';
+  else if (loadedArticle) editorSource = explicitEditorSource || 'my-articles';
+  const link = document.getElementById('editor-back-link');
+  link.href = editorSource === 'drafts' ? 'drafts.html' : 'my-articles.html';
+  link.textContent = editorSource === 'drafts' ? '← Back to Drafts' : '← Back to My Articles';
+}
+function savedEditorUrl(id) {
+  return `article-editor.html?${new URLSearchParams({ id: String(id), from: editorSource })}`;
+}
+updateEditorBackLink();
 let article = null;
 let categories = [];
 let tags = [];
@@ -66,11 +79,45 @@ function showEditorLeavePrompt(link) {
     dialog = document.createElement('dialog');
     dialog.id = 'editor-leave-dialog';
     dialog.setAttribute('aria-labelledby', 'editor-leave-title');
-    dialog.innerHTML = '<h2 id="editor-leave-title">Leave this editor?</h2><p>You have unsaved changes or an operation in progress. Stay to keep editing, or leave without saving your current changes.</p><div class="article-editor__actions"><button type="button" class="article-editor__btn" data-stay-editor>Keep editing</button><button type="button" class="article-editor__btn article-editor__btn--danger" data-leave-editor>Leave editor</button></div>';
+    dialog.addEventListener('cancel', event => { if (dialog.dataset.saving === 'true') event.preventDefault(); });
     document.body.append(dialog);
   }
-  dialog.querySelector('[data-stay-editor]').onclick = () => dialog.close();
-  dialog.querySelector('[data-leave-editor]').onclick = () => {
+  const target = new URL(link.href, location.href);
+  const saveDraftBeforeReturn = article?.status !== 'published'
+    && target.origin === location.origin && target.pathname === new URL('drafts.html', location.href).pathname;
+  dialog.innerHTML = `<h2 id="editor-leave-title">${saveDraftBeforeReturn ? 'Save your draft before returning?' : 'Leave this editor?'}</h2>
+    <p>${saveDraftBeforeReturn ? 'Your draft has unsaved changes or an operation in progress. Save your changes before returning to Drafts.' : 'You have unsaved changes or an operation in progress. Stay to keep editing, or leave without saving your current changes.'}</p>
+    <p data-leave-error role="alert"></p>
+    <div class="article-editor__actions"><button type="button" class="article-editor__btn" data-stay-editor autofocus>Keep editing</button>
+    <button type="button" class="article-editor__btn ${saveDraftBeforeReturn ? 'article-editor__btn--primary' : 'article-editor__btn--danger'}" data-leave-editor>${saveDraftBeforeReturn ? 'Save and return to Drafts' : 'Leave editor'}</button></div>`;
+  const stay = dialog.querySelector('[data-stay-editor]');
+  const leave = dialog.querySelector('[data-leave-editor]');
+  const message = dialog.querySelector('[data-leave-error]');
+  stay.onclick = () => dialog.close();
+  leave.onclick = async () => {
+    if (dialog.dataset.saving === 'true') return;
+    if (saveDraftBeforeReturn) {
+      if (savingWorkspace || imageOperationPending) {
+        message.textContent = 'A save or image operation is still in progress. Please wait, then try again.';
+        return;
+      }
+      dialog.dataset.saving = 'true';
+      stay.disabled = leave.disabled = true;
+      leave.textContent = 'Saving…';
+      message.textContent = '';
+      try {
+        const saved = await saveWorkspace(readForm(), false);
+        if (!saved || hasUnsavedEditorChanges()) {
+          message.textContent = saved ? 'Your latest changes are not saved yet. Please save again before returning.'
+            : document.getElementById('editor-status')?.textContent || 'Unable to save your draft. Please try again.';
+          return;
+        }
+      } finally {
+        dialog.dataset.saving = 'false';
+        stay.disabled = leave.disabled = false;
+        leave.textContent = 'Save and return to Drafts';
+      }
+    }
     dialog.close();
     allowEditorNavigation = true;
     link.click();
@@ -188,7 +235,6 @@ function aiWritingPanelHtml() {
       </p>
       <div class="ai-tool-grid">
         <button class="ai-tool" type="button" data-ai-task="title">Suggest title</button>
-        <button class="ai-tool" type="button" data-ai-task="summary">Generate summary</button>
         <button class="ai-tool" type="button" data-ai-task="tags">Suggest tags</button>
         <button class="ai-tool" type="button" data-ai-task="polish">Polish article</button>
       </div>
@@ -384,8 +430,9 @@ async function handleCategoryAppeal(){
    const reviewValues = readForm();
    articleId=await saveArticleWorkspace(articleId,reviewValues,false);
    article={...article,id:articleId,status:'draft'};
+   updateEditorBackLink(article);
    savedFormState = formState({ ...reviewValues, title: reviewValues.title.trim(), content: reviewValues.content.trim() });
-   window.history.replaceState(null,'',`article-editor.html?id=${articleId}`);
+   window.history.replaceState(null,'',savedEditorUrl(articleId));
   }
   if(snapshot!==articleFingerprint())throw new Error('The article changed while saving. Check the new version before requesting a review.');
   const record=await requestCategoryReview(reviewId,reason,articleId);
@@ -727,6 +774,7 @@ async function reloadArticle() {
       '<p class="state-message is-error">This article is unavailable.</p>';
     return false;
   }
+  updateEditorBackLink(article);
   setPageTitle(article.status === "published" ? "Edit Article" : "Edit Draft");
   render();
   try {
@@ -750,14 +798,14 @@ async function handleSaveDraft() {
 }
 
 async function saveWorkspace(values, publish) {
-  if (savingWorkspace || imageOperationPending) return;
+  if (savingWorkspace || imageOperationPending) return false;
   if (!values.title.trim() || !values.content.trim()) {
     setStatus('Enter a title and article content before saving.', true);
-    return;
+    return false;
   }
   if (publish && !values.categoryIds.length) {
     setStatus('Select a category before publishing.', true);
-    return;
+    return false;
   }
   const wasPublished = article?.status === 'published';
   const submittedState = formState(values);
@@ -766,17 +814,18 @@ async function saveWorkspace(values, publish) {
   setStatus(publish ? 'Saving verified article…' : 'Saving draft…');
   try {
     articleId = await saveArticleWorkspace(articleId, values, publish, credibilityResult?.receiptId);
-    window.history.replaceState(null, '', `article-editor.html?id=${articleId}`);
     const changedWhileSaving = formState(readForm()) !== submittedState;
     article = { ...article, id: articleId, title: values.title.trim(), content: values.content.trim(),
       category_id: values.categoryIds[0] ? Number(values.categoryIds[0]) : null,
       category_ids: values.categoryIds.map(Number), tag_ids: values.tagIds.map(Number),
       status: publish ? 'published' : 'draft' };
+    updateEditorBackLink(article);
+    window.history.replaceState(null, '', savedEditorUrl(articleId));
     savedFormState = formState({ ...values, title: values.title.trim(), content: values.content.trim() });
     if (publish && !changedWhileSaving) {
       allowEditorNavigation = true;
       window.location.href = `my-articles.html?success=${wasPublished ? 'updated' : 'published'}`;
-      return;
+      return true;
     }
     if (!changedWhileSaving) {
       // Match the confirmed normalised save without replacing the input nodes.
@@ -812,8 +861,10 @@ async function saveWorkspace(values, publish) {
       ? (publish ? 'The submitted version was published. Your newer edits are still here and are not saved; check and save them separately.'
         : 'Draft saved. Your newer edits are still here and have not been saved yet.')
       : 'Draft saved with its category and tags.');
+    return true;
   } catch (error) {
     setStatus(error.message, true);
+    return false;
   } finally {
     savingWorkspace = false;
     const saveButton = document.getElementById('save-draft-btn');

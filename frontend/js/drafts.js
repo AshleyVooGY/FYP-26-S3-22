@@ -15,8 +15,8 @@ function rowHtml(article) {
       <td>${formatRelativeTime(article.created_at)}</td>
       <td>
         <div class="media-actions">
-          <a class="article-action is-live" href="article-editor.html?id=${article.id}">Continue Editing</a>
-          <a class="article-action is-live" href="article-editor.html?id=${article.id}#credibility-check">Check &amp; Publish</a>
+          <a class="article-action is-live" href="article-editor.html?id=${article.id}&from=drafts">Continue Editing</a>
+          <a class="article-action is-live" href="article-editor.html?id=${article.id}&from=drafts#credibility-check">Check &amp; Publish</a>
           <button class="article-action is-live" data-delete="${article.id}" type="button">Delete</button>
         </div>
       </td>

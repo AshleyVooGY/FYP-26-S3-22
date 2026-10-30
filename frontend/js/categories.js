@@ -20,9 +20,14 @@ const state = {
   total: 0,
   pages: [],
   pageIndex: 0,
-  paging: false
+  paging: false,
+  tagsExpanded: false,
+  manageQuery: "",
+  manageType: "all",
+  managePage: 0
 };
 let requestToken = 0;
+let tagResizeObserver = null;
 
 function showToast(message, isError = false) {
   const toast = document.createElement("div");
@@ -108,7 +113,37 @@ async function changeBrowsePage(index) {
   }
 }
 
+// Hide complete buttons beyond the second visual row, including keyboard focus.
+function updateTagDisclosure() {
+  const list = app.querySelector('#browse-tag-list');
+  const toggle = app.querySelector('#browse-tags-toggle');
+  if (!list || !toggle) return;
+  const buttons = [...list.querySelectorAll('[data-type="tag"]')];
+  buttons.forEach(button => { button.hidden = false; });
+  const rows = [...new Set(buttons.map(button => button.offsetTop))].sort((a, b) => a - b);
+  const overflow = buttons.filter(button => rows.indexOf(button.offsetTop) >= 2);
+  if (!state.tagsExpanded) overflow.forEach(button => { button.hidden = true; });
+  toggle.hidden = overflow.length === 0;
+  toggle.textContent = state.tagsExpanded ? 'Show fewer tags' : 'Show all tags';
+  toggle.setAttribute('aria-expanded', String(state.tagsExpanded));
+  if (buttons.some(button => button.hidden && button === document.activeElement)) toggle.focus();
+}
+
+function observeTagDisclosure() {
+  updateTagDisclosure();
+  const list = app.querySelector('#browse-tag-list');
+  let previousWidth = list.getBoundingClientRect().width;
+  tagResizeObserver = new ResizeObserver(entries => {
+    const width = entries[0].contentRect.width;
+    if (Math.abs(width - previousWidth) < 1) return;
+    previousWidth = width;
+    updateTagDisclosure();
+  });
+  tagResizeObserver.observe(list);
+}
+
 async function renderBrowse() {
+  tagResizeObserver?.disconnect();
   const token = ++requestToken;
   const filter = { type: state.type, id: state.id };
   state.paging = false;
@@ -126,16 +161,22 @@ async function renderBrowse() {
 
     app.innerHTML = `
       <header class="page-head">
-        <div><h1>${selected ? escapeHtml(selected.name) : "Browse News"}</h1><p>Explore published articles by category or tag.</p></div>
+        <div><h1>${selected ? (filter.type === "tag" ? `Articles tagged #${escapeHtml(selected.name)}` : escapeHtml(selected.name)) : "Browse News"}</h1><p>Explore published articles by category or tag.</p></div>
         <div class="button-row"><span id="browse-count" role="status" aria-live="polite"></span>${state.viewer.isAdmin ? '<button class="button" type="button" data-manage>Manage categories & tags</button>' : ""}</div>
       </header>
       <section aria-labelledby="categories-title"><h2 id="categories-title" class="section-title">Categories</h2><div class="classification-bar">
         <button class="classification-chip ${filter.type === "all" ? "is-active" : ""}" data-type="all">All news</button>
         ${state.categories.map((item) => `<button class="classification-chip ${filter.type === "category" && String(filter.id) === String(item.id) ? "is-active" : ""}" data-type="category" data-id="${item.id}">${escapeHtml(item.name)}</button>`).join("")}
       </div></section>
-      <section aria-labelledby="tags-title"><h2 id="tags-title" class="section-title">Tags</h2><div class="classification-bar">
-        ${state.tags.length ? state.tags.map((item) => `<button class="classification-chip ${filter.type === "tag" && String(filter.id) === String(item.id) ? "is-active" : ""}" data-type="tag" data-id="${item.id}">#${escapeHtml(item.name)}</button>`).join("") : '<span class="state-message">No tags are available yet.</span>'}
-      </div></section>
+      <section class="browse-tags" aria-labelledby="tags-title">
+        <div class="browse-tags__heading"><h2 id="tags-title" class="section-title">Tags</h2>
+          ${filter.type === "tag" && selected ? `<button class="classification-chip is-active browse-selected-tag" data-type="all" aria-label="Clear tag filter: ${escapeHtml(selected.name)}">#${escapeHtml(selected.name)} <span aria-hidden="true">×</span></button>` : ""}
+        </div>
+        <div id="browse-tag-list" class="classification-bar browse-tag-list">
+          ${state.tags.length ? state.tags.filter(item => filter.type !== "tag" || String(item.id) !== String(filter.id)).map(item => `<button class="classification-chip" data-type="tag" data-id="${item.id}">#${escapeHtml(item.name)}</button>`).join("") : '<span class="state-message">No tags are available yet.</span>'}
+        </div>
+        <button id="browse-tags-toggle" class="browse-tags-toggle" type="button" aria-expanded="false" aria-controls="browse-tag-list" hidden>Show all tags</button>
+      </section>
       <div class="article-grid" id="browse-grid" aria-busy="false">${page.articles.map(articleCard).join("")}</div>
       ${!page.articles.length ? '<div class="empty-state"><h2>No matching articles</h2><p>There are no published articles under this classification yet.</p></div>' : ''}
       <div class="categories-pagination">
@@ -148,9 +189,15 @@ async function renderBrowse() {
         <button id="browse-retry" class="button" type="button" hidden>Try again</button>
       </div>`;
     updateBrowsePaging();
+    observeTagDisclosure();
+    app.querySelector('#browse-tags-toggle').addEventListener('click', () => {
+      state.tagsExpanded = !state.tagsExpanded;
+      updateTagDisclosure();
+    });
     app.querySelector('#browse-previous').addEventListener('click', () => changeBrowsePage(state.pageIndex - 1));
     app.querySelector('#browse-next').addEventListener('click', () => changeBrowsePage(state.pageIndex + 1));
     app.querySelectorAll("[data-type]").forEach((button) => button.addEventListener("click", () => {
+      state.tagsExpanded = false;
       state.type = button.dataset.type;
       state.id = button.dataset.id || null;
       const query = state.id ? `?type=${state.type}&id=${encodeURIComponent(state.id)}` : '';
@@ -168,6 +215,27 @@ async function renderBrowse() {
 
 function managementRows(items, type) {
   return items.map((item) => `<tr><td>${escapeHtml(item.name)}</td><td>${type === "tag" ? "Tag" : "Category"}</td><td><div class="table-actions"><button class="button" data-edit data-type="${type}" data-id="${item.id}" data-name="${escapeHtml(item.name)}">Edit</button><button class="button button--danger" data-delete data-type="${type}" data-id="${item.id}" data-name="${escapeHtml(item.name)}">Delete</button></div></td></tr>`).join("");
+}
+
+function updateManagementList() {
+  const query = state.manageQuery.trim().toLocaleLowerCase();
+  const items = [
+    ...state.categories.map(item => ({ ...item, type: 'category' })),
+    ...state.tags.map(item => ({ ...item, type: 'tag' }))
+  ].filter(item => (state.manageType === 'all' || item.type === state.manageType)
+    && item.name.toLocaleLowerCase().includes(query));
+  const pageCount = Math.max(1, Math.ceil(items.length / 10));
+  state.managePage = Math.max(0, Math.min(state.managePage, pageCount - 1));
+  const start = state.managePage * 10;
+  const page = items.slice(start, start + 10);
+  app.querySelector('#manage-rows').innerHTML = page.length
+    ? page.map(item => managementRows([item], item.type)).join('')
+    : '<tr><td colspan="3" class="state-message">No matching categories or tags.</td></tr>';
+  app.querySelector('#manage-count').textContent = `Showing ${items.length ? start + 1 : 0}–${start + page.length} of ${items.length} item${items.length === 1 ? "" : "s"}`;
+  app.querySelector('#manage-page').textContent = `Page ${state.managePage + 1} of ${pageCount}`;
+  app.querySelector('#manage-previous').disabled = state.managePage === 0;
+  app.querySelector('#manage-next').disabled = state.managePage + 1 >= pageCount;
+  app.querySelector('#manage-clear').hidden = !state.manageQuery && state.manageType === 'all';
 }
 
 function closeModal() {
@@ -208,6 +276,7 @@ function openDeleteModal(item) {
 }
 
 async function renderManage() {
+  tagResizeObserver?.disconnect();
   const token = ++requestToken;
   if (!state.viewer.isAdmin) {
     history.replaceState(null, "", "categories.html");
@@ -222,7 +291,15 @@ async function renderManage() {
     if (token !== requestToken) return;
     app.innerHTML = `<header class="page-head"><div><h1>Manage Categories &amp; Tags</h1><p>Administrators manage categories and can rename or delete tags. Authors can add tags while writing articles.</p></div><button class="button" type="button" data-browse>Back to browse</button></header>
       <div class="manage-grid"><section class="panel"><h2>Create category/tag</h2><form id="create-form"><div class="field"><label for="classification-name">Name</label><input id="classification-name" name="name" maxlength="60" placeholder="Enter a unique name" required></div><p class="field-label">Type</p><div class="button-row"><label><input type="radio" name="type" value="category" checked> Category</label><label><input type="radio" name="type" value="tag"> Tag</label></div><div class="button-row" style="margin-top:18px"><button class="button button--primary">Save</button><button class="button" type="reset">Cancel</button></div></form></section>
-      <section class="panel"><h2>Existing categories and tags</h2><div style="overflow:auto"><table class="classification-table"><thead><tr><th>Name</th><th>Type</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody>${managementRows(state.categories, "category")}${managementRows(state.tags, "tag")}</tbody></table></div></section></div>`;
+      <section class="panel manage-list-panel" aria-labelledby="manage-list-title"><h2 id="manage-list-title">Existing categories and tags</h2>
+        <div class="manage-filters">
+          <div class="field"><label for="manage-search">Search names</label><input id="manage-search" type="search" placeholder="Find a category or tag…" value="${escapeHtml(state.manageQuery)}" /></div>
+          <div class="field"><label for="manage-type">Type</label><select id="manage-type"><option value="all" ${state.manageType === 'all' ? 'selected' : ''}>All types</option><option value="category" ${state.manageType === 'category' ? 'selected' : ''}>Categories</option><option value="tag" ${state.manageType === 'tag' ? 'selected' : ''}>Tags</option></select></div>
+        </div>
+        <div class="manage-list-summary"><span id="manage-count" role="status" aria-live="polite"></span><button id="manage-clear" class="browse-tags-toggle" type="button" hidden>Clear filters</button></div>
+        <div class="manage-table-wrap"><table class="classification-table"><thead><tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead><tbody id="manage-rows"></tbody></table></div>
+        <nav class="manage-pagination" aria-label="Category and tag pages"><button id="manage-previous" class="button" type="button">Previous</button><span id="manage-page" aria-live="polite"></span><button id="manage-next" class="button" type="button">Next</button></nav>
+      </section></div>`;
 
     app.querySelector("[data-browse]").addEventListener("click", () => {
       history.replaceState(null, "", "categories.html");
@@ -241,8 +318,31 @@ async function renderManage() {
         showToast(error.message.includes("duplicate") ? "That name already exists." : error.message, true);
       }
     });
-    app.querySelectorAll("[data-edit]").forEach((button) => button.addEventListener("click", () => openEditModal(button.dataset)));
-    app.querySelectorAll("[data-delete]").forEach((button) => button.addEventListener("click", () => openDeleteModal(button.dataset)));
+    app.querySelector('#manage-search').addEventListener('input', event => {
+      state.manageQuery = event.target.value;
+      state.managePage = 0;
+      updateManagementList();
+    });
+    app.querySelector('#manage-type').addEventListener('change', event => {
+      state.manageType = event.target.value;
+      state.managePage = 0;
+      updateManagementList();
+    });
+    app.querySelector('#manage-clear').addEventListener('click', () => {
+      state.manageQuery = ''; state.manageType = 'all'; state.managePage = 0;
+      app.querySelector('#manage-search').value = '';
+      app.querySelector('#manage-type').value = 'all';
+      updateManagementList();
+    });
+    app.querySelector('#manage-previous').addEventListener('click', () => { state.managePage--; updateManagementList(); });
+    app.querySelector('#manage-next').addEventListener('click', () => { state.managePage++; updateManagementList(); });
+    app.querySelector('#manage-rows').addEventListener('click', event => {
+      const button = event.target.closest('button[data-edit], button[data-delete]');
+      if (!button) return;
+      if (button.hasAttribute('data-edit')) openEditModal(button.dataset);
+      else openDeleteModal(button.dataset);
+    });
+    updateManagementList();
   } catch (error) {
     if (token === requestToken) showError(error, renderManage);
   }

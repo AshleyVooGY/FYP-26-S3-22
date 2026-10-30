@@ -34,7 +34,7 @@
     <aside class="sidebar" aria-label="Account navigation"></aside>
     <main class="content settings-content">
       <h1 class="section-title">Settings</h1>
-      <p class="settings-description">Manage your display name and account security.</p>
+      <p class="settings-description">Manage the display name shown on your articles and comments.</p>
       <p id="settings-loading" role="status">Loading account settings…</p>
       <button class="settings-button" id="settings-retry" type="button" hidden>Try again</button>
       <div id="settings-forms" hidden>
@@ -49,17 +49,9 @@
             <p id="name-status" class="settings-status" role="status" aria-live="polite"></p>
           </form>
         </section>
-        <section class="settings-panel" aria-labelledby="security-heading">
-          <h2 id="security-heading">Reset password</h2>
-          <p>We will send a secure reset link to your login email. Open the link to set a new password.</p>
-          <p id="reset-destination" class="settings-help" hidden>The reset link opens our published website.</p>
-          <p>Login email: <strong id="settings-email"></strong></p>
-          <button class="settings-button" id="send-reset" type="button">Send reset email</button>
-          <p id="reset-status" class="settings-status" role="status" aria-live="polite"></p>
-        </section>
       </div>
     </main>
   </div>
-  <script type="module" src="js/settings.js?v=account-name-20261029"></script>
+  <script type="module" src="js/settings.js?v=display-name-only-20261030"></script>
 </body>
 </html>

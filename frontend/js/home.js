@@ -109,7 +109,7 @@ async function init() {
   }
 
   try {
-    const trending = await getTrendingArticles(6);
+    const trending = await getTrendingArticles(3);
     renderTrendingGrid(trending);
   } catch (err) {
     document.getElementById("trending-grid").innerHTML =

@@ -92,7 +92,7 @@ function resultCard(article) {
 }
 
 function renderPage() {
-  app.innerHTML = `<header class="page-head"><div><h1>Search News</h1><p>Enter a keyword or choose filters, then search.</p></div><span id="result-count" role="status" aria-live="polite"></span></header>
+  app.innerHTML = `<header class="page-head"><div><h1>Search News</h1><p>Search by keyword. Category, date and sort changes apply automatically.</p></div><span id="result-count" role="status" aria-live="polite"></span></header>
     <form id="search-form" class="toolbar search-panel">
       <div class="field"><label for="keyword">Keyword</label><div class="button-row"><input id="keyword" name="keyword" type="search" value="${escapeHtml(state.filters.keyword)}" placeholder="Search titles, content or topics…"><button class="button button--primary" type="submit">Search</button></div></div>
       <div class="search-options">
@@ -116,20 +116,18 @@ function renderPage() {
   function validateDates() {
     end.setCustomValidity(start.value && end.value && start.value > end.value ? 'Choose an end date on or after the start date.' : '');
   }
-  start.addEventListener('change', validateDates);
-  end.addEventListener('change', validateDates);
-  function applyForm() {
+  function applyForm(submitKeyword = false) {
     validateDates();
     if (!form.reportValidity()) return;
     const values = new FormData(form);
-    state.filters = { keyword: String(values.get('keyword') || '').trim(), categoryId: values.get('category') || '', startDate: start.value, endDate: end.value, sort: values.get('sort') || 'latest' };
+    state.filters = { keyword: submitKeyword ? String(values.get('keyword') || '').trim() : state.filters.keyword, categoryId: values.get('category') || '', startDate: start.value, endDate: end.value, sort: values.get('sort') || 'latest' };
     state.pageIndex = 0;
     syncUrl();
     runSearch();
   }
-  form.addEventListener('submit', event => { event.preventDefault(); applyForm(); });
-  app.querySelector('#search-sort').addEventListener('change', () => {
-    if (state.hasSearched) applyForm();
+  form.addEventListener('submit', event => { event.preventDefault(); applyForm(true); });
+  [app.querySelector('#category'), start, end, app.querySelector('#search-sort')].forEach(control => {
+    control.addEventListener('change', () => applyForm());
   });
   app.querySelector('#search-previous').addEventListener('click', () => changePage(state.pageIndex - 1));
   app.querySelector('#search-next').addEventListener('click', () => changePage(state.pageIndex + 1));

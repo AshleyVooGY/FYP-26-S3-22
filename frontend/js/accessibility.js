@@ -86,7 +86,7 @@ function applyReadingPreferences(
 
     // Update theme buttons
     const themeButtons = articlePanel.querySelectorAll(
-        "[data-reading-theme]"
+        ".reading-accessibility [data-reading-theme]"
     );
 
     themeButtons.forEach(button => {

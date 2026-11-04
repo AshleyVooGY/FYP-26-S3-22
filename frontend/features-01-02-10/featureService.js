@@ -36,20 +36,16 @@ export async function getClassifications() {
   };
 }
 
-// Count only links to published articles, without loading article text or drafts.
-export async function getPublishedTagUsage() {
-  const usage = {};
-  const batchSize = 1000;
-  for (let offset = 0; ; offset += batchSize) {
-    const { data, error } = await supabase.from("article_tags")
-      .select("tag_id, article:articles!inner(id)")
-      .eq("article.status", "published")
-      .order("article_id").order("tag_id")
-      .range(offset, offset + batchSize - 1);
-    throwIfError(error);
-    for (const link of data || []) usage[link.tag_id] = (usage[link.tag_id] || 0) + 1;
-    if (!data || data.length < batchSize) return usage;
-  }
+export async function getCategories() {
+  const { data, error } = await supabase.from("categories").select("id, name").order("name");
+  throwIfError(error);
+  return data || [];
+}
+
+export async function getTag(tagId) {
+  const { data, error } = await supabase.from("tags").select("id, name").eq("id", Number(tagId)).maybeSingle();
+  throwIfError(error);
+  return data;
 }
 
 export async function getPublishedArticles(limit = 24) {
@@ -148,6 +144,36 @@ export async function searchArticles(filters = {}) {
   });
   throwIfError(error);
   return data ?? [];
+}
+
+export async function searchArticlesPage(filters = {}, pageIndex = 0) {
+  if (!Number.isSafeInteger(pageIndex) || pageIndex < 0) throw new Error("Invalid search page.");
+  const pageSize = 6;
+  let query = supabase.rpc("search_news_articles", {
+    p_keyword: filters.keyword?.trim() || null,
+    p_category_id: filters.categoryId ? Number(filters.categoryId) : null,
+    p_start_date: null,
+    p_end_date: null,
+    p_sort: filters.sort || "latest"
+  }, { count: "exact" });
+  // Match the reader's local calendar dates used by the article date display.
+  const dateBoundary = (value, nextDay = false) => {
+    const date = new Date(`${value}T00:00:00`);
+    if (!Number.isFinite(date.getTime())) throw new Error("Invalid search date.");
+    if (nextDay) date.setDate(date.getDate() + 1);
+    return date.toISOString();
+  };
+  if (filters.startDate) query = query.gte("published_at", dateBoundary(filters.startDate));
+  if (filters.endDate) query = query.lt("published_at", dateBoundary(filters.endDate, true));
+  if (filters.sort === "popularity") query = query.order("view_count", { ascending: false, nullsFirst: false });
+  // A unique tie-breaker keeps adjacent pages stable when dates/counts match.
+  query = query.order("published_at", { ascending: filters.sort === "oldest", nullsFirst: false }).order("id", { ascending: false });
+  const { data, count, error } = await query.range(pageIndex * pageSize, pageIndex * pageSize + pageSize - 1);
+  // A bookmarked page can outlive the results it used to contain.
+  if (error?.code === "PGRST103" && pageIndex > 0) return { articles: [], total: 0 };
+  throwIfError(error);
+  if (!Array.isArray(data) || !Number.isSafeInteger(count) || count < 0) throw new Error("Unable to read search results. Please try again.");
+  return { articles: data, total: count };
 }
 
 export async function getArticle(articleId) {

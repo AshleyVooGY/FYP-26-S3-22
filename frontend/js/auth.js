@@ -180,6 +180,7 @@ function wirePrimaryNavigation() {
     button.type = "submit";
     button.className = "topbar-search-button";
     button.setAttribute("aria-label", "Search news");
+    button.title = "Search news and filters — no keyword required";
     button.innerHTML = searchIcon;
     form.append(button);
   });

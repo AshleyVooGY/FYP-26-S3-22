@@ -1,0 +1,223 @@
+/* ==========================================================
+   FEATURE 9 - NEWS READING ACCESSIBILITY
+========================================================== */
+
+
+/* ACCESSIBILITY TOOLBAR */
+
+.reading-accessibility {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 18px 24px;
+
+    margin: 22px 0;
+    padding: 14px 16px;
+
+    border: 1px solid var(--border);
+    border-radius: 10px;
+
+    background: var(--bg-panel-alt);
+}
+
+
+/* TOOLBAR GROUPS */
+
+.reading-accessibility__group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+
+/* LABELS */
+
+.reading-accessibility__label {
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+
+/* BUTTON CONTAINER */
+
+.reading-accessibility__controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+
+/* BUTTONS */
+
+.reading-accessibility__button {
+    min-height: 34px;
+
+    padding: 6px 11px;
+
+    border: 1px solid var(--border);
+    border-radius: 6px;
+
+    background: var(--bg-input);
+    color: var(--text-primary);
+
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease;
+}
+
+
+.reading-accessibility__button:hover:not(:disabled) {
+    border-color: var(--accent);
+}
+
+
+/* SELECTED THEME */
+
+.reading-accessibility__button.is-selected {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #ffffff;
+}
+
+
+/* DISABLED BUTTON */
+
+.reading-accessibility__button:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+}
+
+
+/* TEXT SIZE DISPLAY */
+
+.reading-accessibility__value {
+    min-width: 44px;
+
+    color: var(--text-primary);
+
+    font-size: 13px;
+    font-weight: 700;
+
+    text-align: center;
+}
+
+
+/* SAVED MESSAGE */
+
+.reading-accessibility__saved {
+    margin-left: auto;
+
+    color: var(--text-muted);
+    font-size: 11px;
+}
+
+
+/* ==========================================================
+   ARTICLE TEXT SIZE
+========================================================== */
+
+.article-panel__body {
+    font-size: var(--article-reading-font-size, 100%);
+    line-height: 1.8;
+
+    transition: font-size 0.15s ease;
+}
+
+
+/* ==========================================================
+   LIGHT READING MODE
+========================================================== */
+
+.article-panel[data-reading-theme="light"] {
+    background: #ffffff;
+    color: #202733;
+
+    border-color: #d9dee7;
+}
+
+
+.article-panel[data-reading-theme="light"] .article-panel__title,
+.article-panel[data-reading-theme="light"] .article-panel__body,
+.article-panel[data-reading-theme="light"] .article-panel__byline,
+.article-panel[data-reading-theme="light"] .article-topic-tags,
+.article-panel[data-reading-theme="light"] .article-read-aloud,
+.article-panel[data-reading-theme="light"] .article-comments {
+    color: #202733;
+}
+
+
+.article-panel[data-reading-theme="light"] .article-panel__byline {
+    color: #596575;
+}
+
+
+/* LIGHT MODE TOOLBAR */
+
+.article-panel[data-reading-theme="light"] .reading-accessibility {
+    background: #f2f5f9;
+    border-color: #d9dee7;
+}
+
+
+.article-panel[data-reading-theme="light"] .reading-accessibility__label,
+.article-panel[data-reading-theme="light"] .reading-accessibility__saved {
+    color: #596575;
+}
+
+
+.article-panel[data-reading-theme="light"] .reading-accessibility__button:not(.is-selected) {
+    background: #ffffff;
+    color: #202733;
+    border-color: #cbd3df;
+}
+
+
+.article-panel[data-reading-theme="light"] .reading-accessibility__value {
+    color: #202733;
+}
+
+
+/* LIGHT MODE ARTICLE ACTIONS */
+
+.article-panel[data-reading-theme="light"] .article-action {
+    color: #202733;
+    border-color: #cbd3df;
+    background: #f7f9fc;
+}
+
+
+/* ==========================================================
+   DARK READING MODE
+========================================================== */
+
+.article-panel[data-reading-theme="dark"] {
+    background: var(--bg-panel);
+    color: var(--text-primary);
+}
+
+
+/* ==========================================================
+   RESPONSIVE DESIGN
+========================================================== */
+
+@media (max-width: 640px) {
+
+    .reading-accessibility {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .reading-accessibility__saved {
+        margin-left: 0;
+    }
+
+}

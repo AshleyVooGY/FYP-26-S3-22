@@ -1,55 +1,37 @@
+
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>
-        Article — News Release System
-    </title>
-
+    <title>Article — News Release System</title>
 
     <!-- Shared website styling -->
+    <link rel="stylesheet" href="css/shell.css">
+
+    <!-- Feature 5: Trending and Popular News -->
     <link
         rel="stylesheet"
-        href="css/shell.css"
+        href="css/feature5.css?v=article-tags-20261029"
     >
 
-    <!-- Shared shell -->
-<link
-    rel="stylesheet"
-    href="css/shell.css"
->
+    <!-- Feature 3: Bookmarks and Reading History -->
+    <link rel="stylesheet" href="css/feature3.css">
 
-<!-- Feature 5 -->
-<link
-    rel="stylesheet"
-    href="css/feature5.css?v=read-aloud-20261020"
->
+    <!-- Feature 4: News Reactions -->
+    <link rel="stylesheet" href="css/feature4.css">
 
-<!-- Feature 3 -->
-<link
-    rel="stylesheet"
-    href="css/feature3.css"
->
+    <!-- Feature 9: News Reading Accessibility -->
+    <link rel="stylesheet" href="css/accessibility.css">
 
-<!-- Feature 4 -->
-<link
-    rel="stylesheet"
-    href="css/feature4.css"
->
+    <!-- Comments -->
+    <link rel="stylesheet" href="css/comments.css?v=comments-20261027">
 
 </head>
 
-
 <body>
-
 
     <!-- ==================================================
          TOP NAVIGATION
@@ -57,9 +39,7 @@
 
     <header class="topbar">
 
-
         <!-- BRAND -->
-
         <div class="topbar__brand">
 
             <span class="topbar__brand-icon">
@@ -81,9 +61,7 @@
                         rx="1.5"
                     />
 
-                    <path
-                        d="M17 8.5h4V18a2 2 0 0 1-2 2h-2"
-                    />
+                    <path d="M17 8.5h4V18a2 2 0 0 1-2 2h-2" />
 
                     <line
                         x1="6.5"
@@ -110,36 +88,25 @@
 
             </span>
 
-            <span>
-                NEWS RELEASE SYSTEM
-            </span>
+            <span>NEWS RELEASE SYSTEM</span>
 
         </div>
 
 
         <!-- TOP NAVIGATION -->
-
         <nav class="topbar__nav">
 
             <a href="index.html">
                 Home
             </a>
 
-
-            <a
-                href="categories.html"
-            >
-                Categories ▾
+            <a href="categories.html">
+                Categories
             </a>
 
-
-            <a
-                href="trending.html"
-                class="is-active"
-            >
+            <a href="trending.html" class="is-active">
                 Trending
             </a>
-
 
             <!-- FEATURE 3 -->
             <a href="bookmarks.html">
@@ -150,12 +117,23 @@
 
 
         <!-- TOP ACTIONS -->
-
         <div class="topbar__actions">
 
+            <form
+                class="feature-search-entry"
+                action="search.html"
+                method="get"
+                role="search"
+            >
 
-            <form class="feature-search-entry" action="search.html" method="get" role="search">
-                <input class="topbar__search" name="q" type="search" placeholder="Search news..." aria-label="Search news">
+                <input
+                    class="topbar__search"
+                    name="q"
+                    type="search"
+                    placeholder="Search news..."
+                    aria-label="Search news"
+                >
+
             </form>
 
 
@@ -177,9 +155,7 @@
                         d="M18 8a6 6 0 0 0-12 0c0 6.5-2.5 8.5-2.5 8.5h17S18 14.5 18 8z"
                     />
 
-                    <path
-                        d="M13.7 20a2 2 0 0 1-3.4 0"
-                    />
+                    <path d="M13.7 20a2 2 0 0 1-3.4 0" />
 
                 </svg>
 
@@ -242,12 +218,9 @@
 
     <div class="layout layout--full">
 
-
         <main class="content content--article">
 
-
             <!-- BACK TO TRENDING -->
-
             <a
                 class="back-link"
                 href="trending.html"
@@ -257,7 +230,6 @@
 
 
             <!-- ARTICLE CONTENT -->
-
             <div id="article-slot">
 
                 <p class="state-message">
@@ -265,7 +237,6 @@
                 </p>
 
             </div>
-
 
         </main>
 
@@ -276,15 +247,18 @@
          JAVASCRIPT
     =================================================== -->
 
+    <!-- Authentication -->
     <script
         type="module"
-        src="js/auth.js?v=required-category-20261022"
+        src="js/auth.js?v=account-name-20261029"
     ></script>
 
 
+    <!-- Article functionality, Feature 3, Feature 4,
+         Feature 5, Feature 9 and Comments -->
     <script
         type="module"
-        src="js/article.js?v=required-category-20261022"
+        src="js/article.js?v=account-name-20261029"
     ></script>
 
 

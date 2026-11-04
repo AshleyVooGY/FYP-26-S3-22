@@ -30,6 +30,26 @@ export async function getTags() {
   return data;
 }
 
+/**
+ * Resolve a tag name to its id, creating the tag if it doesn't already
+ * exist. Both manual author input and AI suggestions use this interface.
+ * Renaming and deletion remain admin-only.
+ */
+export async function getOrCreateTag(name) {
+  const { data, error } = await supabase.rpc("get_or_create_tag", { p_name: name });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) {
+    throw new Error(`Could not create the tag "${name}".`);
+  }
+
+  return { id: row.id, name: row.name };
+}
+
 function normaliseIds(ids = []) {
   return [...new Set(ids.map(Number).filter((id) => Number.isInteger(id) && id > 0))];
 }
@@ -262,19 +282,19 @@ function storagePathFromUrl(url) {
   return index === -1 ? null : url.slice(index + marker.length);
 }
 
-/**
- * Upload a featured image for an article the current user owns and attach it.
- * If the article already had an image, the old file is removed from storage
- * once the new one is safely attached.
- */
-export async function uploadArticleImage(articleId, file, previousImageUrl = null) {
+/** Validate a selected file before previewing or uploading it. */
+export function validateArticleImage(file) {
   if (!ALLOWED_TYPES.includes(file.type)) {
     throw new Error("Only PNG, JPEG, WEBP or GIF images are allowed.");
   }
   if (file.size > MAX_FILE_BYTES) {
     throw new Error("Image must be smaller than 5MB.");
   }
+}
 
+/** Upload and attach an image; clean up the replaced file after attachment. */
+export async function uploadArticleImage(articleId, file, previousImageUrl = null) {
+  validateArticleImage(file);
   const extension = file.name.split(".").pop();
   const path = `${articleId}/${crypto.randomUUID()}.${extension}`;
 
@@ -291,7 +311,10 @@ export async function uploadArticleImage(articleId, file, previousImageUrl = nul
   try {
     const { data: updated, error: updateError } = await supabase.from("articles")
       .update({ featured_image_url: imageUrl }).eq("id", articleId).select("id").maybeSingle();
-    attachmentConfirmed = true;
+    // PostgREST returns network failures as an error object too. Only a
+    // PostgreSQL error code proves the update statement was rolled back.
+    // Unknown outcomes must retain the upload: it may already be referenced.
+    attachmentConfirmed = !updateError || /^[0-9A-Z]{5}$/.test(updateError.code || '');
     if (updateError) throw new Error(updateError.message);
     if (!updated) throw new Error("The article could not be updated. Reload and try again.");
   } catch (error) {
@@ -332,7 +355,11 @@ export async function removeArticleImage(articleId, imageUrl) {
 
   if (path) {
     const { error: cleanupError } = await supabase.storage.from(BUCKET).remove([path]);
-    if (cleanupError) throw new Error("Image detached, but the stored file could not be removed. Reload the editor and contact an administrator.");
+    if (cleanupError) {
+      const cleanupFailure = new Error("Image removed from the article, but the stored file could not be cleaned up. Please contact an administrator.");
+      cleanupFailure.imageDetached = true;
+      throw cleanupFailure;
+    }
   }
 }
 
@@ -340,6 +367,7 @@ export async function removeArticleImage(articleId, imageUrl) {
 export async function saveArticleWorkspace(articleId, values, publish = false, receiptId = null) {
   validateArticleInput(values);
   const categoryIds = normaliseIds(values.categoryIds);
+  if (normaliseIds(values.tagIds).length > 5) throw new Error('Choose up to 5 tags for this article.');
   if (categoryIds.length > 1) throw new Error('Choose only one category for this article.');
   if (publish && categoryIds.length !== 1) throw new Error('Select a category before publishing.');
   const { data, error } = await supabase.rpc('save_my_article_workspace', {

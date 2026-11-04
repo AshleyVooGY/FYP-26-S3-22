@@ -1,0 +1,14 @@
+.settings-content { max-width: 900px; }
+.settings-description, .settings-panel > p, .settings-help { color: var(--text-secondary); line-height: 1.6; }
+.settings-panel { background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-top: 24px; }
+.settings-panel h2 { margin: 0 0 12px; font-size: 1.2em; }
+.settings-panel label { display: block; margin: 20px 0 8px; font-weight: 600; }
+.settings-panel input { display: block; box-sizing: border-box; width: 100%; max-width: 480px; padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-input); color: var(--text-primary); font: inherit; }
+.settings-help { font-size: .875em; margin: 8px 0 18px; }
+.settings-button { padding: 10px 16px; color: var(--text-primary); background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; font: inherit; font-weight: 600; cursor: pointer; }
+.settings-button.is-primary { color: #fff; background: var(--accent); }
+.settings-button:disabled { opacity: .6; cursor: default; }
+.settings-status { min-height: 1.5em; margin-bottom: 0; line-height: 1.5; }
+.settings-status.is-error, #settings-loading.is-error { color: #e57373; }
+.settings-panel input:focus-visible, .settings-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.settings-content [hidden] { display: none !important; }

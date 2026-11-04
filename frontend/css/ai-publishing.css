@@ -270,7 +270,7 @@
 
 .ai-tool-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   margin-top: 16px;
 }
@@ -426,3 +426,21 @@
 .category-appeal { margin-top: 14px; }
 .category-appeal summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
 .category-appeal summary:focus-visible { outline: 2px solid var(--accent, #7763ee); outline-offset: 4px; border-radius: 4px; }
+
+/* Keep the unsaved-input prompt readable with the site's theme and text size. */
+#editor-leave-dialog {
+  width: min(32rem, calc(100vw - 2rem));
+  box-sizing: border-box;
+  padding: 1.5rem;
+  border: 1px solid var(--border, #344252);
+  border-radius: 12px;
+  background: var(--bg-panel, #1c2937);
+  color: var(--text-primary, #eef2f7);
+  font: inherit;
+}
+#editor-leave-dialog::backdrop { background: rgb(0 0 0 / 55%); }
+#editor-leave-dialog h2 { margin-top: 0; font-size: 1.25em; }
+#editor-leave-dialog p { line-height: 1.6; }
+
+#editor-leave-dialog [data-leave-error] { color: #e57373; }
+#editor-leave-dialog [data-leave-error]:empty { display: none; }

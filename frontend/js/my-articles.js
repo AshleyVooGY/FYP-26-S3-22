@@ -1,5 +1,5 @@
-import { requireAuth } from "./auth.js?v=required-category-20261022";
-import { getMyArticles, deleteArticle } from "../../services/feature8Service.js";
+import { requireAuth } from "./auth.js?v=account-name-20261029";
+import { getMyArticles, deleteArticle } from "../../services/feature8Service.js?v=apply-tags-20261024";
 import { escapeHtml, formatCount, formatRelativeTime, thumbHtml } from "./format.js";
 
 function rowHtml(article) {
@@ -16,7 +16,7 @@ function rowHtml(article) {
       <td class="is-numeric">${formatCount(article.view_count)}</td>
       <td>
         <div class="media-actions">
-          <a class="article-action is-live" href="article-editor.html?id=${article.id}">Edit</a>
+          <a class="article-action is-live" href="article-editor.html?id=${article.id}&from=my-articles">Edit</a>
           <button class="article-action is-live" data-delete="${article.id}" type="button">Delete</button>
         </div>
       </td>
@@ -64,6 +64,18 @@ async function reload() {
 async function init() {
   const user = await requireAuth();
   if (!user) return;
+
+  const url = new URL(window.location.href);
+  const success = url.searchParams.get('success');
+  if (success === 'published' || success === 'updated') {
+    // Consume the redirect feedback so refresh does not repeat it.
+    url.searchParams.delete('success');
+    window.history.replaceState(window.history.state, '', url);
+    const feedback = document.getElementById('article-success');
+    feedback.textContent = success === 'published'
+      ? 'Article published successfully.' : 'Article updated successfully.';
+    feedback.hidden = false;
+  }
 
   const slot = document.getElementById("my-articles-slot");
   slot.innerHTML = '<p class="state-message">Loading…</p>';

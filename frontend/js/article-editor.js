@@ -1,13 +1,15 @@
-import { requireAuth } from "./auth.js?v=required-category-20261022";
+import { requireAuth } from "./auth.js?v=account-name-20261029";
 import {
   getCategories,
   getTags,
+  getOrCreateTag,
   getMyArticleById,
   saveArticleWorkspace,
   deleteArticle,
   uploadArticleImage,
+  validateArticleImage,
   removeArticleImage
-} from "../../services/feature8Service.js?v=single-category-20261019";
+} from "../../services/feature8Service.js?v=article-tags-20261029";
 import {
   CREDIBILITY_THRESHOLD,
   getSubscriptionTier,
@@ -20,10 +22,122 @@ import { escapeHtml, thumbHtml } from "./format.js";
 
 const params = new URLSearchParams(window.location.search);
 let articleId = params.get("id");
+const explicitEditorSource = ['drafts', 'my-articles'].includes(params.get('from')) ? params.get('from') : null;
+let editorSource = explicitEditorSource || 'my-articles';
+function updateEditorBackLink(loadedArticle = null) {
+  if (loadedArticle?.status === 'draft') editorSource = 'drafts';
+  else if (loadedArticle) editorSource = explicitEditorSource || 'my-articles';
+  const link = document.getElementById('editor-back-link');
+  link.href = editorSource === 'drafts' ? 'drafts.html' : 'my-articles.html';
+  link.textContent = editorSource === 'drafts' ? '← Back to Drafts' : '← Back to My Articles';
+}
+function savedEditorUrl(id) {
+  return `article-editor.html?${new URLSearchParams({ id: String(id), from: editorSource })}`;
+}
+updateEditorBackLink();
 let article = null;
 let categories = [];
 let tags = [];
 let currentUser = null;
+let savedFormState = null;
+let allowEditorNavigation = false;
+let imageOperationPending = false;
+let savingWorkspace = false;
+let pendingImageFile = null;
+let pendingImagePreview = null;
+
+function clearPendingImage() {
+  if (pendingImagePreview) URL.revokeObjectURL(pendingImagePreview);
+  pendingImageFile = null;
+  pendingImagePreview = null;
+}
+function hasFeaturedImage() {
+  return Boolean(pendingImageFile || article?.featured_image_url?.trim());
+}
+
+// Track exact displayed input, including whitespace; publishing checks use
+// their own normalised fingerprint and are deliberately kept separate.
+function formState(values) {
+  return JSON.stringify({ title: values.title, content: values.content,
+    categoryIds: values.categoryIds.map(String).sort(), tagIds: values.tagIds.map(String).sort() });
+}
+function hasUnsavedEditorChanges() {
+  return Boolean(pendingImageFile) || savedFormState !== null && document.getElementById('field-title')
+    && formState(readForm()) !== savedFormState;
+}
+function shouldWarnBeforeLeaving() {
+  return !allowEditorNavigation && (hasUnsavedEditorChanges() || savingWorkspace || imageOperationPending || addingTag || tagsApplying);
+}
+window.addEventListener('beforeunload', event => {
+  if (!shouldWarnBeforeLeaving()) return;
+  event.preventDefault();
+  event.returnValue = '';
+});
+document.addEventListener('click', event => {
+  const link = event.target.closest?.('a[href]');
+  if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey
+    || link.target === '_blank' || link.hasAttribute('download') || !shouldWarnBeforeLeaving()) return;
+  const target = new URL(link.href, location.href);
+  if (!link.hasAttribute('data-logout') && (target.href === location.href ||
+    (target.origin === location.origin && target.pathname === location.pathname && target.search === location.search && target.hash))) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  showEditorLeavePrompt(link);
+}, true);
+function showEditorLeavePrompt(link) {
+  let dialog = document.getElementById('editor-leave-dialog');
+  if (dialog?.open) return;
+  if (!dialog) {
+    dialog = document.createElement('dialog');
+    dialog.id = 'editor-leave-dialog';
+    dialog.setAttribute('aria-labelledby', 'editor-leave-title');
+    dialog.addEventListener('cancel', event => { if (dialog.dataset.saving === 'true') event.preventDefault(); });
+    document.body.append(dialog);
+  }
+  const target = new URL(link.href, location.href);
+  const saveDraftBeforeReturn = article?.status !== 'published'
+    && target.origin === location.origin && target.pathname === new URL('drafts.html', location.href).pathname;
+  dialog.innerHTML = `<h2 id="editor-leave-title">${saveDraftBeforeReturn ? 'Save your draft before returning?' : 'Leave this editor?'}</h2>
+    <p>${saveDraftBeforeReturn ? 'Your draft has unsaved changes or an operation in progress. Save your changes before returning to Drafts.' : 'You have unsaved changes or an operation in progress. Stay to keep editing, or leave without saving your current changes.'}</p>
+    <p data-leave-error role="alert"></p>
+    <div class="article-editor__actions"><button type="button" class="article-editor__btn" data-stay-editor autofocus>Keep editing</button>
+    <button type="button" class="article-editor__btn ${saveDraftBeforeReturn ? 'article-editor__btn--primary' : 'article-editor__btn--danger'}" data-leave-editor>${saveDraftBeforeReturn ? 'Save and return to Drafts' : 'Leave editor'}</button></div>`;
+  const stay = dialog.querySelector('[data-stay-editor]');
+  const leave = dialog.querySelector('[data-leave-editor]');
+  const message = dialog.querySelector('[data-leave-error]');
+  stay.onclick = () => dialog.close();
+  leave.onclick = async () => {
+    if (dialog.dataset.saving === 'true') return;
+    if (saveDraftBeforeReturn) {
+      if (savingWorkspace || imageOperationPending) {
+        message.textContent = 'A save or image operation is still in progress. Please wait, then try again.';
+        return;
+      }
+      dialog.dataset.saving = 'true';
+      stay.disabled = leave.disabled = true;
+      leave.textContent = 'Saving…';
+      message.textContent = '';
+      try {
+        const saved = await saveWorkspace(readForm(), false);
+        if (!saved || hasUnsavedEditorChanges()) {
+          message.textContent = saved ? 'Your latest changes are not saved yet. Please save again before returning.'
+            : document.getElementById('editor-status')?.textContent || 'Unable to save your draft. Please try again.';
+          return;
+        }
+      } finally {
+        dialog.dataset.saving = 'false';
+        stay.disabled = leave.disabled = false;
+        leave.textContent = 'Save and return to Drafts';
+      }
+    }
+    dialog.close();
+    allowEditorNavigation = true;
+    link.click();
+    window.setTimeout(() => { allowEditorNavigation = false; }, 1500);
+  };
+  dialog.showModal();
+}
+
 let subscriptionTier = "free";
 let credibilityResult = null;
 let verifiedFingerprint = null;
@@ -104,7 +218,7 @@ function credibilityPanelHtml() {
         <span class="plan-badge plan-badge--${subscriptionTier}">${planName} plan</span>
       </div>
       <p class="ai-panel__description">
-        Credibility must reach ${CREDIBILITY_THRESHOLD}% with no critical issues, and the selected category must pass AI checking or receive administrator approval.
+        A featured image is required. Credibility must reach ${CREDIBILITY_THRESHOLD}% with no critical issues, and the selected category must pass AI checking or receive administrator approval.
         Editing the title, category, tags or article content after a check automatically invalidates the result.
       </p>
       <p class="plan-description">${planDescription}. The required publishing check is available to all signed-in users (up to 20 checks per hour). Publishing results expire after 30 minutes.</p>
@@ -133,7 +247,6 @@ function aiWritingPanelHtml() {
       </p>
       <div class="ai-tool-grid">
         <button class="ai-tool" type="button" data-ai-task="title">Suggest title</button>
-        <button class="ai-tool" type="button" data-ai-task="summary">Generate summary</button>
         <button class="ai-tool" type="button" data-ai-task="tags">Suggest tags</button>
         <button class="ai-tool" type="button" data-ai-task="polish">Polish article</button>
       </div>
@@ -142,6 +255,27 @@ function aiWritingPanelHtml() {
       <p class="media-row-status" id="ai-writing-status" role="status" aria-live="polite"></p>
     </section>
   `;
+}
+
+function articleImageHtml() {
+  const image = pendingImagePreview || article?.featured_image_url;
+  const published = article?.status === 'published';
+  return `<span>Featured Image</span>
+    <div class="media-thumb article-editor__thumb">${thumbHtml({ featured_image_url: image })}</div>
+    <p class="state-message article-image-note">${pendingImageFile ? 'Image selected. It will upload when you save or publish.' : published ? 'Published articles must keep a featured image. You can replace it.' : 'Optional for drafts. Required before publishing. Choose an image now; no draft save is needed first.'}</p>
+    <div class="media-actions">
+      <label class="media-upload-btn">${image ? 'Replace' : 'Upload'} Image
+        <input type="file" id="field-image" accept="image/png,image/jpeg,image/webp,image/gif" hidden ${imageOperationPending || savingWorkspace ? 'disabled' : ''} />
+      </label>
+      ${published ? '' : `<button class="article-action ${image ? 'is-live' : ''}" id="remove-image-btn" type="button" ${!image || imageOperationPending || savingWorkspace ? 'disabled' : ''}>${pendingImageFile && article?.featured_image_url ? 'Cancel selected image' : 'Remove'}</button>`}
+    </div>`;
+}
+function renderArticleImage() {
+  const region = document.getElementById('article-image-region');
+  if (!region) return;
+  region.innerHTML = articleImageHtml();
+  document.getElementById('field-image')?.addEventListener('change', handleImageUpload);
+  document.getElementById('remove-image-btn')?.addEventListener('click', handleImageRemove);
 }
 
 function render() {
@@ -185,8 +319,20 @@ function render() {
 
         <div class="article-editor__field">
           <span>Tags</span>
-          <p class="classification-help">Choose all tags that describe this article.</p>
-          <div class="classification-picker" id="tag-options">
+          <p class="classification-help">Choose up to 5 tags. Authors can add tags; administrators can rename or delete them.</p>
+          <div class="tag-tools"><span id="tag-count" role="status" aria-live="polite"></span></div>
+          <div class="tag-search-row">
+            <input id="tag-search" type="search" placeholder="Search tags…" aria-label="Search tags" aria-controls="tag-search-results" autocomplete="off" />
+            <button type="button" class="tag-new-toggle" id="new-tag-toggle" aria-expanded="false" aria-controls="new-tag-controls">＋ New tag</button>
+          </div>
+          <div id="tag-search-results" class="tag-search-results" role="group" aria-label="Matching tags" hidden></div>
+          <div id="selected-tags" class="tag-selected" aria-label="Selected tags"></div>
+          <div id="new-tag-controls" class="tag-new-controls" hidden>
+            <label for="new-tag-name">New tag name</label>
+            <div class="tag-new-row"><input id="new-tag-name" type="text" maxlength="100" placeholder="e.g. Public Transport" /><button type="button" class="article-editor__btn" id="add-tag-btn">Add tag</button></div>
+          </div>
+          <p id="tag-status" class="classification-help" role="status" aria-live="polite"></p>
+          <div class="classification-picker" id="tag-options" hidden>
             ${classificationOptionsHtml(tags, selectedTagIds, "tagIds", "No tags are available.")}
           </div>
         </div>
@@ -196,24 +342,8 @@ function render() {
           <textarea id="field-content" rows="14" placeholder="Write your article...">${escapeHtml(article?.content ?? "")}</textarea>
         </label>
 
-        <div class="article-editor__field">
-          <span>Featured Image</span>
-          ${
-            isEditing
-              ? `
-                <div class="media-thumb article-editor__thumb">${thumbHtml(article ?? {})}</div>
-                <div class="media-actions">
-                  <label class="media-upload-btn">
-                    ${article?.featured_image_url ? "Replace" : "Upload"} Image
-                    <input type="file" id="field-image" accept="image/png,image/jpeg,image/webp,image/gif" hidden />
-                  </label>
-                  <button class="article-action ${article?.featured_image_url ? "is-live" : ""}" id="remove-image-btn" type="button" ${article?.featured_image_url ? "" : "disabled"}>
-                    Remove
-                  </button>
-                </div>
-              `
-              : `<p class="state-message article-image-note">Save your article as a draft first, then you can add an image.</p>`
-          }
+        <div class="article-editor__field" id="article-image-region">
+          ${articleImageHtml()}
         </div>
 
         <div class="article-editor__actions">
@@ -244,8 +374,17 @@ function render() {
   ["field-title", "field-content"].forEach((id) => {
     document.getElementById(id).addEventListener("input", handleArticleInput);
   });
-  document.querySelectorAll('input[name="tagIds"]').forEach((input) => {
-    input.addEventListener("change", handleArticleInput);
+  bindTagPicker();
+  bindTagSearch();
+  document.getElementById('new-tag-toggle').addEventListener('click', () => {
+    const panel = document.getElementById('new-tag-controls');
+    panel.hidden = !panel.hidden;
+    document.getElementById('new-tag-toggle').setAttribute('aria-expanded', String(!panel.hidden));
+    if (!panel.hidden) document.getElementById('new-tag-name').focus();
+  });
+  document.getElementById('add-tag-btn').addEventListener('click', handleAddTag);
+  document.getElementById('new-tag-name').addEventListener('keydown', event => {
+    if (event.key === 'Enter') { event.preventDefault(); handleAddTag(); }
   });
 
   const publishBtn = document.getElementById("publish-btn");
@@ -258,6 +397,7 @@ function render() {
   const removeBtn = document.getElementById("remove-image-btn");
   if (removeBtn) removeBtn.addEventListener("click", handleImageRemove);
 
+  if (savedFormState === null) savedFormState = formState(readForm());
   renderCredibilityResult();
   if (aiSuggestion && aiSuggestion.snapshot !== articleFingerprint()) aiSuggestion = null;
   if (writingUndo && writingUndo.applied !== readForm().content) writingUndo = null;
@@ -322,9 +462,12 @@ async function handleCategoryAppeal(){
  try{
   if(snapshot!==categoryReviewFingerprint)throw new Error('The article changed. Run the publishing check again.');
   if(article?.status!=='published'){
-   articleId=await saveArticleWorkspace(articleId,readForm(),false);
+   const reviewValues = readForm();
+   articleId=await saveArticleWorkspace(articleId,reviewValues,false);
    article={...article,id:articleId,status:'draft'};
-   window.history.replaceState(null,'',`article-editor.html?id=${articleId}`);
+   updateEditorBackLink(article);
+   savedFormState = formState({ ...reviewValues, title: reviewValues.title.trim(), content: reviewValues.content.trim() });
+   window.history.replaceState(null,'',savedEditorUrl(articleId));
   }
   if(snapshot!==articleFingerprint())throw new Error('The article changed while saving. Check the new version before requesting a review.');
   const record=await requestCategoryReview(reviewId,reason,articleId);
@@ -348,7 +491,129 @@ function invalidateCredibility() {
   }
 }
 
+const MAX_ARTICLE_TAGS = 5;
+let addingTag = false;
+const selectedTags = () => [...document.querySelectorAll('input[name="tagIds"]:checked')];
+const normaliseTagName = name => String(name).trim().toLowerCase();
+function tagStatus(message = '') {
+  document.getElementById('tag-status').textContent = message;
+}
+function updateTagCount() {
+  const count = selectedTags().length;
+  document.getElementById('tag-count').textContent = `${count}/${MAX_ARTICLE_TAGS} selected`;
+  if (count > MAX_ARTICLE_TAGS) tagStatus('This older article has more than 5 tags. Keep up to 5 before saving.');
+  renderSelectedTags();
+  renderTagMatches();
+}
+function renderSelectedTags() {
+  const region = document.getElementById('selected-tags');
+  const ids = new Set(selectedTags().map(input => input.value));
+  const selected = tags.filter(tag => ids.has(String(tag.id)));
+  region.innerHTML = selected.length ? selected.map(tag => `<span class="tag-selected-chip"><span>${escapeHtml(tag.name)}</span><button type="button" data-remove-tag="${tag.id}" aria-label="Remove tag ${escapeHtml(tag.name)}">×</button></span>`).join('')
+    : '<span class="classification-picker__empty">No tags selected.</span>';
+}
+function renderTagMatches() {
+  const query = normaliseTagName(document.getElementById('tag-search').value);
+  const region = document.getElementById('tag-search-results');
+  region.hidden = !query;
+  if (!query) { region.innerHTML = ''; return; }
+  const ids = new Set(selectedTags().map(input => input.value));
+  const matching = tags.filter(tag => !ids.has(String(tag.id)) && normaliseTagName(tag.name).includes(query));
+  const full = ids.size >= MAX_ARTICLE_TAGS;
+  region.innerHTML = matching.length
+    ? `${full ? '<p class="classification-help">Remove a selected tag before adding another.</p>' : ''}<div class="tag-match-list">${matching.slice(0,10).map(tag => `<button type="button" class="tag-match" data-select-tag="${tag.id}" ${full ? 'disabled' : ''}>${escapeHtml(tag.name)}</button>`).join('')}</div>${matching.length > 10 ? `<p class="classification-help">Showing 10 of ${matching.length} matches. Keep typing to narrow your search.</p>` : ''}`
+    : '<p class="classification-help">No unselected tags match. Try another keyword or use ＋ New tag.</p>';
+}
+function bindTagSearch() {
+  const search = document.getElementById('tag-search');
+  search.addEventListener('input', renderTagMatches);
+  search.addEventListener('keydown', event => {
+    if (event.key === 'Escape') { search.value = ''; renderTagMatches(); }
+    if (event.key === 'ArrowDown') {
+      const first = document.querySelector('#tag-search-results [data-select-tag]:not(:disabled)');
+      if (first) { event.preventDefault(); first.focus(); }
+    }
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      document.querySelector('#tag-search-results [data-select-tag]:not(:disabled)')?.click();
+    }
+  });
+  document.getElementById('tag-search-results').addEventListener('click', event => {
+    const button = event.target.closest('[data-select-tag]');
+    if (!button || button.disabled) return;
+    const input = [...document.querySelectorAll('input[name="tagIds"]')].find(item => item.value === button.dataset.selectTag);
+    if (!input || input.checked) return;
+    if (selectedTags().length >= MAX_ARTICLE_TAGS) return tagStatus('Choose up to 5 tags. Remove one before adding another.');
+    input.checked = true;
+    search.value = '';
+    tagStatus();
+    handleArticleInput();
+    search.focus();
+  });
+  document.getElementById('selected-tags').addEventListener('click', event => {
+    const button = event.target.closest('[data-remove-tag]');
+    if (!button) return;
+    const input = selectedTags().find(item => item.value === button.dataset.removeTag);
+    if (!input) return;
+    input.checked = false;
+    tagStatus();
+    handleArticleInput();
+    search.focus();
+  });
+}
+function bindTagPicker() {
+  document.querySelectorAll('input[name="tagIds"]').forEach(input => input.addEventListener('change', () => {
+    if (input.checked && selectedTags().length > MAX_ARTICLE_TAGS) {
+      input.checked = false;
+      tagStatus('Choose up to 5 tags. Remove one before adding another.');
+      return;
+    }
+    tagStatus();
+    handleArticleInput();
+  }));
+  updateTagCount();
+}
+function selectResolvedTags(resolved) {
+  for (const tag of resolved) if (!tags.some(item => String(item.id) === String(tag.id))) tags.push(tag);
+  tags.sort((a,b) => a.name.localeCompare(b.name));
+  const ids = [...new Set([...selectedTags().map(input => input.value), ...resolved.map(tag => String(tag.id))])];
+  if (ids.length > MAX_ARTICLE_TAGS) throw new Error('Choose up to 5 tags. Remove a tag before applying these suggestions.');
+  document.getElementById('tag-options').innerHTML = classificationOptionsHtml(tags, ids, 'tagIds', 'No tags are available.');
+  document.getElementById('tag-search').value = '';
+  bindTagPicker();
+  handleArticleInput();
+}
+async function handleAddTag() {
+  if (addingTag || tagsApplying) return;
+  if (savingWorkspace || imageOperationPending) {
+    tagStatus('Wait for the save or image operation to finish before adding a tag.');
+    return;
+  }
+  const input = document.getElementById('new-tag-name');
+  const name = input.value.trim();
+  if (!name || name.length > 100) return tagStatus('Enter a tag name between 1 and 100 characters.');
+  const existing = tags.find(tag => normaliseTagName(tag.name) === normaliseTagName(name));
+  if (existing && selectedTags().some(item => item.value === String(existing.id))) return tagStatus('This tag is already selected.');
+  if (selectedTags().length >= MAX_ARTICLE_TAGS) return tagStatus('Choose up to 5 tags. Remove one before adding another.');
+  addingTag = true;
+  updatePublishingState();
+  const button = document.getElementById('add-tag-btn');
+  button.disabled = true;
+  tagStatus('Adding tag…');
+  try {
+    const tag = existing || await getOrCreateTag(name);
+    selectResolvedTags([tag]);
+    input.value = '';
+    tagStatus('Tag selected. Save your article to keep it.');
+    document.getElementById('new-tag-controls').hidden = true;
+    document.getElementById('new-tag-toggle').setAttribute('aria-expanded', 'false');
+    document.getElementById('tag-search').focus();
+  } catch (error) { tagStatus(error.message); }
+  finally { addingTag = false; button.disabled = false; updatePublishingState(); }
+}
+
 function handleArticleInput() {
+  updateTagCount();
   invalidateCredibility();
   if (writingUndo && readForm().content !== writingUndo.applied) writingUndo = null;
   renderWritingUndo();
@@ -364,13 +629,14 @@ function handleArticleInput() {
 
 function updatePublishingState() {
   const passed = hasCurrentPassingCheck();
+  const hasImage = hasFeaturedImage();
   const publishBtn = document.getElementById("publish-btn");
   const saveBtn = document.getElementById("save-draft-btn");
   const lock = document.getElementById("publish-lock");
   const isPublished = article?.status === "published";
 
-  if (publishBtn) publishBtn.disabled = !passed;
-  if (saveBtn && isPublished) saveBtn.disabled = !passed;
+  if (publishBtn) publishBtn.disabled = !passed || !hasImage || savingWorkspace || imageOperationPending || addingTag || tagsApplying;
+  if (saveBtn) saveBtn.disabled = savingWorkspace || imageOperationPending || addingTag || tagsApplying || (isPublished && (!passed || !hasImage));
   if (!lock) return;
   if (publishChecking && !credibilityResult) {
     lock.textContent = 'Checking credibility and category…';
@@ -378,7 +644,10 @@ function updatePublishingState() {
     return;
   }
 
-  if (passed) {
+  if (!hasImage) {
+    lock.textContent = 'Choose a featured image before publishing. Drafts can be saved without an image.';
+    lock.className = 'publish-lock is-blocked';
+  } else if (passed) {
     lock.textContent = `Credibility ${credibilityResult.score}% and category approved — publishing is unlocked.`;
     lock.className = "publish-lock is-ready";
   } else if (credibilityResult?.criticalIssue) {
@@ -444,8 +713,9 @@ function renderCredibilityResult() {
 }
 
 async function handleCredibilityCheck() {
- if(publishChecking)return;
+ if(publishChecking || addingTag || tagsApplying)return;
  const values=readForm(),button=document.getElementById('check-credibility-btn'),status=document.getElementById('credibility-status');
+ if(values.tagIds.length > MAX_ARTICLE_TAGS){status.textContent='Choose up to 5 tags before checking.';status.classList.add('is-error');return;}
  if(!values.title.trim()||!values.content.trim()||values.categoryIds.length!==1){status.textContent='Add a title, article content and one category before checking.';status.classList.add('is-error');return;}
  publishChecking=true;const token=++publishRequest,fingerprint=articleFingerprint(values);
  credibilityResult=null;verifiedFingerprint=null;credibilityWasInvalidated=false;setCategoryReview(null,null);setCategoryStatus('');renderCredibilityResult();renderCategorySuggestion();updatePublishingState();
@@ -457,7 +727,7 @@ async function handleCredibilityCheck() {
   credibilityResult=result;verifiedFingerprint=fingerprint;credibilityWasInvalidated=false;
   setCategoryReview(result.categoryReview,fingerprint);
   renderCredibilityResult();renderCategorySuggestion();updatePublishingState();
-  status.textContent=hasCurrentPassingCheck()?'Credibility and category passed. Publishing is available for this version.':'Checks completed. Review the credibility and category results before publishing.';
+  status.textContent=hasCurrentPassingCheck()?'Credibility and category passed for this version.':'Checks completed. Review the credibility and category results before publishing.';
  }catch(error){if(token===publishRequest){status.textContent=error.message;status.classList.add('is-error');}}
  finally{if(token===publishRequest){publishChecking=false;button.disabled=false;button.textContent='Check before publishing';updatePublishingState();}}
 }
@@ -485,7 +755,7 @@ function renderAiSuggestion() {
   } else if (aiSuggestion.summary) {
     body = `<p class="ai-suggestion__label">Suggested summary</p><p>${escapeHtml(aiSuggestion.summary)}</p><button class="ai-apply-btn" type="button" data-copy-value="summary">Copy summary</button>`;
   } else if (aiSuggestion.tags.length) {
-    body = `<p class="ai-suggestion__label">Suggested tags</p><div class="ai-tag-list">${aiSuggestion.tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div><button class="ai-apply-btn" type="button" data-copy-value="tags">Copy tags</button>`;
+    body = `<p class="ai-suggestion__label">Suggested tags</p><div class="ai-tag-list">${aiSuggestion.tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div><button class="ai-apply-btn" type="button" data-apply-tags>Apply tags</button><p class="classification-help">Applying creates any tag that doesn't already exist yet.</p>`;
   } else if (aiSuggestion.content) {
     body = `<p class="ai-suggestion__label">Review polished article</p>
       <p>Check names, dates, numbers and quotations before applying. AI editing can make mistakes.</p>
@@ -513,6 +783,7 @@ function renderAiSuggestion() {
       setAiStatus("Title applied. Review it before continuing.");
     });
   });
+  slot.querySelector("[data-apply-tags]")?.addEventListener("click", handleApplyTags);
   slot.querySelector("[data-apply-content]")?.addEventListener("click", () => {
     if (aiSuggestion.snapshot !== articleFingerprint()) { handleArticleInput(); return; }
     const original = document.getElementById("field-content").value;
@@ -541,6 +812,70 @@ function renderAiSuggestion() {
     renderAiSuggestion();
     setAiStatus("");
   });
+}
+
+let tagsApplying = false;
+
+/**
+ * Applies the current AI tag suggestion to the article's tag picker,
+ * creating any tag that doesn't exist yet (get_or_create_tag, which any
+ * Registered User may call — see author-tag-creation.sql). Already-checked
+ * tags are kept; suggested tags are added on top rather than replacing them.
+ */
+async function handleApplyTags() {
+  if (tagsApplying || addingTag || !aiSuggestion?.tags?.length) return;
+  if (savingWorkspace || imageOperationPending) {
+    setAiStatus('Wait for the save or image operation to finish before applying tags.', true);
+    return;
+  }
+  if (aiSuggestion.snapshot !== articleFingerprint()) {
+    handleArticleInput();
+    return;
+  }
+
+  const suggestion = aiSuggestion;
+  const snapshot = suggestion.snapshot;
+  const names = [...new Map(suggestion.tags.map(name => [normaliseTagName(name), String(name).trim()])).values()];
+  const selectedNames = new Set(selectedTags().map(input => normaliseTagName(tags.find(tag => String(tag.id) === input.value)?.name || '')));
+  if (selectedTags().length + names.filter(name => !selectedNames.has(normaliseTagName(name))).length > MAX_ARTICLE_TAGS) {
+    setAiStatus('These suggestions would exceed 5 tags. Remove selected tags before applying them.', true);
+    return;
+  }
+  tagsApplying = true;
+  updatePublishingState();
+  const applyButton = document.querySelector("[data-apply-tags]");
+  if (applyButton) {
+    applyButton.disabled = true;
+    applyButton.textContent = "Applying…";
+  }
+  setAiStatus("Applying suggested tags…");
+
+  try {
+    const resolvedTags = [];
+    for (const tagName of names) {
+      if (aiSuggestion !== suggestion || snapshot !== articleFingerprint()) {
+        throw new Error("The article or suggestion changed. Request tag suggestions again for the current version.");
+      }
+      const tag = await getOrCreateTag(tagName);
+      resolvedTags.push(tag);
+    }
+    if (aiSuggestion !== suggestion || snapshot !== articleFingerprint()) {
+      throw new Error("The article or suggestion changed. Request tag suggestions again for the current version.");
+    }
+    selectResolvedTags(resolvedTags);
+    aiSuggestion = null;
+    renderAiSuggestion();
+    setAiStatus("Tags applied. Save your draft to keep them; recheck credibility before publishing.");
+  } catch (error) {
+    setAiStatus(error.message, true);
+  } finally {
+    tagsApplying = false;
+    updatePublishingState();
+    if (applyButton?.isConnected) {
+      applyButton.disabled = false;
+      applyButton.textContent = "Apply tags";
+    }
+  }
 }
 
 function renderWritingUndo() {
@@ -601,6 +936,7 @@ async function reloadArticle() {
       '<p class="state-message is-error">This article is unavailable.</p>';
     return false;
   }
+  updateEditorBackLink(article);
   setPageTitle(article.status === "published" ? "Edit Article" : "Edit Draft");
   render();
   try {
@@ -620,38 +956,114 @@ async function handleSaveDraft() {
     return;
   }
 
-  await saveWorkspace(values, isPublished);
+  const saved = await saveWorkspace(values, isPublished);
+  if (saved && !isPublished && !hasUnsavedEditorChanges()) {
+    allowEditorNavigation = true;
+    window.location.href = 'drafts.html';
+  }
 }
 
-let savingWorkspace = false;
 async function saveWorkspace(values, publish) {
-  if (savingWorkspace) return;
+  if (savingWorkspace || imageOperationPending) return false;
+  if (addingTag || tagsApplying) {
+    setStatus('Wait for the tags to finish applying, then save again.', true);
+    return false;
+  }
+  if (values.tagIds.length > MAX_ARTICLE_TAGS) {
+    setStatus('Choose up to 5 tags before saving.', true);
+    return false;
+  }
   if (!values.title.trim() || !values.content.trim()) {
     setStatus('Enter a title and article content before saving.', true);
-    return;
+    return false;
   }
   if (publish && !values.categoryIds.length) {
     setStatus('Select a category before publishing.', true);
-    return;
+    return false;
   }
+  if (publish && !hasFeaturedImage()) {
+    setStatus('Choose a featured image before publishing.', true);
+    return false;
+  }
+  const wasPublished = article?.status === 'published';
+  const submittedState = formState(values);
   savingWorkspace = true;
-  document.querySelectorAll('#save-draft-btn,#publish-btn').forEach(button => { button.disabled = true; });
+  document.querySelectorAll('#save-draft-btn,#publish-btn,#delete-btn').forEach(button => { button.disabled = true; });
+  renderArticleImage();
   setStatus(publish ? 'Saving verified article…' : 'Saving draft…');
   try {
-    articleId = await saveArticleWorkspace(articleId, values, publish, credibilityResult?.receiptId);
-    window.history.replaceState(null, '', `article-editor.html?id=${articleId}`);
-    if (publish) {
-      window.location.href = 'my-articles.html';
-      return;
+    // New uploads use an owned draft ID for the existing Storage policies.
+    // This is internal to the single save/publish action; no prior user save is required.
+    if (pendingImageFile) {
+      if (!articleId) {
+        articleId = await saveArticleWorkspace(null, values, false);
+        article = { ...article, id: articleId, status: 'draft' };
+        updateEditorBackLink(article);
+        window.history.replaceState(null, '', savedEditorUrl(articleId));
+      }
+      setStatus('Uploading selected image…');
+      const imageUrl = await uploadArticleImage(articleId, pendingImageFile, article?.featured_image_url ?? null);
+      article = { ...article, featured_image_url: imageUrl };
+      clearPendingImage();
     }
-    await reloadArticle();
-    setStatus('Draft saved with its categories and tags.');
+    articleId = await saveArticleWorkspace(articleId, values, publish, credibilityResult?.receiptId);
+    const changedWhileSaving = formState(readForm()) !== submittedState;
+    article = { ...article, id: articleId, title: values.title.trim(), content: values.content.trim(),
+      category_id: values.categoryIds[0] ? Number(values.categoryIds[0]) : null,
+      category_ids: values.categoryIds.map(Number), tag_ids: values.tagIds.map(Number),
+      status: publish ? 'published' : 'draft' };
+    updateEditorBackLink(article);
+    window.history.replaceState(null, '', savedEditorUrl(articleId));
+    savedFormState = formState({ ...values, title: values.title.trim(), content: values.content.trim() });
+    if (publish && !changedWhileSaving) {
+      allowEditorNavigation = true;
+      window.location.href = `my-articles.html?success=${wasPublished ? 'updated' : 'published'}`;
+      return true;
+    }
+    if (!changedWhileSaving) {
+      // Match the confirmed normalised save without replacing the input nodes.
+      document.getElementById('field-title').value = values.title.trim();
+      document.getElementById('field-content').value = values.content.trim();
+    }
+    renderArticleImage();
+    if (!document.getElementById('delete-btn')) {
+      const actions = document.querySelector('.article-editor__actions');
+      if (actions) {
+        const deleteButton = document.createElement('button');
+        deleteButton.id = 'delete-btn'; deleteButton.type = 'button';
+        deleteButton.className = 'article-editor__btn article-editor__btn--danger';
+        deleteButton.textContent = publish ? 'Delete Article' : 'Delete Draft';
+        deleteButton.addEventListener('click', handleDelete);
+        actions.append(deleteButton);
+      }
+    }
+    setPageTitle(publish ? 'Edit Article' : 'Edit Draft');
+    const introTitle = document.querySelector('.article-editor__intro h2');
+    if (introTitle) introTitle.textContent = publish ? 'Update published article' : 'Continue your draft';
+    if (publish) {
+      document.getElementById('publish-btn')?.remove();
+      document.getElementById('save-draft-btn').textContent = 'Save Verified Changes';
+      const label = document.querySelector('.article-state'); if (label) label.textContent = 'Published';
+      const intro = document.querySelector('.article-editor__intro h2'); if (intro) intro.textContent = 'Update published article';
+      const deleteButton = document.getElementById('delete-btn'); if (deleteButton) deleteButton.textContent = 'Delete Article';
+      // The receipt was consumed for the submitted version.
+      credibilityResult = null; verifiedFingerprint = null; credibilityWasInvalidated = true;
+      renderCredibilityResult();
+    }
+    setStatus(changedWhileSaving
+      ? (publish ? 'The submitted version was published. Your newer edits are still here and are not saved; check and save them separately.'
+        : 'Draft saved. Your newer edits are still here and have not been saved yet.')
+      : 'Draft saved with its category and tags.');
+    return true;
   } catch (error) {
     setStatus(error.message, true);
+    return false;
   } finally {
     savingWorkspace = false;
+    renderArticleImage();
     const saveButton = document.getElementById('save-draft-btn');
     if (saveButton) saveButton.disabled = false;
+    const deleteButton = document.getElementById('delete-btn'); if (deleteButton) deleteButton.disabled = false;
     updatePublishingState();
   }
 }
@@ -666,9 +1078,11 @@ async function handlePublish() {
 }
 
 async function handleDelete() {
+  if (savingWorkspace || imageOperationPending) return;
   if (!confirm("Delete this article? This cannot be undone.")) return;
   try {
     await deleteArticle(articleId);
+    allowEditorNavigation = true;
     window.location.href = article.status === "published" ? "my-articles.html" : "drafts.html";
   } catch (err) {
     setStatus(err.message, true);
@@ -677,26 +1091,41 @@ async function handleDelete() {
 
 async function handleImageUpload(event) {
   const file = event.target.files?.[0];
-  if (!file) return;
-
-  setStatus("Uploading…");
+  if (!file || imageOperationPending || savingWorkspace) return;
   try {
-    await uploadArticleImage(articleId, file, article?.featured_image_url ?? null);
-    await reloadArticle();
-    setStatus("Image updated.");
-  } catch (err) {
-    setStatus(err.message, true);
+    validateArticleImage(file);
+    clearPendingImage();
+    pendingImageFile = file;
+    pendingImagePreview = URL.createObjectURL(file);
+    setStatus('Image selected. Save or publish to upload it. Your current inputs have been kept.');
+  } catch (error) {
+    setStatus(error.message, true);
   }
+  renderArticleImage();
+  updatePublishingState();
 }
 
 async function handleImageRemove() {
-  setStatus("Removing…");
+  if (imageOperationPending || savingWorkspace || article?.status === 'published') return;
+  if (pendingImageFile) {
+    clearPendingImage();
+    renderArticleImage(); updatePublishingState();
+    setStatus('Selected image cancelled. Your current inputs have been kept.');
+    return;
+  }
+  imageOperationPending = true;
+  renderArticleImage(); updatePublishingState();
+  setStatus('Removing…');
   try {
     await removeArticleImage(articleId, article.featured_image_url);
-    await reloadArticle();
-    setStatus("Image removed.");
+    article = { ...article, featured_image_url: null };
+    setStatus('Image removed. Your current text and tag selections have been kept.');
   } catch (err) {
+    if (err.imageDetached) article = { ...article, featured_image_url: null };
     setStatus(err.message, true);
+  } finally {
+    imageOperationPending = false;
+    renderArticleImage(); updatePublishingState();
   }
 }
 

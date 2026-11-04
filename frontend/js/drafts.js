@@ -1,5 +1,5 @@
-import { requireAuth } from "./auth.js?v=required-category-20261022";
-import { getMyArticles, deleteArticle } from "../../services/feature8Service.js";
+import { requireAuth } from "./auth.js?v=account-name-20261029";
+import { getMyArticles, deleteArticle } from "../../services/feature8Service.js?v=apply-tags-20261024";
 import { escapeHtml, formatRelativeTime, thumbHtml } from "./format.js";
 
 function rowHtml(article) {
@@ -15,8 +15,8 @@ function rowHtml(article) {
       <td>${formatRelativeTime(article.created_at)}</td>
       <td>
         <div class="media-actions">
-          <a class="article-action is-live" href="article-editor.html?id=${article.id}">Continue Editing</a>
-          <a class="article-action is-live" href="article-editor.html?id=${article.id}#credibility-check">Check &amp; Publish</a>
+          <a class="article-action is-live" href="article-editor.html?id=${article.id}&from=drafts">Continue Editing</a>
+          <a class="article-action is-live" href="article-editor.html?id=${article.id}&from=drafts#credibility-check">Check &amp; Publish</a>
           <button class="article-action is-live" data-delete="${article.id}" type="button">Delete</button>
         </div>
       </td>

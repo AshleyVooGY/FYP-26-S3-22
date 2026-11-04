@@ -1,9 +1,10 @@
-import { requireAuth } from './auth.js?v=required-category-20261022';
-import { getPersonalizedNews } from '../../services/personalizationService.js?v=news-page-totals-20261023';
+import { requireAuth } from './auth.js?v=account-name-20261029';
+import { getPersonalizedNews } from '../../services/personalizationService.js?v=feed-selection-20261104';
 import { escapeHtml, thumbHtml, formatRelativeTime, formatCount } from './format.js';
 const grid=document.getElementById('feed-grid'),status=document.getElementById('feed-status'),state=document.getElementById('feed-state');
 const previous=document.getElementById('feed-previous'),next=document.getElementById('feed-next'),refresh=document.getElementById('feed-refresh');
 const navigation=document.getElementById('feed-pagination'),label=document.getElementById('feed-page');
+const end=document.getElementById('feed-end');
 const PAGE_SIZE=6;
 let pages=[],pageIndex=0,loading=false;
 function card(article) {
@@ -21,10 +22,11 @@ function renderPage(index,scroll=false) {
  const page=pages[index];
  grid.innerHTML=page.articles.map(card).join('');
  const start=index*PAGE_SIZE+1;
- status.textContent=page.articles.length?`Showing ${start}–${start+page.articles.length-1} of ${page.total} articles`:'No articles to show.';
+ status.textContent=page.articles.length?`Showing ${start}–${start+page.articles.length-1} of ${page.total} recommended articles`:'No articles to show.';
  status.classList.remove('is-error');
  label.textContent=`Page ${index+1} of ${Math.max(1,Math.ceil(page.total/PAGE_SIZE))}`;
  state.innerHTML=!page.articles.length?'<div class="empty-state"><h2>You’re all caught up</h2><p>Check back for new stories, update your interests, or browse all news.</p><a class="button" href="categories.html">Browse news</a></div>':!page.hasPreferences?'<p class="feed-intro">Discover news to get started, or <a href="preferences.html">choose your interests</a> to shape your feed.</p>':'';
+ end.hidden=!page.articles.length||Boolean(page.cursor);
  refresh.hidden=false;updateControls();
  if(scroll)document.querySelector('#for-you-app .page-head').scrollIntoView({block:'start'});
 }

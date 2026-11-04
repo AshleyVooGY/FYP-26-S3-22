@@ -460,9 +460,8 @@ export const sidebarHtml = `<aside class="sidebar">
         =================================================== -->
 
         <a
-          href="#"
-          class="is-disabled"
-          title="Coming soon"
+          href="settings.html"
+          data-page="settings.html"
         >
 
           <span class="sidebar__icon">

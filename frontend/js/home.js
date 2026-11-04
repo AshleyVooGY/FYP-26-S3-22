@@ -1,9 +1,9 @@
-import { requireAuth } from "./auth.js?v=required-category-20261022";
+import { requireAuth } from "./auth.js?v=account-name-20261029";
 import {
   getTrendingArticles,
   getPopularArticles,
   getLatestArticles
-} from "../../services/feature5Service.js";
+} from "../../services/feature5Service.js?v=account-settings-20261027";
 import { formatCount, formatRelativeTime, escapeHtml, thumbHtml } from "./format.js";
 
 function renderFeatured(article) {
@@ -64,7 +64,7 @@ function renderTrendingGrid(articles) {
   const grid = document.getElementById("trending-grid");
 
   if (!articles || articles.length === 0) {
-    grid.innerHTML = '<p class="state-message">Nothing trending in the last 7 days yet.</p>';
+    grid.innerHTML = '<p class="state-message">No recorded activity in the last 24 hours yet.</p>';
     return;
   }
 
@@ -109,7 +109,7 @@ async function init() {
   }
 
   try {
-    const trending = await getTrendingArticles(6);
+    const trending = await getTrendingArticles(3);
     renderTrendingGrid(trending);
   } catch (err) {
     document.getElementById("trending-grid").innerHTML =

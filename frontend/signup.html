@@ -18,12 +18,13 @@
       <h1 class="auth-title">Create your account</h1>
       <p class="auth-subtitle">Sign up to save preferences, bookmark articles and react to news.</p>
 
-      <div id="form-message"></div>
+      <div id="form-message" role="status" aria-live="polite"></div>
 
       <form id="signup-form">
         <div class="form-group">
           <label for="display-name">Display name</label>
-          <input class="form-input" type="text" id="display-name" name="displayName" placeholder="Jane Doe" required autocomplete="name" />
+          <input class="form-input" type="text" id="display-name" maxlength="60" aria-describedby="display-name-help" name="displayName" placeholder="Jane Doe" required autocomplete="name" />
+          <p id="display-name-help" class="auth-subtitle">Choose a unique name (1–60 characters). Capitalisation does not distinguish names.</p>
         </div>
 
         <div class="form-group">
@@ -61,6 +62,6 @@
     </div>
   </div>
 
-  <script type="module" src="js/signup.js?v=required-category-20261022"></script>
+  <script type="module" src="js/signup.js?v=unique-display-name-20261104"></script>
 </body>
 </html>

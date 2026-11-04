@@ -1,14 +1,15 @@
+import { setupComments } from './comments.js?v=comments-20261027';
 import { supabase } from "../../config/supabaseClient.js";
 
 import {
     requireAuth
-} from "./auth.js?v=required-category-20261022";
+} from "./auth.js?v=account-name-20261029";
 
 import {
     getArticleById,
     getTrendingArticles,
     recordArticleView
-} from "../../services/feature5Service.js";
+} from "../../services/feature5Service.js?v=article-tags-20261029";
 
 import {
     formatCount,
@@ -1038,6 +1039,8 @@ function renderArticle(
                 </div>
 
 
+                ${article.article_tags?.some(link => link.tag) ? `<nav class="article-topic-tags" aria-label="Article tags"><strong>Tags</strong>${article.article_tags.filter(link => link.tag).map(({tag}) => `<a href="categories.html?type=tag&amp;id=${encodeURIComponent(tag.id)}">#${escapeHtml(tag.name)}</a>`).join('')}</nav>` : ''}
+
                 <!-- ======================================
                      READING ACCESSIBILITY - READ ALOUD
                 ======================================= -->
@@ -1107,8 +1110,9 @@ function renderArticle(
 
                     <button
                         type="button"
-                        class="article-action"
-                        title="Coming soon"
+                        class="article-action is-live"
+                        id="comment-btn"
+                        aria-controls="article-comments"
                     >
 
                         💬 Comment
@@ -1146,6 +1150,7 @@ function renderArticle(
                 </div>
 
 
+                <section id="article-comments" class="article-comments" aria-labelledby="comments-heading"></section>
             </article>
 
 
@@ -1254,6 +1259,7 @@ function renderArticle(
     setupReactions(
         articleId
     );
+    setupComments(articleId);
 
 
     /* ------------------------------------------------------

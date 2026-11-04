@@ -1,13 +1,14 @@
-import { requireAuth } from "./auth.js?v=required-category-20261022";
+import { requireAuth } from "./auth.js?v=account-name-20261029";
 import { escapeHtml, formatCount, formatRelativeTime, thumbHtml } from "./format.js";
 import {
   getViewer,
   getClassifications,
+  getPublishedTagUsage,
   getBrowseArticlesPage,
   createClassification,
   updateClassification,
   deleteClassification
-} from "../features-01-02-10/featureService.js?v=categories-pagination-20261023";
+} from "../features-01-02-10/featureService.js?v=compact-tags-20261104";
 
 const app = document.getElementById("categories-app");
 const state = {
@@ -20,7 +21,11 @@ const state = {
   total: 0,
   pages: [],
   pageIndex: 0,
-  paging: false
+  paging: false,
+  tagUsage: {},
+  manageQuery: "",
+  manageType: "all",
+  managePage: 0
 };
 let requestToken = 0;
 
@@ -50,10 +55,17 @@ function articleCard(article) {
   </a>`;
 }
 
-async function loadClassifications() {
-  const result = await getClassifications();
+async function loadClassifications(includeUsage = false) {
+  const [result, usage] = await Promise.all([
+    getClassifications(),
+    includeUsage ? getPublishedTagUsage().catch(error => {
+      console.warn("Unable to load tag popularity", error);
+      return {};
+    }) : Promise.resolve(null)
+  ]);
   state.categories = result.categories;
   state.tags = result.tags;
+  if (usage) state.tagUsage = usage;
 }
 
 function updateBrowsePaging() {
@@ -108,6 +120,28 @@ async function changeBrowsePage(index) {
   }
 }
 
+async function selectBrowseFilter(type, id, restoreTagFocus = false) {
+  app.querySelector('#browse-tag-dialog')?.close();
+  state.type = type;
+  state.id = id || null;
+  const query = state.id ? `?type=${state.type}&id=${encodeURIComponent(state.id)}` : '';
+  history.replaceState(null, '', `categories.html${query}`);
+  await renderBrowse();
+  if (restoreTagFocus) app.querySelector('.browse-selected-tag, #browse-more-tags')?.focus({ preventScroll: true });
+}
+
+function openTagPicker() {
+  const dialog = app.querySelector('#browse-tag-dialog');
+  const opener = app.querySelector('#browse-more-tags');
+  const previousOverflow = document.body.style.overflow;
+  document.body.style.overflow = 'hidden';
+  dialog.addEventListener('close', () => {
+    document.body.style.overflow = previousOverflow;
+    if (opener.isConnected) opener.focus({ preventScroll: true });
+  }, { once: true });
+  dialog.showModal();
+}
+
 async function renderBrowse() {
   const token = ++requestToken;
   const filter = { type: state.type, id: state.id };
@@ -115,7 +149,7 @@ async function renderBrowse() {
   app.innerHTML = '<div class="loading-panel" role="status">Loading categories and articles…</div>';
 
   try {
-    await loadClassifications();
+    await loadClassifications(true);
     if (token !== requestToken) return;
     const page = await getBrowseArticlesPage(filter);
     if (token !== requestToken) return;
@@ -123,19 +157,33 @@ async function renderBrowse() {
 
     const selected = [...state.categories.map((item) => ({ ...item, type: "category" })), ...state.tags.map((item) => ({ ...item, type: "tag" }))]
       .find((item) => item.type === filter.type && String(item.id) === String(filter.id));
+    const popularTags = [...state.tags].sort((a, b) =>
+      (state.tagUsage[b.id] || 0) - (state.tagUsage[a.id] || 0) || a.name.localeCompare(b.name)
+    ).slice(0, 8);
 
     app.innerHTML = `
       <header class="page-head">
-        <div><h1>${selected ? escapeHtml(selected.name) : "Browse News"}</h1><p>Explore published articles by category or tag.</p></div>
+        <div><h1>${selected ? (filter.type === "tag" ? `Articles tagged #${escapeHtml(selected.name)}` : escapeHtml(selected.name)) : "Browse News"}</h1><p>Explore published articles by category or tag.</p></div>
         <div class="button-row"><span id="browse-count" role="status" aria-live="polite"></span>${state.viewer.isAdmin ? '<button class="button" type="button" data-manage>Manage categories & tags</button>' : ""}</div>
       </header>
       <section aria-labelledby="categories-title"><h2 id="categories-title" class="section-title">Categories</h2><div class="classification-bar">
         <button class="classification-chip ${filter.type === "all" ? "is-active" : ""}" data-type="all">All news</button>
         ${state.categories.map((item) => `<button class="classification-chip ${filter.type === "category" && String(filter.id) === String(item.id) ? "is-active" : ""}" data-type="category" data-id="${item.id}">${escapeHtml(item.name)}</button>`).join("")}
       </div></section>
-      <section aria-labelledby="tags-title"><h2 id="tags-title" class="section-title">Tags</h2><div class="classification-bar">
-        ${state.tags.length ? state.tags.map((item) => `<button class="classification-chip ${filter.type === "tag" && String(filter.id) === String(item.id) ? "is-active" : ""}" data-type="tag" data-id="${item.id}">#${escapeHtml(item.name)}</button>`).join("") : '<span class="state-message">No tags are available yet.</span>'}
-      </div></section>
+      <section class="browse-tags" aria-labelledby="tags-title">
+        <div class="browse-tags__heading"><h2 id="tags-title" class="section-title">Tags</h2>
+          ${filter.type === "tag" && selected ? `<button class="classification-chip is-active browse-selected-tag" data-type="all" aria-label="Clear tag filter: ${escapeHtml(selected.name)}">#${escapeHtml(selected.name)} <span aria-hidden="true">×</span></button>` : ""}
+        </div>
+        <div id="browse-tag-list" class="classification-bar browse-tag-list">
+          ${state.tags.length ? popularTags.filter(item => filter.type !== "tag" || String(item.id) !== String(filter.id)).map(item => `<button class="classification-chip ${filter.type === 'tag' && String(filter.id) === String(item.id) ? 'is-active' : ''}" data-type="tag" data-id="${item.id}" aria-pressed="${filter.type === 'tag' && String(filter.id) === String(item.id)}">#${escapeHtml(item.name)}</button>`).join("") : '<span class="state-message">No tags are available yet.</span>'}
+          ${state.tags.length > 8 ? '<button id="browse-more-tags" class="browse-more-tags" type="button" aria-haspopup="dialog" aria-controls="browse-tag-dialog">More tags <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 9 6 6 6-6"/></svg></button>' : ''}
+        </div>
+      </section>
+      <dialog id="browse-tag-dialog" class="browse-tag-dialog" aria-labelledby="browse-tag-dialog-title" aria-describedby="browse-tag-dialog-help">
+        <header class="browse-tag-dialog__header"><div><h2 id="browse-tag-dialog-title">Explore tags</h2><p id="browse-tag-dialog-help">Choose one topic to browse its articles.</p></div><button class="browse-tag-dialog__close" type="button" aria-label="Close tag picker" autofocus><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 6 12 12M18 6 6 18"/></svg></button></header>
+        <div class="browse-tag-dialog__list" aria-label="All tags">${state.tags.map(item => `<button class="classification-chip ${filter.type === 'tag' && String(filter.id) === String(item.id) ? 'is-active' : ''}" data-picker-tag="${item.id}" aria-pressed="${filter.type === 'tag' && String(filter.id) === String(item.id)}">#${escapeHtml(item.name)}</button>`).join('')}</div>
+        <footer class="browse-tag-dialog__footer">${state.tags.length} tags · One topic at a time</footer>
+      </dialog>
       <div class="article-grid" id="browse-grid" aria-busy="false">${page.articles.map(articleCard).join("")}</div>
       ${!page.articles.length ? '<div class="empty-state"><h2>No matching articles</h2><p>There are no published articles under this classification yet.</p></div>' : ''}
       <div class="categories-pagination">
@@ -148,12 +196,28 @@ async function renderBrowse() {
         <button id="browse-retry" class="button" type="button" hidden>Try again</button>
       </div>`;
     updateBrowsePaging();
+    app.querySelector('#browse-more-tags')?.addEventListener('click', openTagPicker);
+    const tagDialog = app.querySelector('#browse-tag-dialog');
+    tagDialog.querySelector('.browse-tag-dialog__close').addEventListener('click', () => tagDialog.close());
+    tagDialog.addEventListener('keydown', event => {
+      if (event.key !== 'Tab') return;
+      const controls = [...tagDialog.querySelectorAll('button:not(:disabled)')];
+      const first = controls[0], last = controls.at(-1);
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault(); last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault(); first.focus();
+      }
+    });
+    tagDialog.addEventListener('click', event => {
+      if (event.target === tagDialog) tagDialog.close();
+      const button = event.target.closest('[data-picker-tag]');
+      if (button) selectBrowseFilter('tag', button.dataset.pickerTag, true);
+    });
     app.querySelector('#browse-previous').addEventListener('click', () => changeBrowsePage(state.pageIndex - 1));
     app.querySelector('#browse-next').addEventListener('click', () => changeBrowsePage(state.pageIndex + 1));
     app.querySelectorAll("[data-type]").forEach((button) => button.addEventListener("click", () => {
-      state.type = button.dataset.type;
-      state.id = button.dataset.id || null;
-      renderBrowse();
+      selectBrowseFilter(button.dataset.type, button.dataset.id);
     }));
     app.querySelector("[data-manage]")?.addEventListener("click", () => {
       history.replaceState(null, "", "categories.html?mode=manage");
@@ -166,6 +230,27 @@ async function renderBrowse() {
 
 function managementRows(items, type) {
   return items.map((item) => `<tr><td>${escapeHtml(item.name)}</td><td>${type === "tag" ? "Tag" : "Category"}</td><td><div class="table-actions"><button class="button" data-edit data-type="${type}" data-id="${item.id}" data-name="${escapeHtml(item.name)}">Edit</button><button class="button button--danger" data-delete data-type="${type}" data-id="${item.id}" data-name="${escapeHtml(item.name)}">Delete</button></div></td></tr>`).join("");
+}
+
+function updateManagementList() {
+  const query = state.manageQuery.trim().toLocaleLowerCase();
+  const items = [
+    ...state.categories.map(item => ({ ...item, type: 'category' })),
+    ...state.tags.map(item => ({ ...item, type: 'tag' }))
+  ].filter(item => (state.manageType === 'all' || item.type === state.manageType)
+    && item.name.toLocaleLowerCase().includes(query));
+  const pageCount = Math.max(1, Math.ceil(items.length / 10));
+  state.managePage = Math.max(0, Math.min(state.managePage, pageCount - 1));
+  const start = state.managePage * 10;
+  const page = items.slice(start, start + 10);
+  app.querySelector('#manage-rows').innerHTML = page.length
+    ? page.map(item => managementRows([item], item.type)).join('')
+    : '<tr><td colspan="3" class="state-message">No matching categories or tags.</td></tr>';
+  app.querySelector('#manage-count').textContent = `Showing ${items.length ? start + 1 : 0}–${start + page.length} of ${items.length} item${items.length === 1 ? "" : "s"}`;
+  app.querySelector('#manage-page').textContent = `Page ${state.managePage + 1} of ${pageCount}`;
+  app.querySelector('#manage-previous').disabled = state.managePage === 0;
+  app.querySelector('#manage-next').disabled = state.managePage + 1 >= pageCount;
+  app.querySelector('#manage-clear').hidden = !state.manageQuery && state.manageType === 'all';
 }
 
 function closeModal() {
@@ -218,9 +303,17 @@ async function renderManage() {
   try {
     await loadClassifications();
     if (token !== requestToken) return;
-    app.innerHTML = `<header class="page-head"><div><h1>Manage Categories &amp; Tags</h1><p>Create, view, edit and delete article classifications.</p></div><button class="button" type="button" data-browse>Back to browse</button></header>
+    app.innerHTML = `<header class="page-head"><div><h1>Manage Categories &amp; Tags</h1><p>Administrators manage categories and can rename or delete tags. Authors can add tags while writing articles.</p></div><button class="button" type="button" data-browse>Back to browse</button></header>
       <div class="manage-grid"><section class="panel"><h2>Create category/tag</h2><form id="create-form"><div class="field"><label for="classification-name">Name</label><input id="classification-name" name="name" maxlength="60" placeholder="Enter a unique name" required></div><p class="field-label">Type</p><div class="button-row"><label><input type="radio" name="type" value="category" checked> Category</label><label><input type="radio" name="type" value="tag"> Tag</label></div><div class="button-row" style="margin-top:18px"><button class="button button--primary">Save</button><button class="button" type="reset">Cancel</button></div></form></section>
-      <section class="panel"><h2>Existing categories and tags</h2><div style="overflow:auto"><table class="classification-table"><thead><tr><th>Name</th><th>Type</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody>${managementRows(state.categories, "category")}${managementRows(state.tags, "tag")}</tbody></table></div></section></div>`;
+      <section class="panel manage-list-panel" aria-labelledby="manage-list-title"><h2 id="manage-list-title">Existing categories and tags</h2>
+        <div class="manage-filters">
+          <div class="field"><label for="manage-search">Search names</label><input id="manage-search" type="search" placeholder="Find a category or tag…" value="${escapeHtml(state.manageQuery)}" /></div>
+          <div class="field"><label for="manage-type">Type</label><select id="manage-type"><option value="all" ${state.manageType === 'all' ? 'selected' : ''}>All types</option><option value="category" ${state.manageType === 'category' ? 'selected' : ''}>Categories</option><option value="tag" ${state.manageType === 'tag' ? 'selected' : ''}>Tags</option></select></div>
+        </div>
+        <div class="manage-list-summary"><span id="manage-count" role="status" aria-live="polite"></span><button id="manage-clear" class="browse-tags-toggle" type="button" hidden>Clear filters</button></div>
+        <div class="manage-table-wrap"><table class="classification-table"><thead><tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead><tbody id="manage-rows"></tbody></table></div>
+        <nav class="manage-pagination" aria-label="Category and tag pages"><button id="manage-previous" class="button" type="button">Previous</button><span id="manage-page" aria-live="polite"></span><button id="manage-next" class="button" type="button">Next</button></nav>
+      </section></div>`;
 
     app.querySelector("[data-browse]").addEventListener("click", () => {
       history.replaceState(null, "", "categories.html");
@@ -239,8 +332,31 @@ async function renderManage() {
         showToast(error.message.includes("duplicate") ? "That name already exists." : error.message, true);
       }
     });
-    app.querySelectorAll("[data-edit]").forEach((button) => button.addEventListener("click", () => openEditModal(button.dataset)));
-    app.querySelectorAll("[data-delete]").forEach((button) => button.addEventListener("click", () => openDeleteModal(button.dataset)));
+    app.querySelector('#manage-search').addEventListener('input', event => {
+      state.manageQuery = event.target.value;
+      state.managePage = 0;
+      updateManagementList();
+    });
+    app.querySelector('#manage-type').addEventListener('change', event => {
+      state.manageType = event.target.value;
+      state.managePage = 0;
+      updateManagementList();
+    });
+    app.querySelector('#manage-clear').addEventListener('click', () => {
+      state.manageQuery = ''; state.manageType = 'all'; state.managePage = 0;
+      app.querySelector('#manage-search').value = '';
+      app.querySelector('#manage-type').value = 'all';
+      updateManagementList();
+    });
+    app.querySelector('#manage-previous').addEventListener('click', () => { state.managePage--; updateManagementList(); });
+    app.querySelector('#manage-next').addEventListener('click', () => { state.managePage++; updateManagementList(); });
+    app.querySelector('#manage-rows').addEventListener('click', event => {
+      const button = event.target.closest('button[data-edit], button[data-delete]');
+      if (!button) return;
+      if (button.hasAttribute('data-edit')) openEditModal(button.dataset);
+      else openDeleteModal(button.dataset);
+    });
+    updateManagementList();
   } catch (error) {
     if (token === requestToken) showError(error, renderManage);
   }
@@ -250,6 +366,10 @@ async function init() {
   const user = await requireAuth("welcome.html");
   if (!user) return;
   state.viewer = await getViewer();
+  const query = new URLSearchParams(location.search);
+  if (['tag', 'category'].includes(query.get('type')) && /^[1-9]\d*$/.test(query.get('id') || '')) {
+    state.type = query.get('type'); state.id = query.get('id');
+  }
   if (new URLSearchParams(location.search).get("mode") === "manage") {
     await renderManage();
   } else {

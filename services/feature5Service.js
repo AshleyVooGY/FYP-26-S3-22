@@ -1,21 +1,13 @@
 import { supabase } from "../config/supabaseClient.js";
 
-/**
- * Retrieve trending articles published within the last seven days.
- */
-export async function getTrendingArticles(limit = 10) {
-  const { data, error } = await supabase.rpc(
-    "get_trending_articles",
-    {
-      result_limit: limit
-    }
-  );
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return data;
+/** Retrieve published articles ranked by activity in a rolling time window. */
+export async function getTrendingArticles(limit = 10, window = '24h') {
+  if (!['24h', '7d', '30d'].includes(window)) throw new Error('Invalid trending time range.');
+  const { data, error } = await supabase.rpc('get_trending_articles_by_window', {
+    p_window: window, result_limit: limit
+  });
+  if (error) throw new Error(error.message);
+  return data ?? [];
 }
 
 
@@ -40,15 +32,15 @@ export async function getPopularArticles(limit = 10) {
 
 /**
  * Retrieve a single published article, including its category name.
- * The author's display name is included when readable under RLS
- * (profiles are only visible to their own owner), otherwise null.
+ * A narrow author RPC resolves bylines when another user's profile is
+ * private under RLS. It exposes a display name for a published article only.
  */
 export async function getArticleById(articleId) {
   const { data, error } = await supabase
     .from("articles")
     .select(
       `id, title, content, featured_image_url, view_count, reaction_count,
-       published_at, category:categories!articles_category_id_fkey(name), author:profiles(display_name)`
+       published_at, category:categories!articles_category_id_fkey(name), author:profiles(display_name), article_tags(tag:tags(id,name))`
     )
     .eq("id", articleId)
     .eq("status", "published")
@@ -58,6 +50,12 @@ export async function getArticleById(articleId) {
     throw new Error(error.message);
   }
 
+  if (!data.author) {
+    try {
+      const authorResult = await supabase.rpc('get_published_article_author', { p_article_id: articleId });
+      if (!authorResult.error) data.author = authorResult.data;
+    } catch { /* Keep articles readable if the optional byline lookup is unavailable. */ }
+  }
   return data;
 }
 

@@ -58,7 +58,7 @@ export async function getPersonalizedNews(cursor=null,pageSize=24) {
         .select('article_ids').eq('id',sessionId).maybeSingle();
       if(sessionError)throw sessionError;
       if(!Array.isArray(session?.article_ids)||session.article_ids.length>1000||session.article_ids.some(id=>!Number.isSafeInteger(Number(id))||Number(id)<=0))throw new Error('Unable to read the recommendation page count. Please refresh.');
-      total=session.article_ids.length;
+      total=Math.min(session.article_ids.length,12);
     } else if (cursor || data.next_cursor) {
       throw new Error('Unable to read the recommendation page count. Please refresh.');
     }

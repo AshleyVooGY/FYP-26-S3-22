@@ -3,11 +3,12 @@ import { escapeHtml, formatCount, formatRelativeTime, thumbHtml } from "./format
 import {
   getViewer,
   getClassifications,
+  getPublishedTagUsage,
   getBrowseArticlesPage,
   createClassification,
   updateClassification,
   deleteClassification
-} from "../features-01-02-10/featureService.js?v=categories-pagination-20261023";
+} from "../features-01-02-10/featureService.js?v=compact-tags-20261104";
 
 const app = document.getElementById("categories-app");
 const state = {
@@ -21,13 +22,12 @@ const state = {
   pages: [],
   pageIndex: 0,
   paging: false,
-  tagsExpanded: false,
+  tagUsage: {},
   manageQuery: "",
   manageType: "all",
   managePage: 0
 };
 let requestToken = 0;
-let tagResizeObserver = null;
 
 function showToast(message, isError = false) {
   const toast = document.createElement("div");
@@ -55,10 +55,17 @@ function articleCard(article) {
   </a>`;
 }
 
-async function loadClassifications() {
-  const result = await getClassifications();
+async function loadClassifications(includeUsage = false) {
+  const [result, usage] = await Promise.all([
+    getClassifications(),
+    includeUsage ? getPublishedTagUsage().catch(error => {
+      console.warn("Unable to load tag popularity", error);
+      return {};
+    }) : Promise.resolve(null)
+  ]);
   state.categories = result.categories;
   state.tags = result.tags;
+  if (usage) state.tagUsage = usage;
 }
 
 function updateBrowsePaging() {
@@ -113,44 +120,36 @@ async function changeBrowsePage(index) {
   }
 }
 
-// Hide complete buttons beyond the second visual row, including keyboard focus.
-function updateTagDisclosure() {
-  const list = app.querySelector('#browse-tag-list');
-  const toggle = app.querySelector('#browse-tags-toggle');
-  if (!list || !toggle) return;
-  const buttons = [...list.querySelectorAll('[data-type="tag"]')];
-  buttons.forEach(button => { button.hidden = false; });
-  const rows = [...new Set(buttons.map(button => button.offsetTop))].sort((a, b) => a - b);
-  const overflow = buttons.filter(button => rows.indexOf(button.offsetTop) >= 2);
-  if (!state.tagsExpanded) overflow.forEach(button => { button.hidden = true; });
-  toggle.hidden = overflow.length === 0;
-  toggle.textContent = state.tagsExpanded ? 'Show fewer tags' : 'Show all tags';
-  toggle.setAttribute('aria-expanded', String(state.tagsExpanded));
-  if (buttons.some(button => button.hidden && button === document.activeElement)) toggle.focus();
+async function selectBrowseFilter(type, id, restoreTagFocus = false) {
+  app.querySelector('#browse-tag-dialog')?.close();
+  state.type = type;
+  state.id = id || null;
+  const query = state.id ? `?type=${state.type}&id=${encodeURIComponent(state.id)}` : '';
+  history.replaceState(null, '', `categories.html${query}`);
+  await renderBrowse();
+  if (restoreTagFocus) app.querySelector('.browse-selected-tag, #browse-more-tags')?.focus({ preventScroll: true });
 }
 
-function observeTagDisclosure() {
-  updateTagDisclosure();
-  const list = app.querySelector('#browse-tag-list');
-  let previousWidth = list.getBoundingClientRect().width;
-  tagResizeObserver = new ResizeObserver(entries => {
-    const width = entries[0].contentRect.width;
-    if (Math.abs(width - previousWidth) < 1) return;
-    previousWidth = width;
-    updateTagDisclosure();
-  });
-  tagResizeObserver.observe(list);
+function openTagPicker() {
+  const dialog = app.querySelector('#browse-tag-dialog');
+  const opener = app.querySelector('#browse-more-tags');
+  const previousOverflow = document.body.style.overflow;
+  document.body.style.overflow = 'hidden';
+  dialog.addEventListener('close', () => {
+    document.body.style.overflow = previousOverflow;
+    if (opener.isConnected) opener.focus({ preventScroll: true });
+  }, { once: true });
+  dialog.showModal();
 }
 
 async function renderBrowse() {
-  tagResizeObserver?.disconnect();
   const token = ++requestToken;
   const filter = { type: state.type, id: state.id };
   state.paging = false;
   app.innerHTML = '<div class="loading-panel" role="status">Loading categories and articles…</div>';
 
   try {
-    await loadClassifications();
+    await loadClassifications(true);
     if (token !== requestToken) return;
     const page = await getBrowseArticlesPage(filter);
     if (token !== requestToken) return;
@@ -158,6 +157,9 @@ async function renderBrowse() {
 
     const selected = [...state.categories.map((item) => ({ ...item, type: "category" })), ...state.tags.map((item) => ({ ...item, type: "tag" }))]
       .find((item) => item.type === filter.type && String(item.id) === String(filter.id));
+    const popularTags = [...state.tags].sort((a, b) =>
+      (state.tagUsage[b.id] || 0) - (state.tagUsage[a.id] || 0) || a.name.localeCompare(b.name)
+    ).slice(0, 8);
 
     app.innerHTML = `
       <header class="page-head">
@@ -173,10 +175,15 @@ async function renderBrowse() {
           ${filter.type === "tag" && selected ? `<button class="classification-chip is-active browse-selected-tag" data-type="all" aria-label="Clear tag filter: ${escapeHtml(selected.name)}">#${escapeHtml(selected.name)} <span aria-hidden="true">×</span></button>` : ""}
         </div>
         <div id="browse-tag-list" class="classification-bar browse-tag-list">
-          ${state.tags.length ? state.tags.filter(item => filter.type !== "tag" || String(item.id) !== String(filter.id)).map(item => `<button class="classification-chip" data-type="tag" data-id="${item.id}">#${escapeHtml(item.name)}</button>`).join("") : '<span class="state-message">No tags are available yet.</span>'}
+          ${state.tags.length ? popularTags.filter(item => filter.type !== "tag" || String(item.id) !== String(filter.id)).map(item => `<button class="classification-chip ${filter.type === 'tag' && String(filter.id) === String(item.id) ? 'is-active' : ''}" data-type="tag" data-id="${item.id}" aria-pressed="${filter.type === 'tag' && String(filter.id) === String(item.id)}">#${escapeHtml(item.name)}</button>`).join("") : '<span class="state-message">No tags are available yet.</span>'}
+          ${state.tags.length > 8 ? '<button id="browse-more-tags" class="browse-more-tags" type="button" aria-haspopup="dialog" aria-controls="browse-tag-dialog">More tags <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 9 6 6 6-6"/></svg></button>' : ''}
         </div>
-        <button id="browse-tags-toggle" class="browse-tags-toggle" type="button" aria-expanded="false" aria-controls="browse-tag-list" hidden>Show all tags</button>
       </section>
+      <dialog id="browse-tag-dialog" class="browse-tag-dialog" aria-labelledby="browse-tag-dialog-title" aria-describedby="browse-tag-dialog-help">
+        <header class="browse-tag-dialog__header"><div><h2 id="browse-tag-dialog-title">Explore tags</h2><p id="browse-tag-dialog-help">Choose one topic to browse its articles.</p></div><button class="browse-tag-dialog__close" type="button" aria-label="Close tag picker" autofocus><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 6 12 12M18 6 6 18"/></svg></button></header>
+        <div class="browse-tag-dialog__list" aria-label="All tags">${state.tags.map(item => `<button class="classification-chip ${filter.type === 'tag' && String(filter.id) === String(item.id) ? 'is-active' : ''}" data-picker-tag="${item.id}" aria-pressed="${filter.type === 'tag' && String(filter.id) === String(item.id)}">#${escapeHtml(item.name)}</button>`).join('')}</div>
+        <footer class="browse-tag-dialog__footer">${state.tags.length} tags · One topic at a time</footer>
+      </dialog>
       <div class="article-grid" id="browse-grid" aria-busy="false">${page.articles.map(articleCard).join("")}</div>
       ${!page.articles.length ? '<div class="empty-state"><h2>No matching articles</h2><p>There are no published articles under this classification yet.</p></div>' : ''}
       <div class="categories-pagination">
@@ -189,20 +196,28 @@ async function renderBrowse() {
         <button id="browse-retry" class="button" type="button" hidden>Try again</button>
       </div>`;
     updateBrowsePaging();
-    observeTagDisclosure();
-    app.querySelector('#browse-tags-toggle').addEventListener('click', () => {
-      state.tagsExpanded = !state.tagsExpanded;
-      updateTagDisclosure();
+    app.querySelector('#browse-more-tags')?.addEventListener('click', openTagPicker);
+    const tagDialog = app.querySelector('#browse-tag-dialog');
+    tagDialog.querySelector('.browse-tag-dialog__close').addEventListener('click', () => tagDialog.close());
+    tagDialog.addEventListener('keydown', event => {
+      if (event.key !== 'Tab') return;
+      const controls = [...tagDialog.querySelectorAll('button:not(:disabled)')];
+      const first = controls[0], last = controls.at(-1);
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault(); last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault(); first.focus();
+      }
+    });
+    tagDialog.addEventListener('click', event => {
+      if (event.target === tagDialog) tagDialog.close();
+      const button = event.target.closest('[data-picker-tag]');
+      if (button) selectBrowseFilter('tag', button.dataset.pickerTag, true);
     });
     app.querySelector('#browse-previous').addEventListener('click', () => changeBrowsePage(state.pageIndex - 1));
     app.querySelector('#browse-next').addEventListener('click', () => changeBrowsePage(state.pageIndex + 1));
     app.querySelectorAll("[data-type]").forEach((button) => button.addEventListener("click", () => {
-      state.tagsExpanded = false;
-      state.type = button.dataset.type;
-      state.id = button.dataset.id || null;
-      const query = state.id ? `?type=${state.type}&id=${encodeURIComponent(state.id)}` : '';
-      history.replaceState(null, '', `categories.html${query}`);
-      renderBrowse();
+      selectBrowseFilter(button.dataset.type, button.dataset.id);
     }));
     app.querySelector("[data-manage]")?.addEventListener("click", () => {
       history.replaceState(null, "", "categories.html?mode=manage");
@@ -276,7 +291,6 @@ function openDeleteModal(item) {
 }
 
 async function renderManage() {
-  tagResizeObserver?.disconnect();
   const token = ++requestToken;
   if (!state.viewer.isAdmin) {
     history.replaceState(null, "", "categories.html");

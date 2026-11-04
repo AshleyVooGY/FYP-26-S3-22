@@ -36,6 +36,22 @@ export async function getClassifications() {
   };
 }
 
+// Count only links to published articles, without loading article text or drafts.
+export async function getPublishedTagUsage() {
+  const usage = {};
+  const batchSize = 1000;
+  for (let offset = 0; ; offset += batchSize) {
+    const { data, error } = await supabase.from("article_tags")
+      .select("tag_id, article:articles!inner(id)")
+      .eq("article.status", "published")
+      .order("article_id").order("tag_id")
+      .range(offset, offset + batchSize - 1);
+    throwIfError(error);
+    for (const link of data || []) usage[link.tag_id] = (usage[link.tag_id] || 0) + 1;
+    if (!data || data.length < batchSize) return usage;
+  }
+}
+
 export async function getPublishedArticles(limit = 24) {
   const { data, error } = await supabase
     .from("articles")

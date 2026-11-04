@@ -1,11 +1,14 @@
-import { signUp, getCurrentUser } from "./auth.js?v=account-name-20261029";
+import { signUp, getCurrentUser } from "./auth.js?v=unique-display-name-20261104";
 
 const form = document.getElementById("signup-form");
 const submitBtn = document.getElementById("submit-btn");
 const messageSlot = document.getElementById("form-message");
 
 function showMessage(text, isError) {
-  messageSlot.innerHTML = `<p class="auth-message ${isError ? "is-error" : "is-success"}">${text}</p>`;
+  const message = document.createElement('p');
+  message.className = `auth-message ${isError ? "is-error" : "is-success"}`;
+  message.textContent = text;
+  messageSlot.replaceChildren(message);
 }
 
 form.addEventListener("submit", async (event) => {

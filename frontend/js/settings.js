@@ -1,5 +1,5 @@
 import { requireAuth } from './auth.js?v=account-name-20261029';
-import { getMyAccountSettings, updateMyDisplayName } from '../../services/accountSettingsService.js?v=display-name-only-20261030';
+import { getMyAccountSettings, updateMyDisplayName } from '../../services/accountSettingsService.js?v=unique-display-name-20261104';
 const nameInput = document.getElementById('display-name');
 const saveButton = document.getElementById('save-name');
 const loading = document.getElementById('settings-loading');

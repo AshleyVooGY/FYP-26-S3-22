@@ -44,7 +44,7 @@
           <form id="display-name-form">
             <label for="display-name">Display name</label>
             <input id="display-name" name="displayName" type="text" maxlength="60" required autocomplete="nickname" aria-describedby="name-help" />
-            <p id="name-help" class="settings-help">1–60 characters. Names do not have to be unique.</p>
+            <p id="name-help" class="settings-help">1–60 characters. Names must be unique, ignoring capitalisation and spaces at the start or end.</p>
             <button class="settings-button is-primary" id="save-name" type="submit">Save display name</button>
             <p id="name-status" class="settings-status" role="status" aria-live="polite"></p>
           </form>
@@ -52,6 +52,6 @@
       </div>
     </main>
   </div>
-  <script type="module" src="js/settings.js?v=display-name-only-20261030"></script>
+  <script type="module" src="js/settings.js?v=unique-display-name-20261104"></script>
 </body>
 </html>

@@ -7,7 +7,12 @@ export function validateDisplayName(value) {
   }
   return name;
 }
+export const DISPLAY_NAME_TAKEN = 'This display name is already taken. Please choose another.';
+
 function settingsError(error) {
+  if (error?.code === '23505' || error?.message?.includes('display_name_taken')) {
+    return new Error(DISPLAY_NAME_TAKEN);
+  }
   return new Error(['PGRST202', '42883'].includes(error?.code)
     ? 'Account settings are being set up. Please try again later.'
     : error?.message || 'Unable to update your account. Please try again.');
@@ -43,4 +48,13 @@ export async function updateMyDisplayName(value) {
     if (typeof data !== 'string' || !data) throw new Error('Unable to confirm your display name. Please reload and try again.');
     return data;
   } catch (error) { throw settingsError(error); }
+}
+
+/** Public boolean-only lookup; never returns account IDs or profile records. */
+export async function isDisplayNameAvailable(value) {
+  const name = validateDisplayName(value);
+  const { data, error } = await supabase.rpc('is_display_name_available', { p_display_name: name });
+  if (error) throw settingsError(error);
+  if (typeof data !== 'boolean') throw new Error('Unable to check this display name. Please try again.');
+  return data;
 }

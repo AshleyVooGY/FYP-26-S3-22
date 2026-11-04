@@ -1,3 +1,4 @@
+import { registerAccount } from '../../services/accountRegistrationService.js?v=unique-display-name-20261104';
 import { getMyDisplayName } from '../../services/accountSettingsService.js?v=account-name-20261029';
 import { setupNotifications } from './notifications.js?v=notifications-20261027';
 import { sidebarHtml } from "./sidebar.js?v=account-settings-20261027";
@@ -10,16 +11,8 @@ import { upgradeMyAccountToPremium } from "../../services/userManagementService.
 // ==========================================================
 
 export async function signUp(email, password, displayName, tier = "free") {
-  return supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      // requested_tier is only ever read once, at account creation, by the
-      // handle_new_user trigger — it is never trusted again after that.
-      data: { display_name: displayName, requested_tier: tier === "premium" ? "premium" : "free" },
-      emailRedirectTo: new URL("login.html", window.location.href).href
-    }
-  });
+  return registerAccount(email, password, displayName, tier,
+    new URL("login.html", window.location.href).href);
 }
 
 export async function signIn(email, password) {

@@ -1,4 +1,5 @@
 import { setupComments } from './comments.js?v=comments-20261027';
+import { setupReadingAccessibility } from "./accessibility.js";
 import { supabase } from "../../config/supabaseClient.js";
 
 import {
@@ -1269,6 +1270,15 @@ function renderArticle(
     setupReadAloud(
         article
     );
+
+    /* ------------------------------------------------------
+    NEWS READING ACCESSIBILITY MANAGEMENT
+    ------------------------------------------------------ */
+    setupReadingAccessibility(
+    document.querySelector(".article-panel"),
+    document.querySelector(".article-panel__body")
+);
+
 
 }
 

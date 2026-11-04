@@ -1,0 +1,27 @@
+-- Disposable database only. Cluster roles anon/authenticated must exist.
+create schema auth;
+create table auth.users(id uuid primary key);
+create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
+grant usage on schema auth to authenticated,anon;
+create table public.categories(id bigint primary key,name text);
+create table public.tags(id bigint primary key,name text);
+create table public.articles(id bigint primary key,title text,content text,category_id bigint references categories(id),status text,featured_image_url text,published_at timestamptz,view_count integer,reaction_count integer);
+create table public.article_tags(article_id bigint references articles(id) on delete cascade,tag_id bigint references tags(id),primary key(article_id,tag_id));
+create table public.article_views(article_id bigint references articles(id),viewer_identifier text,viewed_at timestamptz);
+create table public.bookmarks(article_id bigint references articles(id),user_id uuid references auth.users(id),created_at timestamptz default now(),primary key(user_id,article_id));
+create table public.reactions(article_id bigint references articles(id),user_id uuid references auth.users(id),reaction_type text,created_at timestamptz default now(),primary key(user_id,article_id));
+alter table public.articles enable row level security;
+create policy "Published articles" on public.articles for select to authenticated using(status='published');
+alter table public.article_views enable row level security;
+create policy "Own views" on public.article_views for all to authenticated using(viewer_identifier='user:'||auth.uid()::text) with check(viewer_identifier='user:'||auth.uid()::text);
+alter table public.bookmarks enable row level security;
+create policy "Own bookmarks" on public.bookmarks for all to authenticated using(user_id=auth.uid()) with check(user_id=auth.uid());
+alter table public.reactions enable row level security;
+create policy "Own reactions" on public.reactions for all to authenticated using(user_id=auth.uid()) with check(user_id=auth.uid());
+grant select on public.categories,public.tags,public.articles,public.article_tags,public.article_views,public.bookmarks,public.reactions to authenticated;
+insert into auth.users values('11111111-1111-1111-1111-111111111111'),('22222222-2222-2222-2222-222222222222');
+insert into categories values(1,'Technology'),(2,'Health'),(3,'Environment');
+insert into tags values(10,'AI'),(20,'Healthcare');
+insert into articles select g,'Article '||g,'Published test article '||g,1+g%3,case when g=80 then 'draft' else 'published' end,null,now()-g*interval '1 minute',g,0 from generate_series(1,80) g;
+insert into article_tags select id,case when category_id=1 then 10 else 20 end from articles;
+insert into article_tags select id,10 from articles where id%5=0 and category_id<>1;

@@ -1,9 +1,7 @@
 
 /* ==========================================================
    FEATURE 9 - NEWS READING ACCESSIBILITY MANAGEMENT
-   Compact toolbar + Article Reading Modes
 ========================================================== */
-
 
 /* ==========================================================
    1. ACCESSIBILITY TOOLBAR
@@ -172,7 +170,7 @@
 }
 
 
-/* Consistent paragraph spacing */
+/* To ensure consistent paragraph spacing */
 
 .article-panel__body p {
     margin-top: 0;
@@ -181,7 +179,7 @@
 }
 
 
-/* Consistent heading spacing */
+/* To ensure consistent heading spacing */
 
 .article-panel__body h1,
 .article-panel__body h2,
@@ -240,9 +238,6 @@
 .article-panel[data-reading-theme="dark"] .article-panel__body span {
     color: #e5e7eb;
 }
-
-
-/* Article links in dark mode */
 
 .article-panel[data-reading-theme="dark"] .article-panel__body a {
     color: #a99cff;

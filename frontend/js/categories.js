@@ -1,4 +1,4 @@
-import { requireAuth } from "./auth.js?v=news-discovery-20261104";
+import { requireAuth } from "./auth.js?v=premium-approval-20261105";
 import { escapeHtml, formatCount, formatRelativeTime, thumbHtml } from "./format.js";
 import {
   getViewer,

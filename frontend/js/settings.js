@@ -1,4 +1,4 @@
-import { requireAuth } from './auth.js?v=account-name-20261029';
+import { requireAuth } from './auth.js?v=premium-approval-20261105';
 import { getMyAccountSettings, updateMyDisplayName } from '../../services/accountSettingsService.js?v=unique-display-name-20261104';
 const nameInput = document.getElementById('display-name');
 const saveButton = document.getElementById('save-name');

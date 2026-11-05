@@ -450,7 +450,7 @@ export const sidebarHtml = `<aside class="sidebar">
 
           </span>
 
-          Upgrade to Premium
+          <span data-premium-label>Upgrade to Premium</span>
 
         </a>
 

@@ -1,4 +1,4 @@
-import { requireAdmin } from './auth.js?v=account-name-20261029';
+import { requireAdmin } from './auth.js?v=premium-approval-20261105';
 import { getCategoryReviewQueue,decideCategoryReview } from '../../services/publishingReviewService.js?v=required-category-20261022';
 import { getCategories } from '../../services/feature8Service.js?v=apply-tags-20261024';
 import { escapeHtml,forbiddenStateHtml } from './format.js';

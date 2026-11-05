@@ -32,6 +32,12 @@ This project is currently under development.
 
 These describe the current website's page access. Some read-only database policies and RPCs also allow anonymous access to published data; they do not expose private drafts. Administrative writes and ownership checks are enforced by backend permissions and RLS.
 
+## Premium Requests
+
+All new accounts start on Free. Selecting **Request Premium** during registration creates a pending request; existing Free users can also apply from the sidebar. Users stay on Free until a System Admin approves the request in **Users → Premium requests**. Rejected users can submit a new request. Existing Premium accounts keep their plan.
+
+For deployment, apply `supabase/Features/premium-upgrade-approval.sql` **after** the existing subscription, administrator-management and Auth scripts, **before** deploying the updated frontend. This migration replaces the signup/tier functions, restricts plan changes to admins, and adds request RPCs and RLS. Do not rerun the older `auth.sql` or `subscription-tiers.sql` afterwards without reapplying this migration.
+
 ## Technology Stack
 
 * **Frontend:** HTML, CSS and JavaScript

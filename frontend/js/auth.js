@@ -1,9 +1,10 @@
 import { registerAccount } from '../../services/accountRegistrationService.js?v=unique-display-name-20261104';
 import { getMyDisplayName } from '../../services/accountSettingsService.js?v=account-name-20261029';
 import { setupNotifications } from './notifications.js?v=notifications-20261027';
-import { sidebarHtml } from "./sidebar.js?v=account-settings-20261027";
+import { sidebarHtml } from "./sidebar.js?v=premium-approval-20261105";
 import { supabase } from "../../config/supabaseClient.js";
-import { upgradeMyAccountToPremium } from "../../services/userManagementService.js?v=required-category-20261022";
+import { showPremiumUpgradeDialog } from "./premium-dialog.js?v=premium-approval-20261105";
+import { getMyPremiumStatus, requestPremiumUpgrade } from "../../services/premiumService.js?v=premium-approval-20261105";
 
 // ==========================================================
 // LOGIN / AUTHENTICATION
@@ -81,29 +82,19 @@ function wireLogoutLinks() {
   });
 }
 
-// Wires the sidebar's "Upgrade to Premium" link (shown to Free users only,
-// see applyTierVisibility). The server — guard_profile_tier_change() in
-// subscription-tiers.sql — is what actually allows this one-directional
-// self-service change; this is just the UI around it.
+// Both signup and existing accounts request Premium; only admins grant it.
+function updatePremiumLinks(account) {
+  document.querySelectorAll('[data-upgrade-tier]').forEach(el => {
+    el.hidden = account.tier === 'premium';
+    const label = el.querySelector('[data-premium-label]');
+    if (label) label.textContent = account.status === 'pending' ? 'Premium request pending' : 'Upgrade to Premium';
+  });
+}
 function wireUpgradeLinks() {
-  document.querySelectorAll("[data-upgrade-tier]").forEach((el) => {
-    el.addEventListener("click", async (event) => {
+  document.querySelectorAll('[data-upgrade-tier]').forEach(el => {
+    el.addEventListener('click', event => {
       event.preventDefault();
-      if (!window.confirm("Upgrade your account to Premium? This unlocks higher optional AI writing limits. Publishing checks are available on both plans.")) {
-        return;
-      }
-      el.style.pointerEvents = "none";
-      try {
-        await upgradeMyAccountToPremium();
-        // Refresh the session so the app_metadata mirror (and every
-        // tier-aware part of the UI) reflects Premium immediately.
-        await supabase.auth.refreshSession();
-        alert("You're now on Premium! Enjoy higher optional AI writing limits.");
-        window.location.reload();
-      } catch (error) {
-        alert(`Could not upgrade your account: ${error.message}`);
-        el.style.pointerEvents = "";
-      }
+      showPremiumUpgradeDialog({ load: getMyPremiumStatus, request: requestPremiumUpgrade, onChange: updatePremiumLinks });
     });
   });
 }
@@ -254,14 +245,11 @@ async function applyTierVisibility() {
   }
 
   const user = await getCurrentUser();
-  const tier = user?.app_metadata?.subscription_tier === "premium" ? "premium" : "free";
-  const show = Boolean(user) && tier === "free";
-  freeOnlyEls.forEach((el) => {
-    el.hidden = !show;
-  });
-  if (show) {
-    wireUpgradeLinks();
-  }
+  freeOnlyEls.forEach(el => { el.hidden = !user; });
+  if (!user) return;
+  wireUpgradeLinks();
+  try { updatePremiumLinks(await getMyPremiumStatus()); }
+  catch { /* Keep the entry available: its dialog provides a retryable error. */ }
 }
 
 wirePrimaryNavigation();

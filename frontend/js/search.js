@@ -1,4 +1,4 @@
-import { requireAuth } from "./auth.js?v=news-discovery-20261104";
+import { requireAuth } from "./auth.js?v=premium-approval-20261105";
 import { escapeHtml, formatCount, formatRelativeTime, thumbHtml } from "./format.js";
 import { getCategories, searchArticlesPage } from "../features-01-02-10/featureService.js?v=classification-pages-20261105";
 

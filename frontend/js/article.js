@@ -1039,7 +1039,7 @@ function renderArticle(
                 >
 
                     ${escapeHtml(
-                        articlecontent
+                        articleContent
                     )}
 
                 </div>

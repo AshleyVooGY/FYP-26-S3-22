@@ -1,5 +1,7 @@
+
 /* ==========================================================
-   FEATURE 9 - NEWS READING ACCESSIBILITY
+   FEATURE 9 - NEWS READING ACCESSIBILITY MANAGEMENT
+   Text Size + Global Light/Dark Mode
 ========================================================== */
 
 const STORAGE_KEY = "newsReleaseReadingPreferences";
@@ -14,8 +16,11 @@ const MAX_FONT_SIZE = 150;
 const FONT_SIZE_STEP = 10;
 
 
-// LOAD SAVED PREFERENCES
-function loadReadingPreferences() {
+/* ==========================================================
+   1. LOAD SAVED PREFERENCES
+========================================================== */
+
+export function loadReadingPreferences() {
     try {
         const saved = JSON.parse(
             localStorage.getItem(STORAGE_KEY) || "{}"
@@ -37,15 +42,21 @@ function loadReadingPreferences() {
         };
 
     } catch (error) {
-        console.error("Unable to load reading preferences:", error);
+        console.error(
+            "Unable to load reading preferences:",
+            error
+        );
 
         return { ...DEFAULT_PREFERENCES };
     }
 }
 
 
-// SAVE PREFERENCES
-function saveReadingPreferences(preferences) {
+/* ==========================================================
+   2. SAVE PREFERENCES
+========================================================== */
+
+export function saveReadingPreferences(preferences) {
     try {
         localStorage.setItem(
             STORAGE_KEY,
@@ -53,12 +64,53 @@ function saveReadingPreferences(preferences) {
         );
 
     } catch (error) {
-        console.error("Unable to save reading preferences:", error);
+        console.error(
+            "Unable to save reading preferences:",
+            error
+        );
     }
 }
 
 
-// APPLY PREFERENCES TO ARTICLE
+/* ==========================================================
+   3. APPLY GLOBAL LIGHT / DARK THEME
+========================================================== */
+
+export function applyGlobalTheme(theme) {
+    const selectedTheme = theme === "light"
+        ? "light"
+        : "dark";
+
+    // Apply theme to the entire HTML document
+    document.documentElement.dataset.readingTheme =
+        selectedTheme;
+
+    // Apply theme to the body
+    document.body.dataset.readingTheme =
+        selectedTheme;
+
+    // Update browser colour scheme where supported
+    document.documentElement.style.colorScheme =
+        selectedTheme;
+}
+
+
+/* ==========================================================
+   4. INITIALISE GLOBAL THEME
+   Called by global-theme.js on every page
+========================================================== */
+
+export function initializeGlobalTheme() {
+    const preferences = loadReadingPreferences();
+
+    applyGlobalTheme(preferences.theme);
+}
+
+
+/* ==========================================================
+   5. APPLY ARTICLE ACCESSIBILITY PREFERENCES
+========================================================== */
+
 function applyReadingPreferences(
     articlePanel,
     articleBody,
@@ -66,8 +118,12 @@ function applyReadingPreferences(
 ) {
     if (!articlePanel || !articleBody) return;
 
-    // Apply reading theme
-    articlePanel.dataset.readingTheme = preferences.theme;
+    // Apply theme globally
+    applyGlobalTheme(preferences.theme);
+
+    // Also apply theme to the article panel
+    articlePanel.dataset.readingTheme =
+        preferences.theme;
 
     // Apply article text size
     articleBody.style.setProperty(
@@ -81,10 +137,11 @@ function applyReadingPreferences(
     );
 
     if (sizeLabel) {
-        sizeLabel.textContent = `${preferences.fontSize}%`;
+        sizeLabel.textContent =
+            `${preferences.fontSize}%`;
     }
 
-    // Update theme buttons
+    // Update selected theme buttons
     const themeButtons = articlePanel.querySelectorAll(
         ".reading-accessibility [data-reading-theme]"
     );
@@ -93,7 +150,10 @@ function applyReadingPreferences(
         const selected =
             button.dataset.readingTheme === preferences.theme;
 
-        button.classList.toggle("is-selected", selected);
+        button.classList.toggle(
+            "is-selected",
+            selected
+        );
 
         button.setAttribute(
             "aria-pressed",
@@ -101,19 +161,20 @@ function applyReadingPreferences(
         );
     });
 
-    // Disable buttons at minimum and maximum size
+    // Disable decrease button at minimum size
     const decreaseButton = articlePanel.querySelector(
         "#reading-size-decrease"
-    );
-
-    const increaseButton = articlePanel.querySelector(
-        "#reading-size-increase"
     );
 
     if (decreaseButton) {
         decreaseButton.disabled =
             preferences.fontSize <= MIN_FONT_SIZE;
     }
+
+    // Disable increase button at maximum size
+    const increaseButton = articlePanel.querySelector(
+        "#reading-size-increase"
+    );
 
     if (increaseButton) {
         increaseButton.disabled =
@@ -122,20 +183,29 @@ function applyReadingPreferences(
 }
 
 
-// SET UP ACCESSIBILITY CONTROLS
+/* ==========================================================
+   6. SET UP ACCESSIBILITY CONTROLS
+========================================================== */
+
 export function setupReadingAccessibility(
     articlePanel,
     articleBody
 ) {
-    if (!articlePanel || !articleBody) return;
+    if (!articlePanel || !articleBody) {
+        console.warn(
+            "Reading accessibility could not initialise: article elements not found."
+        );
+        return;
+    }
 
-    // Prevent duplicate controls
+    // Prevent duplicate toolbar
     if (
         articlePanel.querySelector(".reading-accessibility")
     ) {
         return;
     }
 
+    // Load previously saved preferences
     let preferences = loadReadingPreferences();
 
     // Create accessibility toolbar
@@ -225,14 +295,21 @@ export function setupReadingAccessibility(
         </span>
     `;
 
-    // Insert toolbar before article content
+
+    /* ======================================================
+       INSERT TOOLBAR BEFORE ARTICLE CONTENT
+    ====================================================== */
+
     articleBody.parentNode.insertBefore(
         toolbar,
         articleBody
     );
 
 
-    // GET BUTTONS
+    /* ======================================================
+       GET BUTTON ELEMENTS
+    ====================================================== */
+
     const decreaseButton = toolbar.querySelector(
         "#reading-size-decrease"
     );
@@ -250,7 +327,10 @@ export function setupReadingAccessibility(
     );
 
 
-    // DECREASE TEXT SIZE
+    /* ======================================================
+       DECREASE TEXT SIZE
+    ====================================================== */
+
     decreaseButton.addEventListener("click", () => {
 
         preferences.fontSize = Math.max(
@@ -268,7 +348,10 @@ export function setupReadingAccessibility(
     });
 
 
-    // INCREASE TEXT SIZE
+    /* ======================================================
+       INCREASE TEXT SIZE
+    ====================================================== */
+
     increaseButton.addEventListener("click", () => {
 
         preferences.fontSize = Math.min(
@@ -286,7 +369,10 @@ export function setupReadingAccessibility(
     });
 
 
-    // SWITCH TO LIGHT MODE
+    /* ======================================================
+       SWITCH TO LIGHT MODE
+    ====================================================== */
+
     lightButton.addEventListener("click", () => {
 
         preferences.theme = "light";
@@ -301,7 +387,10 @@ export function setupReadingAccessibility(
     });
 
 
-    // SWITCH TO DARK MODE
+    /* ======================================================
+       SWITCH TO DARK MODE
+    ====================================================== */
+
     darkButton.addEventListener("click", () => {
 
         preferences.theme = "dark";
@@ -316,10 +405,45 @@ export function setupReadingAccessibility(
     });
 
 
-    // RESTORE PREVIOUSLY SAVED PREFERENCES
+    /* ======================================================
+       RESTORE PREVIOUSLY SAVED PREFERENCES
+    ====================================================== */
+
     applyReadingPreferences(
         articlePanel,
         articleBody,
         preferences
     );
 }
+
+
+/* ==========================================================
+   7. SYNCHRONISE THEME BETWEEN BROWSER TABS
+========================================================== */
+
+window.addEventListener("storage", event => {
+
+    if (event.key !== STORAGE_KEY) return;
+
+    const preferences = loadReadingPreferences();
+
+    // Update global page theme
+    applyGlobalTheme(preferences.theme);
+
+    // Update article panel if this is an article page
+    const articlePanel = document.querySelector(
+        ".article-panel"
+    );
+
+    const articleBody = document.querySelector(
+        ".article-panel__body"
+    );
+
+    if (articlePanel && articleBody) {
+        applyReadingPreferences(
+            articlePanel,
+            articleBody,
+            preferences
+        );
+    }
+});

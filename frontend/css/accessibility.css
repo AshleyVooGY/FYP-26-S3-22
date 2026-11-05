@@ -1,7 +1,7 @@
 
 /* ==========================================================
    FEATURE 9 - NEWS READING ACCESSIBILITY MANAGEMENT
-   Compact toolbar with consistent article spacing
+   Compact toolbar + Article Reading Modes
 ========================================================== */
 
 
@@ -11,17 +11,16 @@
 
 .reading-accessibility {
     display: flex;
+    flex-direction: row;
     align-items: center;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 16px;
 
     width: 100%;
     box-sizing: border-box;
 
-    padding: 8px 12px;
-
-    /* Consistent spacing above and below toolbar */
-    margin: 16px 0 !important;
+    padding: 10px 14px;
+    margin: 16px 0;
 
     background: var(--bg-panel-alt);
     border: 1px solid var(--border);
@@ -35,6 +34,7 @@
 
 .reading-accessibility__group {
     display: flex;
+    flex-direction: row;
     align-items: center;
     gap: 7px;
 }
@@ -48,6 +48,7 @@
 
 .reading-accessibility__controls {
     display: flex;
+    flex-direction: row;
     align-items: center;
     gap: 4px;
 }
@@ -140,32 +141,34 @@
 
 
 /* ==========================================================
-   6. ARTICLE BODY AND SPACING
+   6. ARTICLE BODY AND TEXT SIZE
 ========================================================== */
 
 .article-panel__body {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
+    margin-top: 0;
+    padding-top: 0;
 
     font-size: var(--article-reading-font-size, 100%);
     line-height: 1.8;
 
-    transition: font-size 0.2s ease;
+    transition:
+        font-size 0.2s ease,
+        color 0.2s ease;
 }
 
 
 /* Remove unnecessary spacing before first article element */
 
 .article-panel__body > :first-child {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
+    margin-top: 0;
+    padding-top: 0;
 }
 
 
 /* First paragraph */
 
 .article-panel__body > p:first-child {
-    margin-top: 0 !important;
+    margin-top: 0;
 }
 
 
@@ -189,58 +192,128 @@
 
 
 /* ==========================================================
-   7. LIGHT READING MODE
+   7. ARTICLE LIGHT MODE
 ========================================================== */
 
 .article-panel[data-reading-theme="light"] {
-    background: #ffffff;
+    background-color: #ffffff;
     color: #222222;
+    border-color: #d5dae2;
 }
 
-.article-panel[data-reading-theme="light"] .article-panel__body {
-    color: #222222;
-}
-
+.article-panel[data-reading-theme="light"] .article-panel__body,
 .article-panel[data-reading-theme="light"] .article-panel__body h1,
 .article-panel[data-reading-theme="light"] .article-panel__body h2,
 .article-panel[data-reading-theme="light"] .article-panel__body h3,
+.article-panel[data-reading-theme="light"] .article-panel__body h4,
 .article-panel[data-reading-theme="light"] .article-panel__body p,
-.article-panel[data-reading-theme="light"] .article-panel__body li {
+.article-panel[data-reading-theme="light"] .article-panel__body li,
+.article-panel[data-reading-theme="light"] .article-panel__body span {
     color: #222222;
 }
 
 
+/* Article links in light mode */
+
+.article-panel[data-reading-theme="light"] .article-panel__body a {
+    color: #5142c5;
+}
+
+
 /* ==========================================================
-   8. DARK READING MODE
+   8. ARTICLE DARK MODE
 ========================================================== */
 
 .article-panel[data-reading-theme="dark"] {
-    background: #202938;
+    background-color: #202938;
     color: #e5e7eb;
+    border-color: #2a3644;
 }
 
-.article-panel[data-reading-theme="dark"] .article-panel__body {
-    color: #e5e7eb;
-}
-
+.article-panel[data-reading-theme="dark"] .article-panel__body,
 .article-panel[data-reading-theme="dark"] .article-panel__body h1,
 .article-panel[data-reading-theme="dark"] .article-panel__body h2,
 .article-panel[data-reading-theme="dark"] .article-panel__body h3,
+.article-panel[data-reading-theme="dark"] .article-panel__body h4,
 .article-panel[data-reading-theme="dark"] .article-panel__body p,
-.article-panel[data-reading-theme="dark"] .article-panel__body li {
+.article-panel[data-reading-theme="dark"] .article-panel__body li,
+.article-panel[data-reading-theme="dark"] .article-panel__body span {
     color: #e5e7eb;
+}
+
+
+/* Article links in dark mode */
+
+.article-panel[data-reading-theme="dark"] .article-panel__body a {
+    color: #a99cff;
 }
 
 
 /* ==========================================================
-   9. RESPONSIVE DESIGN - TABLETS
+   9. TOOLBAR LIGHT MODE
+========================================================== */
+
+html[data-reading-theme="light"] .reading-accessibility {
+    background-color: #edf0f5;
+    border-color: #d5dae2;
+}
+
+html[data-reading-theme="light"] .reading-accessibility__label,
+html[data-reading-theme="light"] .reading-accessibility__saved,
+html[data-reading-theme="light"] .reading-accessibility__value {
+    color: #333333;
+}
+
+html[data-reading-theme="light"] .reading-accessibility__button {
+    background-color: #ffffff;
+    border-color: #cbd1da;
+    color: #222222;
+}
+
+html[data-reading-theme="light"] .reading-accessibility__button.is-selected {
+    background-color: var(--accent);
+    border-color: var(--accent);
+    color: #ffffff;
+}
+
+
+/* ==========================================================
+   10. TOOLBAR DARK MODE
+========================================================== */
+
+html[data-reading-theme="dark"] .reading-accessibility {
+    background-color: #212f3f;
+    border-color: #2a3644;
+}
+
+html[data-reading-theme="dark"] .reading-accessibility__label,
+html[data-reading-theme="dark"] .reading-accessibility__saved,
+html[data-reading-theme="dark"] .reading-accessibility__value {
+    color: #e5e7eb;
+}
+
+html[data-reading-theme="dark"] .reading-accessibility__button {
+    background-color: #24313f;
+    border-color: #2a3644;
+    color: #f5f6fa;
+}
+
+html[data-reading-theme="dark"] .reading-accessibility__button.is-selected {
+    background-color: var(--accent);
+    border-color: var(--accent);
+    color: #ffffff;
+}
+
+
+/* ==========================================================
+   11. RESPONSIVE DESIGN - TABLETS
 ========================================================== */
 
 @media (max-width: 768px) {
 
     .reading-accessibility {
-        gap: 8px;
-        padding: 7px 9px;
+        gap: 10px;
+        padding: 8px 10px;
     }
 
     .reading-accessibility__group {
@@ -269,14 +342,16 @@
 
 
 /* ==========================================================
-   10. RESPONSIVE DESIGN - MOBILE
+   12. RESPONSIVE DESIGN - MOBILE
 ========================================================== */
 
 @media (max-width: 480px) {
 
     .reading-accessibility {
-        gap: 8px;
-        padding: 7px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 10px;
     }
 
     .reading-accessibility__group {
@@ -286,6 +361,6 @@
     .reading-accessibility__saved {
         width: 100%;
         margin-left: 0;
-        text-align: right;
+        text-align: left;
     }
 }

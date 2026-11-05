@@ -1,4 +1,14 @@
-/* Shared page shell: topbar, sidebar, layout grid, base tokens */
+
+/* ==========================================================
+   SHARED PAGE SHELL
+   Topbar, Sidebar, Layout Grid and Base Theme Tokens
+   FEATURE 9 - GLOBAL LIGHT / DARK MODE
+========================================================== */
+
+
+/* ==========================================================
+   1. DEFAULT DARK THEME
+========================================================== */
 
 :root {
   --bg-page: #131b28;
@@ -6,26 +16,100 @@
   --bg-panel-alt: #212f3f;
   --bg-sidebar: #101722;
   --bg-input: #24313f;
+
   --accent: #6c5ce7;
   --accent-hover: #5a4bd6;
+
   --text-primary: #f5f6fa;
   --text-secondary: #9aa5b1;
   --text-muted: #6b7684;
+
   --border: #2a3644;
   --radius: 8px;
 }
 
+
+/* ==========================================================
+   2. GLOBAL LIGHT THEME VARIABLES
+========================================================== */
+
+html[data-reading-theme="light"] {
+  color-scheme: light;
+
+  --bg-page: #f5f6fa;
+  --bg-panel: #ffffff;
+  --bg-panel-alt: #edf0f5;
+  --bg-sidebar: #ffffff;
+  --bg-input: #e8ebf0;
+
+  --text-primary: #222222;
+  --text-secondary: #555b65;
+  --text-muted: #777f89;
+
+  --border: #d5dae2;
+}
+
+
+/* ==========================================================
+   3. GLOBAL DARK THEME VARIABLES
+========================================================== */
+
+html[data-reading-theme="dark"] {
+  color-scheme: dark;
+
+  --bg-page: #131b28;
+  --bg-panel: #1c2836;
+  --bg-panel-alt: #212f3f;
+  --bg-sidebar: #101722;
+  --bg-input: #24313f;
+
+  --text-primary: #f5f6fa;
+  --text-secondary: #9aa5b1;
+  --text-muted: #6b7684;
+
+  --border: #2a3644;
+}
+
+
+/* ==========================================================
+   4. GLOBAL RESET
+========================================================== */
+
 * {
   box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background: var(--bg-page);
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
 
 body {
   margin: 0;
   background: var(--bg-page);
   color: var(--text-primary);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+
   min-height: 100vh;
+
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
+
+
+/* ==========================================================
+   5. LINKS AND BUTTONS
+========================================================== */
 
 a {
   color: inherit;
@@ -36,26 +120,45 @@ button {
   font-family: inherit;
 }
 
+
+/* ==========================================================
+   6. TOP NAVIGATION BAR
+========================================================== */
+
 .topbar {
   display: flex;
   align-items: center;
   gap: 28px;
+
   padding: 14px 24px;
+
   background: var(--bg-sidebar);
   border-bottom: 1px solid var(--border);
+
   position: sticky;
   top: 0;
   z-index: 10;
+
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
 }
+
+
+/* Brand */
 
 .topbar__brand {
   display: flex;
   align-items: center;
   gap: 10px;
+
   font-weight: 700;
   font-size: 15px;
   letter-spacing: 0.3px;
+
   white-space: nowrap;
+  color: var(--text-primary);
 }
 
 .topbar__brand-icon {
@@ -69,19 +172,26 @@ button {
   height: 20px;
 }
 
+
+/* Top navigation links */
+
 .topbar__nav {
   display: flex;
   align-items: center;
   gap: 22px;
+
   flex: 1;
+
   font-size: 14px;
   font-weight: 500;
+
   color: var(--text-secondary);
 }
 
 .topbar__nav a {
   padding: 6px 2px;
   border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
 }
 
 .topbar__nav a:hover {
@@ -102,17 +212,26 @@ button {
   color: var(--text-secondary);
 }
 
+
+/* Top navigation actions */
+
 .topbar__actions {
   display: flex;
   align-items: center;
   gap: 14px;
 }
 
+
+/* Search input */
+
 .topbar__search {
   background: var(--bg-input);
+
   border: 1px solid var(--border);
   border-radius: 6px;
+
   color: var(--text-primary);
+
   padding: 8px 14px;
   font-size: 13px;
   width: 220px;
@@ -122,14 +241,21 @@ button {
   color: var(--text-muted);
 }
 
+
+/* Icon button */
+
 .icon-btn {
   background: transparent;
   border: none;
+
   color: var(--text-secondary);
+
   font-size: 17px;
   cursor: not-allowed;
+
   opacity: 0.6;
   line-height: 1;
+
   display: flex;
   align-items: center;
 }
@@ -139,36 +265,38 @@ button {
   height: 19px;
 }
 
+
+/* Publish button */
+
 .btn-publish {
   background: var(--accent);
   color: #fff;
+
   border: none;
   border-radius: 6px;
+
   padding: 9px 16px;
+
   font-size: 13px;
   font-weight: 600;
+
   cursor: not-allowed;
   opacity: 0.7;
+
   white-space: nowrap;
-  text-decoration: none;
-  display: inline-block;
 }
 
-.btn-publish.is-live {
-  cursor: pointer;
-  opacity: 1;
-}
 
-.btn-publish.is-live:hover {
-  background: var(--accent-hover);
-}
+/* User information */
 
 .user-chip {
   display: flex;
   align-items: center;
   gap: 8px;
+
   font-size: 13px;
   font-weight: 500;
+
   color: var(--text-secondary);
   white-space: nowrap;
 }
@@ -176,11 +304,15 @@ button {
 .user-chip__avatar {
   width: 28px;
   height: 28px;
+
   border-radius: 50%;
+
   background: var(--bg-panel-alt);
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   font-size: 15px;
   color: var(--text-secondary);
 }
@@ -190,21 +322,47 @@ button {
   height: 16px;
 }
 
+
+/* ==========================================================
+   7. MAIN PAGE LAYOUT
+========================================================== */
+
 .layout {
   display: grid;
   grid-template-columns: 220px 1fr;
+
   min-height: calc(100vh - 58px);
+
+  background: var(--bg-page);
+  color: var(--text-primary);
 }
 
 .layout--full {
   grid-template-columns: 1fr;
 }
 
+
+/* ==========================================================
+   8. SIDEBAR
+========================================================== */
+
 .sidebar {
   background: var(--bg-sidebar);
+
   border-right: 1px solid var(--border);
+
   padding: 20px 12px;
+
+  color: var(--text-primary);
+
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
 }
+
+
+/* Sidebar navigation */
 
 .sidebar__nav {
   display: flex;
@@ -212,18 +370,18 @@ button {
   gap: 2px;
 }
 
-.sidebar__nav a[hidden] {
-  display: none;
-}
-
 .sidebar__nav a {
   display: flex;
   align-items: center;
   gap: 12px;
+
   padding: 10px 12px;
+
   border-radius: 6px;
+
   font-size: 14px;
   font-weight: 500;
+
   color: var(--text-secondary);
 }
 
@@ -247,22 +405,17 @@ button {
   color: var(--text-secondary);
 }
 
-.sidebar__nav a[data-upgrade-tier] {
-  color: #f2c96d;
-  font-weight: 700;
-}
 
-.sidebar__nav a[data-upgrade-tier]:hover {
-  background: rgba(242, 201, 109, 0.1);
-  color: #f2c96d;
-}
+/* Sidebar icons */
 
 .sidebar__icon {
   width: 18px;
   height: 18px;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   flex-shrink: 0;
 }
 
@@ -271,29 +424,171 @@ button {
   height: 17px;
 }
 
+
+/* ==========================================================
+   9. MAIN CONTENT
+========================================================== */
+
 .content {
   padding: 28px 32px 60px;
   max-width: 1240px;
+
+  background: var(--bg-page);
+  color: var(--text-primary);
 }
 
 .content--article {
   max-width: 1080px;
+
   margin: 0 auto;
+
   padding: 28px 24px 60px;
+
+  background: var(--bg-page);
+  color: var(--text-primary);
 }
+
+
+/* ==========================================================
+   10. SECTION TITLES
+========================================================== */
 
 .section-title {
   font-size: 16px;
   font-weight: 700;
+
   margin: 0 0 14px;
+
+  color: var(--text-primary);
 }
+
+
+/* ==========================================================
+   11. STATE MESSAGES
+========================================================== */
 
 .state-message {
   color: var(--text-secondary);
+
   font-size: 14px;
   padding: 18px 4px;
 }
 
 .state-message.is-error {
   color: #f28b82;
+}
+
+
+/* ==========================================================
+   12. GLOBAL THEME TRANSITIONS
+========================================================== */
+
+.topbar,
+.sidebar,
+.layout,
+.content,
+.content--article {
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+
+/* ==========================================================
+   13. LIGHT MODE - COMMON PAGE ELEMENTS
+========================================================== */
+
+html[data-reading-theme="light"] body {
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+}
+
+html[data-reading-theme="light"] .topbar,
+html[data-reading-theme="light"] .sidebar {
+  background-color: var(--bg-sidebar);
+}
+
+html[data-reading-theme="light"] .layout,
+html[data-reading-theme="light"] .content,
+html[data-reading-theme="light"] .content--article {
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+}
+
+
+/* ==========================================================
+   14. DARK MODE - COMMON PAGE ELEMENTS
+========================================================== */
+
+html[data-reading-theme="dark"] body {
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+}
+
+html[data-reading-theme="dark"] .topbar,
+html[data-reading-theme="dark"] .sidebar {
+  background-color: var(--bg-sidebar);
+}
+
+html[data-reading-theme="dark"] .layout,
+html[data-reading-theme="dark"] .content,
+html[data-reading-theme="dark"] .content--article {
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+}
+
+
+/* ==========================================================
+   15. RESPONSIVE NAVIGATION
+========================================================== */
+
+@media (max-width: 900px) {
+
+  .topbar {
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+
+  .topbar__nav {
+    gap: 14px;
+  }
+
+  .topbar__search {
+    width: 180px;
+  }
+}
+
+
+@media (max-width: 700px) {
+
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .topbar {
+    padding: 12px 16px;
+  }
+
+  .topbar__nav {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .topbar__actions {
+    flex-wrap: wrap;
+  }
+
+  .content {
+    padding: 20px 16px 40px;
+  }
+
+  .content--article {
+    padding: 20px 16px 40px;
+  }
 }

@@ -22,12 +22,21 @@ This project is currently under development.
 | Article Media Management           | Supports image uploads for news articles            |
 | Article Draft Management           | Allows unfinished articles to be saved privately    |
 | Reading Accessibility              | Provides text-size and light/dark display settings  |
+| News Recommendation                | Suggests related published articles using shared categories and tags |
 
 ## User Roles
 
-* **Guest User:** Browses, searches and reads published news.
-* **Registered User:** Accesses personalised functions and manages personal content.
+* **Guest User:** Can access the welcome, login and sign-up pages. News browsing, search and article reading require sign-in in the current website.
+* **Registered User:** Browses, searches and reads news, accesses recommendations and personalised functions, and manages their own articles and drafts.
 * **System Admin:** Manages users, classifications, content and analytics.
+
+These describe the current website's page access. Some read-only database policies and RPCs also allow anonymous access to published data; they do not expose private drafts. Administrative writes and ownership checks are enforced by backend permissions and RLS.
+
+## Premium Requests
+
+All new accounts start on Free. Selecting **Request Premium** during registration creates a pending request; existing Free users can also apply from the sidebar. Users stay on Free until a System Admin approves the request in **Users → Premium requests**. Rejected users can submit a new request. Existing Premium accounts keep their plan.
+
+For deployment, apply `supabase/Features/premium-upgrade-approval.sql` **after** the existing subscription, administrator-management and Auth scripts, **before** deploying the updated frontend. This migration replaces the signup/tier functions, restricts plan changes to admins, and adds request RPCs and RLS. Do not rerun the older `auth.sql` or `subscription-tiers.sql` afterwards without reapplying this migration.
 
 ## Technology Stack
 

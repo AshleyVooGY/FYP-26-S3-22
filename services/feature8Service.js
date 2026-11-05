@@ -1,4 +1,5 @@
 import { supabase } from "../config/supabaseClient.js";
+import { getClassificationList } from './classificationService.js?v=classification-pages-20261105';
 
 const BUCKET = "article-images";
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
@@ -8,26 +9,14 @@ const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
  * Retrieve every category (used to populate the article editor's category picker).
  */
 export async function getCategories() {
-  const { data, error } = await supabase.from("categories").select("id, name").order("name");
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return data;
+  return getClassificationList('categories');
 }
 
 /**
  * Retrieve every tag used by the article editor.
  */
 export async function getTags() {
-  const { data, error } = await supabase.from("tags").select("id, name").order("name");
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return data;
+  return getClassificationList('tags');
 }
 
 /**

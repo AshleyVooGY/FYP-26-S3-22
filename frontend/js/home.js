@@ -1,4 +1,4 @@
-import { requireAuth } from "./auth.js?v=account-name-20261029";
+import { requireAuth } from "./auth.js?v=premium-approval-20261105";
 import {
   getTrendingArticles,
   getPopularArticles,

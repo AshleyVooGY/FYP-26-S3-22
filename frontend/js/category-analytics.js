@@ -1,4 +1,4 @@
-import { requireAdmin } from "./auth.js?v=account-name-20261029";
+import { requireAdmin } from "./auth.js?v=premium-approval-20261105";
 import { getCategoryPopularity } from "../../services/feature6Service.js";
 import { formatCount, escapeHtml, forbiddenStateHtml } from "./format.js";
 

@@ -1,9 +1,11 @@
-import { requireAdmin } from "./auth.js?v=account-name-20261029";
+import { requireAdmin } from "./auth.js?v=premium-approval-20261105";
 import { getAllProfiles, setUserRole, setUserSubscriptionTier } from "../../services/userManagementService.js?v=required-category-20261022";
+import { getPendingPremiumRequests, reviewPremiumUpgrade } from "../../services/premiumService.js?v=premium-approval-20261105";
 import { escapeHtml, forbiddenStateHtml } from "./format.js";
 
 let currentAdminId = null;
 let profiles = [];
+let premiumRequests = [];
 let pendingChange = null;
 let updating = false;
 const roleName = role => role === 'system_admin' ? 'System Admin' : 'Registered User';
@@ -32,6 +34,36 @@ function render() {
   document.getElementById('users-table').innerHTML = `<div class="analytics-panel"><table class="data-table">
     <thead><tr><th>Name / Account ID</th><th>Role</th><th></th><th>Plan</th><th></th></tr></thead>
     <tbody>${profiles.map(rowHtml).join('')}</tbody></table></div>`;
+}
+
+function renderPremiumRequests() {
+  const slot = document.getElementById('premium-requests-list');
+  slot.innerHTML = premiumRequests.length ? `<div class="premium-request-list">${premiumRequests.map(request => `
+    <div class="premium-request-row">
+      <div><strong>${escapeHtml(request.display_name)}</strong><small class="user-account-id">ID: ${escapeHtml(request.user_id)}</small><small>Requested ${escapeHtml(new Date(request.requested_at).toLocaleString())}</small></div>
+      <div class="premium-request-actions"><button type="button" class="article-action is-live" data-request-id="${escapeHtml(request.user_id)}" data-request-action="reject">Reject</button><button type="button" class="article-action is-live" data-request-id="${escapeHtml(request.user_id)}" data-request-action="approve">Approve</button></div>
+    </div>`).join('')}</div>` : '<p class="state-message">No pending Premium requests.</p>';
+}
+async function refreshPremiumRequests() {
+  const button = document.getElementById('premium-requests-refresh');
+  button.disabled = true;
+  try { premiumRequests = await getPendingPremiumRequests(); renderPremiumRequests(); }
+  catch (error) { document.getElementById('premium-requests-list').textContent = error.message; }
+  finally { button.disabled = false; }
+}
+function openPremiumConfirmation(button) {
+  if (updating) return;
+  const request = premiumRequests.find(item => item.user_id === button.dataset.requestId);
+  if (!request) return;
+  const approve = button.dataset.requestAction === 'approve';
+  pendingChange = { id: request.user_id, kind: 'premium_request', approve, requestedAt: request.requested_at, displayName: request.display_name };
+  document.getElementById('user-confirm-title').textContent = approve ? 'Approve Premium request?' : 'Reject Premium request?';
+  document.getElementById('user-confirm-account').textContent = request.display_name;
+  document.getElementById('user-confirm-id').textContent = request.user_id;
+  document.getElementById('user-confirm-change').textContent = approve ? 'Free → Premium' : 'Keep Free plan';
+  document.getElementById('user-confirm-impact').textContent = approve ? 'This grants higher optional AI writing limits. The account’s role stays the same.' : 'The account stays on Free. The user can see the result and submit a new request later.';
+  document.getElementById('user-confirm-error').textContent = '';
+  document.getElementById('user-change-dialog').showModal();
 }
 
 function openConfirmation(button) {
@@ -69,6 +101,17 @@ async function confirmChange() {
   confirm.textContent = 'Updating…';
   error.textContent = '';
   try {
+    if (change.kind === 'premium_request') {
+      await reviewPremiumUpgrade(change.id, change.approve, change.requestedAt);
+      premiumRequests = premiumRequests.filter(request => request.user_id !== change.id);
+      if (change.approve) profiles = profiles.map(profile => profile.id === change.id ? { ...profile, subscription_tier: 'premium' } : profile);
+      renderPremiumRequests();
+      render();
+      pendingChange = null;
+      dialog.close();
+      feedback(`Premium request ${change.approve ? 'approved' : 'rejected'}: ${change.displayName}.`);
+      return;
+    }
     // Recheck the displayed value before writing: another admin may have
     // changed the account while this confirmation was open.
     const fresh = await getAllProfiles();
@@ -85,12 +128,13 @@ async function confirmChange() {
     else await setUserSubscriptionTier(change.id, change.next);
     profiles = fresh.map(p => p.id === change.id ? { ...p, [change.field]: change.next } : p);
     render();
+    if (change.kind === 'plan' && change.next === 'premium') { premiumRequests = premiumRequests.filter(request => request.user_id !== change.id); renderPremiumRequests(); }
     pendingChange = null;
     dialog.close();
     const label = change.kind === 'role' ? roleName(change.next) : tierName(change.next);
     feedback(`${change.kind === 'role' ? 'Role' : 'Plan'} updated successfully: ${target.display_name} (ID: ${target.id}) → ${label}.`);
   } catch (err) {
-    error.textContent = `Could not update ${change.kind}: ${err.message}. No successful change was confirmed. You can retry or cancel.`;
+    error.textContent = `Could not update ${change.kind === 'premium_request' ? 'Premium request' : change.kind}: ${err.message}. No successful change was confirmed. You can retry or cancel.`;
   } finally {
     updating = false;
     confirm.disabled = cancel.disabled = false;
@@ -104,6 +148,10 @@ async function init() {
   if (!admin) { slot.innerHTML = forbiddenStateHtml(); return; }
   currentAdminId = admin.id;
   slot.innerHTML = `<p id="user-change-status" class="state-message" role="status" aria-live="polite"></p>
+    <section class="analytics-panel premium-requests-panel" aria-labelledby="premium-requests-title">
+      <div class="premium-requests-heading"><h2 id="premium-requests-title">Premium requests</h2><button type="button" id="premium-requests-refresh" class="article-action is-live">Refresh</button></div>
+      <div id="premium-requests-list"><p class="state-message">Loading requests…</p></div>
+    </section>
     <div id="users-table"><p class="state-message">Loading…</p></div>
     <dialog id="user-change-dialog" aria-labelledby="user-confirm-title" aria-describedby="user-confirm-impact">
       <h2 id="user-confirm-title"></h2>
@@ -121,6 +169,12 @@ async function init() {
     const button = event.target.closest('button[data-id]');
     if (button && !button.disabled) openConfirmation(button);
   });
+  document.getElementById('premium-requests-refresh').addEventListener('click', refreshPremiumRequests);
+  document.getElementById('premium-requests-list').addEventListener('click', event => {
+    const button = event.target.closest('button[data-request-id]');
+    if (button) openPremiumConfirmation(button);
+  });
+  refreshPremiumRequests();
   try { profiles = await getAllProfiles(); render(); }
   catch (err) { feedback(`Could not load users: ${err.message}`, true); document.getElementById('users-table').innerHTML = ''; }
 }

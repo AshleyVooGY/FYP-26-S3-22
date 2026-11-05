@@ -4,7 +4,7 @@ import { supabase } from "../../config/supabaseClient.js";
 
 import {
     requireAuth
-} from "./auth.js?v=account-name-20261029";
+} from "./auth.js?v=premium-approval-20261105";
 
 import {
     getArticleById,

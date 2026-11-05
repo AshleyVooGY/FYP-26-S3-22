@@ -1,14 +1,15 @@
-import { requireAuth } from "./auth.js?v=account-name-20261029";
+import { requireAuth } from "./auth.js?v=premium-approval-20261105";
 import { escapeHtml, formatCount, formatRelativeTime, thumbHtml } from "./format.js";
 import {
   getViewer,
   getClassifications,
-  getPublishedTagUsage,
+  getCategories,
+  getTag,
   getBrowseArticlesPage,
   createClassification,
   updateClassification,
   deleteClassification
-} from "../features-01-02-10/featureService.js?v=compact-tags-20261104";
+} from "../features-01-02-10/featureService.js?v=classification-pages-20261105";
 
 const app = document.getElementById("categories-app");
 const state = {
@@ -22,7 +23,6 @@ const state = {
   pages: [],
   pageIndex: 0,
   paging: false,
-  tagUsage: {},
   manageQuery: "",
   manageType: "all",
   managePage: 0
@@ -55,17 +55,10 @@ function articleCard(article) {
   </a>`;
 }
 
-async function loadClassifications(includeUsage = false) {
-  const [result, usage] = await Promise.all([
-    getClassifications(),
-    includeUsage ? getPublishedTagUsage().catch(error => {
-      console.warn("Unable to load tag popularity", error);
-      return {};
-    }) : Promise.resolve(null)
-  ]);
+async function loadClassifications() {
+  const result = await getClassifications();
   state.categories = result.categories;
   state.tags = result.tags;
-  if (usage) state.tagUsage = usage;
 }
 
 function updateBrowsePaging() {
@@ -120,26 +113,12 @@ async function changeBrowsePage(index) {
   }
 }
 
-async function selectBrowseFilter(type, id, restoreTagFocus = false) {
-  app.querySelector('#browse-tag-dialog')?.close();
+async function selectBrowseFilter(type, id) {
   state.type = type;
   state.id = id || null;
   const query = state.id ? `?type=${state.type}&id=${encodeURIComponent(state.id)}` : '';
   history.replaceState(null, '', `categories.html${query}`);
   await renderBrowse();
-  if (restoreTagFocus) app.querySelector('.browse-selected-tag, #browse-more-tags')?.focus({ preventScroll: true });
-}
-
-function openTagPicker() {
-  const dialog = app.querySelector('#browse-tag-dialog');
-  const opener = app.querySelector('#browse-more-tags');
-  const previousOverflow = document.body.style.overflow;
-  document.body.style.overflow = 'hidden';
-  dialog.addEventListener('close', () => {
-    document.body.style.overflow = previousOverflow;
-    if (opener.isConnected) opener.focus({ preventScroll: true });
-  }, { once: true });
-  dialog.showModal();
 }
 
 async function renderBrowse() {
@@ -149,41 +128,26 @@ async function renderBrowse() {
   app.innerHTML = '<div class="loading-panel" role="status">Loading categories and articles…</div>';
 
   try {
-    await loadClassifications(true);
+    const [categories, tag] = await Promise.all([
+      getCategories(), filter.type === 'tag' ? getTag(filter.id) : Promise.resolve(null)
+    ]);
+    state.categories = categories;
     if (token !== requestToken) return;
     const page = await getBrowseArticlesPage(filter);
     if (token !== requestToken) return;
     state.articles = page.articles; state.total = page.total; state.pages = [page]; state.pageIndex = 0;
 
-    const selected = [...state.categories.map((item) => ({ ...item, type: "category" })), ...state.tags.map((item) => ({ ...item, type: "tag" }))]
-      .find((item) => item.type === filter.type && String(item.id) === String(filter.id));
-    const popularTags = [...state.tags].sort((a, b) =>
-      (state.tagUsage[b.id] || 0) - (state.tagUsage[a.id] || 0) || a.name.localeCompare(b.name)
-    ).slice(0, 8);
+    const selected = filter.type === 'tag' ? tag : state.categories.find(item => String(item.id) === String(filter.id));
 
     app.innerHTML = `
       <header class="page-head">
-        <div><h1>${selected ? (filter.type === "tag" ? `Articles tagged #${escapeHtml(selected.name)}` : escapeHtml(selected.name)) : "Browse News"}</h1><p>Explore published articles by category or tag.</p></div>
-        <div class="button-row"><span id="browse-count" role="status" aria-live="polite"></span>${state.viewer.isAdmin ? '<button class="button" type="button" data-manage>Manage categories & tags</button>' : ""}</div>
+        <div><h1>${selected ? (filter.type === "tag" ? `Articles tagged #${escapeHtml(selected.name)}` : escapeHtml(selected.name)) : (filter.type === "tag" ? "Tag unavailable" : "Browse News")}</h1><p>${filter.type === "tag" ? (tag ? "More articles about this topic." : "This tag may have been renamed or removed.") : "Explore published articles by category."}</p></div>
+        <div class="button-row browse-head-actions">${filter.type === "tag" ? '<a class="button news-card-link" href="categories.html">← Back to all news</a>' : ""}<span id="browse-count" role="status" aria-live="polite"></span>${state.viewer.isAdmin ? '<button class="button" type="button" data-manage>Manage categories & tags</button>' : ""}</div>
       </header>
-      <section aria-labelledby="categories-title"><h2 id="categories-title" class="section-title">Categories</h2><div class="classification-bar">
+      ${filter.type !== "tag" ? `<section aria-labelledby="categories-title"><h2 id="categories-title" class="section-title">Categories</h2><div class="classification-bar">
         <button class="classification-chip ${filter.type === "all" ? "is-active" : ""}" data-type="all">All news</button>
         ${state.categories.map((item) => `<button class="classification-chip ${filter.type === "category" && String(filter.id) === String(item.id) ? "is-active" : ""}" data-type="category" data-id="${item.id}">${escapeHtml(item.name)}</button>`).join("")}
-      </div></section>
-      <section class="browse-tags" aria-labelledby="tags-title">
-        <div class="browse-tags__heading"><h2 id="tags-title" class="section-title">Tags</h2>
-          ${filter.type === "tag" && selected ? `<button class="classification-chip is-active browse-selected-tag" data-type="all" aria-label="Clear tag filter: ${escapeHtml(selected.name)}">#${escapeHtml(selected.name)} <span aria-hidden="true">×</span></button>` : ""}
-        </div>
-        <div id="browse-tag-list" class="classification-bar browse-tag-list">
-          ${state.tags.length ? popularTags.filter(item => filter.type !== "tag" || String(item.id) !== String(filter.id)).map(item => `<button class="classification-chip ${filter.type === 'tag' && String(filter.id) === String(item.id) ? 'is-active' : ''}" data-type="tag" data-id="${item.id}" aria-pressed="${filter.type === 'tag' && String(filter.id) === String(item.id)}">#${escapeHtml(item.name)}</button>`).join("") : '<span class="state-message">No tags are available yet.</span>'}
-          ${state.tags.length > 8 ? '<button id="browse-more-tags" class="browse-more-tags" type="button" aria-haspopup="dialog" aria-controls="browse-tag-dialog">More tags <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 9 6 6 6-6"/></svg></button>' : ''}
-        </div>
-      </section>
-      <dialog id="browse-tag-dialog" class="browse-tag-dialog" aria-labelledby="browse-tag-dialog-title" aria-describedby="browse-tag-dialog-help">
-        <header class="browse-tag-dialog__header"><div><h2 id="browse-tag-dialog-title">Explore tags</h2><p id="browse-tag-dialog-help">Choose one topic to browse its articles.</p></div><button class="browse-tag-dialog__close" type="button" aria-label="Close tag picker" autofocus><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 6 12 12M18 6 6 18"/></svg></button></header>
-        <div class="browse-tag-dialog__list" aria-label="All tags">${state.tags.map(item => `<button class="classification-chip ${filter.type === 'tag' && String(filter.id) === String(item.id) ? 'is-active' : ''}" data-picker-tag="${item.id}" aria-pressed="${filter.type === 'tag' && String(filter.id) === String(item.id)}">#${escapeHtml(item.name)}</button>`).join('')}</div>
-        <footer class="browse-tag-dialog__footer">${state.tags.length} tags · One topic at a time</footer>
-      </dialog>
+      </div></section>` : ''}
       <div class="article-grid" id="browse-grid" aria-busy="false">${page.articles.map(articleCard).join("")}</div>
       ${!page.articles.length ? '<div class="empty-state"><h2>No matching articles</h2><p>There are no published articles under this classification yet.</p></div>' : ''}
       <div class="categories-pagination">
@@ -196,24 +160,6 @@ async function renderBrowse() {
         <button id="browse-retry" class="button" type="button" hidden>Try again</button>
       </div>`;
     updateBrowsePaging();
-    app.querySelector('#browse-more-tags')?.addEventListener('click', openTagPicker);
-    const tagDialog = app.querySelector('#browse-tag-dialog');
-    tagDialog.querySelector('.browse-tag-dialog__close').addEventListener('click', () => tagDialog.close());
-    tagDialog.addEventListener('keydown', event => {
-      if (event.key !== 'Tab') return;
-      const controls = [...tagDialog.querySelectorAll('button:not(:disabled)')];
-      const first = controls[0], last = controls.at(-1);
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault(); last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault(); first.focus();
-      }
-    });
-    tagDialog.addEventListener('click', event => {
-      if (event.target === tagDialog) tagDialog.close();
-      const button = event.target.closest('[data-picker-tag]');
-      if (button) selectBrowseFilter('tag', button.dataset.pickerTag, true);
-    });
     app.querySelector('#browse-previous').addEventListener('click', () => changeBrowsePage(state.pageIndex - 1));
     app.querySelector('#browse-next').addEventListener('click', () => changeBrowsePage(state.pageIndex + 1));
     app.querySelectorAll("[data-type]").forEach((button) => button.addEventListener("click", () => {

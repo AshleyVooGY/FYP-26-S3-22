@@ -1,5 +1,5 @@
 import { setupComments } from './comments.js?v=comments-20261027';
-import { setupReadingAccessibility } from "./accessibility.js";
+import { setupReadingAccessibility } from "./accessibility.js?v=theme-fixes-20261105";
 import { supabase } from "../../config/supabaseClient.js";
 
 import {

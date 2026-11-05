@@ -15,6 +15,9 @@ const MIN_FONT_SIZE = 80;
 const MAX_FONT_SIZE = 150;
 const FONT_SIZE_STEP = 10;
 
+// Share each toolbar's current state with the cross-tab storage listener.
+const articlePreferenceStates = new WeakMap();
+
 
 /* ==========================================================
    1. LOAD SAVED PREFERENCES
@@ -206,7 +209,8 @@ export function setupReadingAccessibility(
     }
 
     // Load previously saved preferences
-    let preferences = loadReadingPreferences();
+    const preferences = loadReadingPreferences();
+    articlePreferenceStates.set(articlePanel, preferences);
 
     // Create accessibility toolbar
     const toolbar = document.createElement("section");
@@ -440,6 +444,10 @@ window.addEventListener("storage", event => {
     );
 
     if (articlePanel && articleBody) {
+        const toolbarPreferences = articlePreferenceStates.get(articlePanel);
+        if (toolbarPreferences) {
+            Object.assign(toolbarPreferences, preferences);
+        }
         applyReadingPreferences(
             articlePanel,
             articleBody,

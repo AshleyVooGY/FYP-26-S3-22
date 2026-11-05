@@ -286,6 +286,15 @@ button {
   white-space: nowrap;
 }
 
+.btn-publish.is-live {
+  cursor: pointer;
+  opacity: 1;
+}
+
+.btn-publish.is-live:hover {
+  background: var(--accent-hover);
+}
+
 
 /* User information */
 
@@ -383,6 +392,11 @@ button {
   font-weight: 500;
 
   color: var(--text-secondary);
+}
+
+/* Author display rules must not override Auth's hidden navigation entries. */
+.sidebar__nav a[hidden] {
+  display: none;
 }
 
 .sidebar__nav a:hover {

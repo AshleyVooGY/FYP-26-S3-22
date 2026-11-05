@@ -6,7 +6,7 @@
 
 import {
     initializeGlobalTheme
-} from "./accessibility.js";
+} from "./accessibility.js?v=theme-fixes-20261105";
 
 
 // Apply saved theme immediately

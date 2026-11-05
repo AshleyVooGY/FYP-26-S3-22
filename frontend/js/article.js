@@ -951,6 +951,11 @@ function renderArticle(
         article.author?.display_name ??
         "Staff Writer";
 
+    // Remove unnecessary whitespace before and after article content
+    const articleContent = String(
+        article.content ?? ""
+    ).trim();
+
 
     slot.innerHTML = `
 
@@ -1034,7 +1039,7 @@ function renderArticle(
                 >
 
                     ${escapeHtml(
-                        article.content
+                        articlecontent
                     )}
 
                 </div>

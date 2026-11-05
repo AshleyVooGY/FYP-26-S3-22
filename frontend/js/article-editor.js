@@ -9,7 +9,7 @@ import {
   uploadArticleImage,
   validateArticleImage,
   removeArticleImage
-} from "../../services/feature8Service.js?v=article-tags-20261029";
+} from "../../services/feature8Service.js?v=classification-pages-20261105";
 import {
   CREDIBILITY_THRESHOLD,
   getSubscriptionTier,

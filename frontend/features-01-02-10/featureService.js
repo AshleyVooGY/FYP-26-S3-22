@@ -1,4 +1,5 @@
 import { supabase } from "../../config/supabaseClient.js";
+import { getClassificationList } from '../../services/classificationService.js?v=classification-pages-20261105';
 
 const throwIfError = (error) => {
   if (error) throw new Error(error.message);
@@ -25,21 +26,17 @@ export async function getViewer() {
 
 export async function getClassifications() {
   const [categoriesResult, tagsResult] = await Promise.all([
-    supabase.from("categories").select("id, name").order("name"),
-    supabase.from("tags").select("id, name").order("name")
+    getClassificationList('categories'),
+    getClassificationList('tags')
   ]);
-  throwIfError(categoriesResult.error);
-  throwIfError(tagsResult.error);
   return {
-    categories: categoriesResult.data ?? [],
-    tags: tagsResult.data ?? []
+    categories: categoriesResult,
+    tags: tagsResult
   };
 }
 
 export async function getCategories() {
-  const { data, error } = await supabase.from("categories").select("id, name").order("name");
-  throwIfError(error);
-  return data || [];
+  return getClassificationList('categories');
 }
 
 export async function getTag(tagId) {

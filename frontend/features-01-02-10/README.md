@@ -35,4 +35,6 @@ F1 browsing and administration now run in `../categories.html`, F2 runs in `../s
 
 The shared pages reuse `featureService.js` and `features.css`; both depend on the shared Supabase client and `shell.css` design tokens.
 
+The editor and administrator classification list reuse `../../services/classificationService.js` to retrieve categories/tags in ID-cursor batches. This avoids silently truncating the catalogue at the Data API's row limit. A failed batch reports an error instead of showing an incomplete list; the existing search and pagination controls remain unchanged.
+
 No changes to other team members' files or database scripts are required by this standalone module.

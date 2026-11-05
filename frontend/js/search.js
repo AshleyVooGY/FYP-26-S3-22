@@ -1,6 +1,6 @@
 import { requireAuth } from "./auth.js?v=news-discovery-20261104";
 import { escapeHtml, formatCount, formatRelativeTime, thumbHtml } from "./format.js";
-import { getCategories, searchArticlesPage } from "../features-01-02-10/featureService.js?v=news-discovery-20261104";
+import { getCategories, searchArticlesPage } from "../features-01-02-10/featureService.js?v=classification-pages-20261105";
 
 const app = document.getElementById("search-app");
 const initial = new URLSearchParams(location.search);

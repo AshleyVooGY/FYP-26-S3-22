@@ -1,7 +1,5 @@
-
 /* ==========================================================
-   FEATURE 9 - NEWS READING ACCESSIBILITY MANAGEMENT
-   Text Size + Global Light/Dark Mode
+   FEATURE 9 - NEWS READING ACCESSIBILITY MANAGEMEN
 ========================================================== */
 
 const STORAGE_KEY = "newsReleaseReadingPreferences";
@@ -100,7 +98,6 @@ export function applyGlobalTheme(theme) {
 
 /* ==========================================================
    4. INITIALISE GLOBAL THEME
-   Called by global-theme.js on every page
 ========================================================== */
 
 export function initializeGlobalTheme() {

@@ -9,7 +9,7 @@ import {
   createClassification,
   updateClassification,
   deleteClassification
-} from "../features-01-02-10/featureService.js?v=classification-pages-20261105";
+} from "../features-01-02-10/featureService.js?v=admin-tag-management-20261105";
 
 const app = document.getElementById("categories-app");
 const state = {

@@ -194,6 +194,7 @@ export async function getRecommendations(articleId, limit = 6) {
 }
 
 export async function createClassification(type, name) {
+  if (type === "tag") return manageTag("create", null, name);
   const table = type === "tag" ? "tags" : "categories";
   const { data, error } = await supabase.from(table).insert({ name: name.trim() }).select("id, name").single();
   throwIfError(error);
@@ -201,6 +202,7 @@ export async function createClassification(type, name) {
 }
 
 export async function updateClassification(type, id, name) {
+  if (type === "tag") return manageTag("update", id, name);
   const table = type === "tag" ? "tags" : "categories";
   const { data, error } = await supabase.from(table).update({ name: name.trim() }).eq("id", id).select("id, name").single();
   throwIfError(error);
@@ -208,7 +210,19 @@ export async function updateClassification(type, id, name) {
 }
 
 export async function deleteClassification(type, id) {
+  if (type === "tag") { await manageTag("delete", id); return; }
   const table = type === "tag" ? "tags" : "categories";
   const { error } = await supabase.from(table).delete().eq("id", id);
   throwIfError(error);
+}
+
+async function manageTag(action, id, name = null) {
+  const { data, error } = await supabase.rpc("admin_manage_tag", {
+    p_action: action, p_tag_id: id, p_name: name
+  });
+  throwIfError(error);
+  if (!data || data.id == null || typeof data.name !== "string") {
+    throw new Error("Unable to confirm the tag change. Refresh the list and try again.");
+  }
+  return data;
 }

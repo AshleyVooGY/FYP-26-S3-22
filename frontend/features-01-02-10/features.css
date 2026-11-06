@@ -144,3 +144,15 @@ a.article-card { display:block; }
 .manage-table-wrap td:first-child { overflow-wrap:anywhere; }
 .manage-pagination { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:12px; margin-top:18px; font-size:13px; color:var(--text-secondary); }
 .manage-pagination button:disabled { opacity:.45; cursor:default; }
+
+/* Management feedback stays visible independently of list loading/scrolling. */
+.categories-page .toast-region { top:90px; bottom:auto; right:24px; width:min(420px,calc(100vw - 32px)); z-index:1200; }
+.categories-page .management-toast { display:flex; align-items:flex-start; gap:12px; max-width:none; padding:16px; border-radius:12px; color:var(--text-primary); background:var(--bg-panel); border-left:4px solid #35b984; box-shadow:0 8px 28px #0003; line-height:1.5; overflow-wrap:anywhere; }
+.categories-page .management-toast__icon { display:grid; place-items:center; flex:0 0 24px; height:24px; border-radius:50%; background:#35b98422; color:#24845d; font-weight:800; }
+.categories-page .management-toast > span:nth-child(2) { flex:1; }
+.categories-page .management-toast__close { flex:0 0 28px; height:28px; padding:0; border:0; border-radius:6px; background:transparent; color:var(--text-secondary); font:inherit; font-size:22px; cursor:pointer; }
+.categories-page .management-toast__close:hover { background:var(--bg-panel-alt); }
+.categories-page .management-toast__close:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.categories-page .management-toast.is-error { color:var(--text-primary); border-color:#d94360; }
+.categories-page .management-toast.is-error .management-toast__icon { background:#d9436022; color:#d94360; }
+@media (max-width:600px) { .categories-page .toast-region { top:80px; right:16px; } }

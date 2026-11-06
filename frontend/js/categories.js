@@ -30,11 +30,31 @@ const state = {
 let requestToken = 0;
 
 function showToast(message, isError = false) {
+  const region = document.getElementById("toast-region");
+  region.replaceChildren();
   const toast = document.createElement("div");
-  toast.className = `toast${isError ? " is-error" : ""}`;
-  toast.textContent = message;
-  document.getElementById("toast-region").append(toast);
-  window.setTimeout(() => toast.remove(), 3600);
+  toast.className = `toast management-toast${isError ? " is-error" : " is-success"}`;
+  toast.setAttribute("role", isError ? "alert" : "status");
+  const icon = document.createElement("span");
+  icon.className = "management-toast__icon";
+  icon.setAttribute("aria-hidden", "true");
+  icon.textContent = isError ? "!" : "✓";
+  const text = document.createElement("span");
+  text.textContent = message;
+  const dismiss = document.createElement("button");
+  dismiss.type = "button";
+  dismiss.className = "management-toast__close";
+  dismiss.setAttribute("aria-label", "Dismiss notification");
+  dismiss.textContent = "×";
+  dismiss.addEventListener("click", () => toast.remove());
+  toast.append(icon, text, dismiss);
+  region.append(toast);
+  // Keep feedback visible while the management list refreshes.
+  window.setTimeout(() => toast.remove(), isError ? 12000 : 8000);
+}
+
+function classificationLabel(type) {
+  return type === "tag" ? "Tag" : "Category";
 }
 
 function showError(error, retry) {
@@ -210,13 +230,18 @@ function openEditModal(item) {
     event.preventDefault();
     const name = String(new FormData(event.currentTarget).get("name") || "").trim();
     if (!name) return;
+    const save = event.currentTarget.querySelector('button[type="submit"], button:not([type])');
+    if (save.disabled) return;
+    save.disabled = true;
     try {
       await updateClassification(item.type, item.id, name);
       closeModal();
-      showToast("Changes saved.");
+      showToast(`${classificationLabel(item.type)} “${name}” updated successfully.`);
       await renderManage();
     } catch (error) {
       showToast(error.message, true);
+    } finally {
+      save.disabled = false;
     }
   });
 }
@@ -224,14 +249,19 @@ function openEditModal(item) {
 function openDeleteModal(item) {
   document.body.insertAdjacentHTML("beforeend", `<div class="modal-backdrop"><div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="delete-title"><h2 id="delete-title">Delete ${item.type}</h2><p>Are you sure you want to delete <strong>${escapeHtml(item.name)}</strong>? This cannot be undone.</p><div class="button-row"><button class="button button--danger" data-confirm-delete>Yes, delete</button><button class="button" data-close>No</button></div></div></div>`);
   document.querySelector("[data-close]").addEventListener("click", closeModal);
-  document.querySelector("[data-confirm-delete]").addEventListener("click", async () => {
+  document.querySelector("[data-confirm-delete]").addEventListener("click", async (event) => {
+    const confirm = event.currentTarget;
+    if (confirm.disabled) return;
+    confirm.disabled = true;
     try {
       await deleteClassification(item.type, item.id);
       closeModal();
-      showToast(`${item.name} was deleted.`);
+      showToast(`${classificationLabel(item.type)} “${item.name}” deleted successfully.`);
       await renderManage();
     } catch (error) {
       showToast(error.message, true);
+    } finally {
+      confirm.disabled = false;
     }
   });
 }
@@ -249,7 +279,7 @@ async function renderManage() {
   try {
     await loadClassifications();
     if (token !== requestToken) return;
-    app.innerHTML = `<header class="page-head"><div><h1>Manage Categories &amp; Tags</h1><p>Administrators manage categories and can rename or delete tags. Authors can add tags while writing articles.</p></div><button class="button" type="button" data-browse>Back to browse</button></header>
+    app.innerHTML = `<header class="page-head"><div><h1>Manage Categories &amp; Tags</h1><p>Administrators can create, rename and delete categories and tags. Authors can add tags while writing articles.</p></div><button class="button" type="button" data-browse>Back to browse</button></header>
       <div class="manage-grid"><section class="panel"><h2>Create category/tag</h2><form id="create-form"><div class="field"><label for="classification-name">Name</label><input id="classification-name" name="name" maxlength="60" placeholder="Enter a unique name" required></div><p class="field-label">Type</p><div class="button-row"><label><input type="radio" name="type" value="category" checked> Category</label><label><input type="radio" name="type" value="tag"> Tag</label></div><div class="button-row" style="margin-top:18px"><button class="button button--primary">Save</button><button class="button" type="reset">Cancel</button></div></form></section>
       <section class="panel manage-list-panel" aria-labelledby="manage-list-title"><h2 id="manage-list-title">Existing categories and tags</h2>
         <div class="manage-filters">
@@ -270,12 +300,17 @@ async function renderManage() {
       const values = new FormData(event.currentTarget);
       const name = String(values.get("name") || "").trim();
       if (!name) return showToast("Please enter a category or tag name.", true);
+      const save = event.currentTarget.querySelector('button:not([type])');
+      if (save.disabled) return;
+      save.disabled = true;
       try {
         await createClassification(values.get("type"), name);
-        showToast(`${name} was created.`);
+        showToast(`${classificationLabel(values.get("type"))} “${name}” created successfully.`);
         await renderManage();
       } catch (error) {
         showToast(error.message.includes("duplicate") ? "That name already exists." : error.message, true);
+      } finally {
+        save.disabled = false;
       }
     });
     app.querySelector('#manage-search').addEventListener('input', event => {

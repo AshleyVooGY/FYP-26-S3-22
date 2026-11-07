@@ -156,3 +156,19 @@ a.article-card { display:block; }
 .categories-page .management-toast.is-error { color:var(--text-primary); border-color:#d94360; }
 .categories-page .management-toast.is-error .management-toast__icon { background:#d9436022; color:#d94360; }
 @media (max-width:600px) { .categories-page .toast-region { top:80px; right:16px; } }
+
+/* Restore the original always-visible search toolbar without changing queries. */
+.search-classic-filters { margin-top:18px; }
+.search-classic-filters .sort-group { flex-wrap:nowrap; }
+.search-classic-filters .sort-button { padding:10px 12px; }
+.search-classic-filters > .button-row .button { text-decoration:none; white-space:nowrap; }
+.search-classic-filters input[type="date"] { min-width:0; }
+@media (max-width:1200px) {
+  .search-classic-filters { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .search-classic-filters > .field:nth-child(4) { grid-column:span 2; }
+}
+@media (max-width:600px) {
+  .search-classic-filters { grid-template-columns:minmax(0,1fr); }
+  .search-classic-filters > .field:nth-child(4) { grid-column:auto; }
+  .search-classic-filters > .button-row { justify-content:flex-start; }
+}

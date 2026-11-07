@@ -29,6 +29,7 @@ function enhanceSelects() {
     control.querySelector('[aria-haspopup]').setAttribute('aria-expanded', 'false');
   });
   app.querySelectorAll('#category, #search-sort').forEach(select => {
+    if (select.hidden) return;
     const label = app.querySelector(`label[for="${select.id}"]`);
     const control = document.createElement('div');
     control.className = 'search-select';
@@ -92,20 +93,20 @@ function resultCard(article) {
 }
 
 function renderPage() {
-  app.innerHTML = `<header class="page-head"><div><h1>Search News</h1><p>Search by keyword. Category, date and sort changes apply automatically.</p></div><span id="result-count" role="status" aria-live="polite"></span></header>
+  app.innerHTML = `<header class="page-head"><div><h1>Search &amp; Filter News</h1><p>Search titles, content, categories and tags, then refine the results.</p></div><span id="result-count" role="status" aria-live="polite"></span></header>
     <form id="search-form" class="toolbar search-panel">
-      <div class="field"><label for="keyword">Keyword</label><div class="button-row"><input id="keyword" name="keyword" type="search" value="${escapeHtml(state.filters.keyword)}" placeholder="Search titles, content or topics…"><button class="button button--primary" type="submit">Search</button></div></div>
-      <div class="search-options">
-        <details id="search-filters" class="search-filters" ${filterCount() ? 'open' : ''}>
-          <summary>Filters <span id="filter-count">${filterCount() ? `(${filterCount()})` : ''}</span><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 9 6 6 6-6"/></svg></summary>
-          <div class="search-filter-fields">
-            <div class="field"><label for="category">Category</label><select id="category" name="category"><option value="">All categories</option>${state.categories.map(item => `<option value="${item.id}" ${String(state.filters.categoryId) === String(item.id) ? 'selected' : ''}>${escapeHtml(item.name)}</option>`).join('')}</select></div>
-            <div class="field"><label for="start-date">From date</label><input id="start-date" name="startDate" type="date" value="${state.filters.startDate}"></div>
-            <div class="field"><label for="end-date">To date</label><input id="end-date" name="endDate" type="date" value="${state.filters.endDate}"></div>
-          </div>
-        </details>
-        <div class="field search-sort"><label for="search-sort">Sort by</label><select id="search-sort" name="sort">${[['latest','Latest'],['oldest','Oldest'],['popularity','Most viewed']].map(([value,label]) => `<option value="${value}" ${state.filters.sort === value ? 'selected' : ''}>${label}</option>`).join('')}</select></div>
+      <div class="field"><label for="keyword">Keyword</label><div class="button-row"><input id="keyword" name="keyword" type="search" value="${escapeHtml(state.filters.keyword)}" placeholder="Search news by keyword…"><button class="button button--primary" type="submit">Search</button></div></div>
+      <div class="filter-row search-classic-filters">
+        <div class="field"><label for="category">Category</label><select id="category" name="category"><option value="">All categories</option>${state.categories.map(item => `<option value="${item.id}" ${String(state.filters.categoryId) === String(item.id) ? 'selected' : ''}>${escapeHtml(item.name)}</option>`).join('')}</select></div>
+        <div class="field"><label for="start-date">From date</label><input id="start-date" name="startDate" type="date" value="${state.filters.startDate}"></div>
+        <div class="field"><label for="end-date">To date</label><input id="end-date" name="endDate" type="date" value="${state.filters.endDate}"></div>
+        <div class="field"><label id="classic-sort-label" for="search-sort">Sort by</label>
+          <select id="search-sort" name="sort" hidden>${[['latest','Latest'],['oldest','Oldest'],['popularity','Most viewed']].map(([value,label]) => `<option value="${value}" ${state.filters.sort === value ? 'selected' : ''}>${label}</option>`).join('')}</select>
+          <div class="sort-group" role="group" aria-labelledby="classic-sort-label">${[['latest','Latest'],['oldest','Oldest'],['popularity','Popularity']].map(([value,label]) => `<button class="sort-button ${state.filters.sort === value ? 'is-active' : ''}" type="button" aria-pressed="${state.filters.sort === value}" aria-label="${value === 'popularity' ? 'Most viewed' : label}" data-sort="${value}">${label}</button>`).join('')}</div>
+        </div>
+        <div class="button-row"><a class="button news-card-link" href="categories.html">Browse all news</a></div>
       </div>
+      <span id="filter-count" class="sr-only"></span>
     </form>
     <div id="active-filters" class="active-filters" aria-label="Applied filters"></div>
     <div id="search-results" class="result-list" aria-busy="false"></div>
@@ -129,6 +130,15 @@ function renderPage() {
   [app.querySelector('#category'), start, end, app.querySelector('#search-sort')].forEach(control => {
     control.addEventListener('change', () => applyForm());
   });
+  app.querySelectorAll('[data-sort]').forEach(button => button.addEventListener('click', () => {
+    const select = app.querySelector('#search-sort');
+    select.value = button.dataset.sort;
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    app.querySelectorAll('[data-sort]').forEach(item => {
+      item.classList.toggle('is-active', item === button);
+      item.setAttribute('aria-pressed', String(item === button));
+    });
+  }));
   app.querySelector('#search-previous').addEventListener('click', () => changePage(state.pageIndex - 1));
   app.querySelector('#search-next').addEventListener('click', () => changePage(state.pageIndex + 1));
   enhanceSelects();
@@ -189,7 +199,7 @@ async function runSearch(scroll = false) {
     syncUrl(); updatePaging();
     app.querySelector('#result-count').textContent = '';
     results.setAttribute('aria-busy', 'false');
-    results.innerHTML = '<div class="empty-state search-start"><h2>What would you like to read?</h2><p>Search by keyword, or open Filters to choose a category or date range.</p><a class="button news-card-link" href="categories.html">Browse all news</a></div>';
+    results.innerHTML = '<div class="empty-state search-start"><h2>What would you like to read?</h2><p>Search by keyword, or choose a category or date range above.</p><a class="button news-card-link" href="categories.html">Browse all news</a></div>';
     return;
   }
   state.hasSearched = true; state.loading = true;

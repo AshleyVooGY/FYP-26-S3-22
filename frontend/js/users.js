@@ -8,6 +8,8 @@ let profiles = [];
 let premiumRequests = [];
 let pendingChange = null;
 let updating = false;
+const USERS_PER_PAGE = 10;
+let usersPage = 1;
 const roleName = role => role === 'system_admin' ? 'System Admin' : 'Registered User';
 const tierName = tier => tier === 'premium' ? 'Premium' : 'Free';
 
@@ -31,9 +33,20 @@ function feedback(message, error = false) {
 }
 
 function render() {
-  document.getElementById('users-table').innerHTML = `<div class="analytics-panel"><table class="data-table">
+  const pageCount = Math.max(1, Math.ceil(profiles.length / USERS_PER_PAGE));
+  usersPage = Math.max(1, Math.min(usersPage, pageCount));
+  const start = (usersPage - 1) * USERS_PER_PAGE;
+  const visibleProfiles = profiles.slice(start, start + USERS_PER_PAGE);
+  document.getElementById('users-table').innerHTML = `<div class="analytics-panel">
+    <p class="users-count" role="status">${profiles.length ? `Showing ${start + 1}–${start + visibleProfiles.length} of ${profiles.length} users` : 'No users found.'}</p>
+    <div class="users-table-scroll"><table class="data-table">
     <thead><tr><th>Name / Account ID</th><th>Role</th><th></th><th>Plan</th><th></th></tr></thead>
-    <tbody>${profiles.map(rowHtml).join('')}</tbody></table></div>`;
+    <tbody>${visibleProfiles.map(rowHtml).join('')}</tbody></table></div>
+    <nav class="users-pagination" aria-label="User list pages" ${pageCount === 1 ? 'hidden' : ''}>
+      <button type="button" class="article-action is-live" data-users-page="${usersPage - 1}" ${usersPage === 1 ? 'disabled' : ''}>Previous</button>
+      <span>Page ${usersPage} of ${pageCount}</span>
+      <button type="button" class="article-action is-live" data-users-page="${usersPage + 1}" ${usersPage === pageCount ? 'disabled' : ''}>Next</button>
+    </nav></div>`;
 }
 
 function renderPremiumRequests() {
@@ -166,6 +179,17 @@ async function init() {
   document.getElementById('user-confirm-cancel').addEventListener('click', () => { if (!updating) dialog.close(); });
   document.getElementById('user-confirm-submit').addEventListener('click', confirmChange);
   document.getElementById('users-table').addEventListener('click', event => {
+    const pageButton = event.target.closest('button[data-users-page]');
+    if (pageButton && !pageButton.disabled && !updating) {
+      const direction = Number(pageButton.dataset.usersPage) > usersPage ? 'next' : 'previous';
+      usersPage = Number(pageButton.dataset.usersPage);
+      render();
+      const pager = document.querySelector('.users-pagination');
+      const buttons = pager.querySelectorAll('button');
+      const preferred = direction === 'next' ? buttons[1] : buttons[0];
+      (preferred.disabled ? (direction === 'next' ? buttons[0] : buttons[1]) : preferred).focus();
+      return;
+    }
     const button = event.target.closest('button[data-id]');
     if (button && !button.disabled) openConfirmation(button);
   });

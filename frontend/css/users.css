@@ -1,4 +1,11 @@
 .user-account-id { display: block; color: var(--text-secondary); font-size: .8em; margin-top: 6px; overflow-wrap: anywhere; }
+.users-count { margin: 0 0 16px; color: var(--text-secondary); }
+.users-table-scroll { overflow-x: auto; }
+.users-pagination { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 16px; margin-top: 20px; color: var(--text-secondary); }
+.users-pagination[hidden] { display: none; }
+.users-pagination .article-action { padding: 9px 16px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-panel-alt); color: var(--text-primary); font: inherit; cursor: pointer; }
+.users-pagination button:disabled { opacity: .45; cursor: default; }
+.users-pagination button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 #user-change-dialog { width: min(34rem, calc(100vw - 32px)); box-sizing: border-box; padding: 24px; border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-primary); background: var(--bg-panel); font: inherit; }
 #user-change-dialog::backdrop { background: rgb(0 0 0 / 55%); }
 #user-change-dialog h2 { margin-top: 0; font-size: 1.25em; }

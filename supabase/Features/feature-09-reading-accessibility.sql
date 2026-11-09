@@ -18,6 +18,7 @@ alter table public.reading_preferences enable row level security;
 
 
 -- users can view their own reading preferences
+drop policy if exists "Users can view own reading preferences" on public.reading_preferences;
 create policy "Users can view own reading preferences"
 on public.reading_preferences
 for select
@@ -26,6 +27,7 @@ using (auth.uid() = user_id);
 
 
 -- users can create their own reading preferences
+drop policy if exists "Users can add own reading preferences" on public.reading_preferences;
 create policy "Users can add own reading preferences"
 on public.reading_preferences
 for insert
@@ -34,6 +36,7 @@ with check (auth.uid() = user_id);
 
 
 -- users can update their own reading preferences
+drop policy if exists "Users can update own reading preferences" on public.reading_preferences;
 create policy "Users can update own reading preferences"
 on public.reading_preferences
 for update

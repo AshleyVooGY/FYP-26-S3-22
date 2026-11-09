@@ -31,23 +31,26 @@ create table if not exists public.article_categories (
 );
 
 
--- 3. Migrate Existing Article Categories
--- Copies existing articles.category_id relationships into
--- the new article_categories junction table.
+-- 3. Migrate Existing Article Categories (one-time, already applied)
+-- Copied existing articles.category_id relationships into the new
+-- article_categories junction table when this file first deployed.
 --
 -- articles.category_id is intentionally NOT removed yet
 -- because existing features still depend on it
-
-insert into public.article_categories (
-    article_id,
-    category_id
-)
-select
-    id,
-    category_id
-from public.articles
-where category_id is not null
-on conflict do nothing;
+--
+-- Not safe to replay: article-publishing-permissions-update.sql later adds
+-- guard_published_classification_change(), a BEFORE trigger on
+-- article_categories that blocks any write touching a published article's
+-- category links outside the reviewed workspace flow. Because Postgres runs
+-- BEFORE triggers ahead of ON CONFLICT resolution, re-running this insert
+-- against a database that already has published articles and that trigger
+-- installed will always raise, even though "on conflict do nothing" would
+-- otherwise skip rows that already match. Left here only as a comment for
+-- reference; do not uncomment on an already-deployed database.
+--
+-- insert into public.article_categories (article_id, category_id)
+-- select id, category_id from public.articles where category_id is not null
+-- on conflict do nothing;
 
 -- 4. Article Tags
 -- Junction table allowing articles to have multiple tags.

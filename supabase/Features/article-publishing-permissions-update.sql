@@ -143,8 +143,13 @@ end;
 $$;
 revoke all on function public.save_my_article_workspace(bigint,text,text,bigint[],bigint[],boolean,uuid) from public,anon;
 grant execute on function public.save_my_article_workspace(bigint,text,text,bigint[],bigint[],boolean,uuid) to authenticated;
-insert into public.article_categories(article_id,category_id)
-select id,category_id from public.articles where category_id is not null on conflict do nothing;
+-- One-time backfill (already applied). Not safe to replay once
+-- guard_published_classification_change() is installed below and live
+-- articles are published: Postgres runs its BEFORE trigger ahead of ON
+-- CONFLICT resolution, so this insert fails for every published article even
+-- when its row already matches. Left as a comment for reference only.
+-- insert into public.article_categories(article_id,category_id)
+-- select id,category_id from public.articles where category_id is not null on conflict do nothing;
 -- Keep legacy article writes available during rollout. Existing RLS and the
 -- publication trigger continue to apply to direct API requests.
 create or replace function public.guard_published_classification_change()

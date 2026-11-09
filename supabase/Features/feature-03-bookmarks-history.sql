@@ -13,6 +13,7 @@ create table if not exists public.bookmarks (
 alter table public.bookmarks enable row level security;
 
 -- Users can view their own bookmarks
+drop policy if exists "Users can view own bookmarks" on public.bookmarks;
 create policy "Users can view own bookmarks"
 on public.bookmarks
 for select
@@ -20,6 +21,7 @@ to authenticated
 using (auth.uid() = user_id);
 
 -- Users can add own bookmarks
+drop policy if exists "Users can add own bookmarks" on public.bookmarks;
 create policy "Users can add own bookmarks"
 on public.bookmarks
 for insert
@@ -27,6 +29,7 @@ to authenticated
 with check (auth.uid() = user_id);
 
 -- Users can remove their own bookmarks
+drop policy if exists "Users can remove own bookmarks" on public.bookmarks;
 create policy "Users can remove own bookmarks"
 on public.bookmarks
 for delete

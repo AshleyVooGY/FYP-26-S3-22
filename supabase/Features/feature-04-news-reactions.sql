@@ -18,6 +18,7 @@ alter table public.reactions enable row level security;
 
 
 -- Logged-in users can view reactions
+drop policy if exists "Users can view reactions" on public.reactions;
 create policy "Users can view reactions"
 on public.reactions
 for select
@@ -26,6 +27,7 @@ using (true);
 
 
 -- Users can add their own reactions
+drop policy if exists "Users can add own reactions" on public.reactions;
 create policy "Users can add own reactions"
 on public.reactions
 for insert
@@ -34,6 +36,7 @@ with check (auth.uid() = user_id);
 
 
 -- Users can update their own reactions
+drop policy if exists "Users can update own reactions" on public.reactions;
 create policy "Users can update own reactions"
 on public.reactions
 for update
@@ -43,6 +46,7 @@ with check (auth.uid() = user_id);
 
 
 -- Users can remove their own reactions
+drop policy if exists "Users can remove own reactions" on public.reactions;
 create policy "Users can remove own reactions"
 on public.reactions
 for delete

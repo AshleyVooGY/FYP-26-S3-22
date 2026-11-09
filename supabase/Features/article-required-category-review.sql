@@ -2,7 +2,7 @@
 -- Required category validation is available to all authenticated users.
 -- Existing articles are retained; only new publication/content changes are gated.
 begin;
-create table public.article_category_reviews (
+create table if not exists public.article_category_reviews (
  id uuid primary key default gen_random_uuid(),
  user_id uuid not null references public.profiles(id) on delete cascade,
  article_id bigint references public.articles(id) on delete cascade,
@@ -18,16 +18,17 @@ create table public.article_category_reviews (
  reviewed_at timestamptz
 );
 alter table public.article_category_reviews enable row level security;
+drop policy if exists "Own or admin category reviews" on public.article_category_reviews;
 create policy "Own or admin category reviews" on public.article_category_reviews for select to authenticated
  using(user_id=auth.uid() or public.is_system_admin());
 revoke all on public.article_category_reviews from public,anon,authenticated;
 grant select on public.article_category_reviews to authenticated;
-create index article_category_review_owner_snapshot on public.article_category_reviews(user_id,created_at);
-create index article_category_review_pending on public.article_category_reviews(created_at,id) where status='pending';
-alter table public.article_credibility_receipts add column category_review_id uuid references public.article_category_reviews(id) on delete set null;
+create index if not exists article_category_review_owner_snapshot on public.article_category_reviews(user_id,created_at);
+create index if not exists article_category_review_pending on public.article_category_reviews(created_at,id) where status='pending';
+alter table public.article_credibility_receipts add column if not exists category_review_id uuid references public.article_category_reviews(id) on delete set null;
 
 -- The model runs once for credibility and category; only the trusted Edge Function may issue this receipt.
-create function public.issue_article_publish_review(
+create or replace function public.issue_article_publish_review(
  p_user_id uuid,p_title text,p_content text,p_category_ids bigint[],p_tag_ids bigint[],
  p_score numeric,p_critical_issue boolean,p_suggested_category_id bigint,p_category_reason text
 ) returns jsonb language plpgsql security definer set search_path=public as $$
@@ -64,7 +65,7 @@ end $$;
 revoke all on function public.issue_article_publish_review(uuid,text,text,bigint[],bigint[],numeric,boolean,bigint,text) from public,anon,authenticated;
 grant execute on function public.issue_article_publish_review(uuid,text,text,bigint[],bigint[],numeric,boolean,bigint,text) to service_role;
 
-create function public.request_article_category_review(p_review_id uuid,p_reason text,p_article_id bigint)
+create or replace function public.request_article_category_review(p_review_id uuid,p_reason text,p_article_id bigint)
 returns void language plpgsql security definer set search_path=public as $$
 begin
  if auth.uid() is null then raise exception 'Sign in to request a review' using errcode='42501'; end if;
@@ -77,7 +78,7 @@ end $$;
 revoke all on function public.request_article_category_review(uuid,text,bigint) from public,anon;
 grant execute on function public.request_article_category_review(uuid,text,bigint) to authenticated;
 
-create function public.decide_article_category_review(p_review_id uuid,p_approve boolean,p_note text)
+create or replace function public.decide_article_category_review(p_review_id uuid,p_approve boolean,p_note text)
 returns void language plpgsql security definer set search_path=public as $$
 declare target public.article_category_reviews%rowtype;
 begin
@@ -93,7 +94,7 @@ revoke all on function public.decide_article_category_review(uuid,boolean,text) 
 grant execute on function public.decide_article_category_review(uuid,boolean,text) to authenticated;
 
 -- Publication guard applies to direct API writes as well as the workspace RPC.
-create function public.assert_category_publish_review(p_receipt_id uuid,p_user_id uuid,p_snapshot jsonb)
+create or replace function public.assert_category_publish_review(p_receipt_id uuid,p_user_id uuid,p_snapshot jsonb)
 returns void language plpgsql security definer set search_path=public as $$
 begin
  if not exists(select 1 from public.article_credibility_receipts receipt join public.article_category_reviews review on review.id=receipt.category_review_id
@@ -104,7 +105,7 @@ begin
  end if;
 end $$;
 revoke all on function public.assert_category_publish_review(uuid,uuid,jsonb) from public,anon,authenticated;
-create function public.enforce_article_category_publish_review()
+create or replace function public.enforce_article_category_publish_review()
 returns trigger language plpgsql security definer set search_path=public as $$
 declare category_ids bigint[]; tag_ids bigint[]; receipt uuid; snap jsonb;
 begin
@@ -122,6 +123,7 @@ begin
  return new;
 end $$;
 revoke all on function public.enforce_article_category_publish_review() from public,anon,authenticated;
+drop trigger if exists enforce_category_before_publish on public.articles;
 create trigger enforce_category_before_publish before insert or update on public.articles
  for each row execute function public.enforce_article_category_publish_review();
 
@@ -192,14 +194,14 @@ grant execute on function public.save_my_article_workspace(bigint,text,text,bigi
 
 
 -- All users share a bounded quota for the required combined check; no Premium gate.
-create table internal.publish_review_usage (
+create table if not exists internal.publish_review_usage (
  user_id uuid not null references auth.users(id) on delete cascade,
  window_start timestamptz not null,request_count integer not null check(request_count between 1 and 20),
  primary key(user_id,window_start)
 );
 alter table internal.publish_review_usage enable row level security;
 revoke all on internal.publish_review_usage from public,anon,authenticated;
-create function public.claim_publish_review_request()
+create or replace function public.claim_publish_review_request()
 returns boolean language plpgsql security definer set search_path=public as $$
 declare allowed boolean;
 begin
@@ -211,7 +213,7 @@ begin
 end $$;
 revoke all on function public.claim_publish_review_request() from public,anon;
 grant execute on function public.claim_publish_review_request() to authenticated;
-create function public.get_article_category_review_queue(p_after uuid default null)
+create or replace function public.get_article_category_review_queue(p_after uuid default null)
 returns jsonb language plpgsql security definer set search_path=public as $$
 declare cursor_time timestamptz; result jsonb;
 begin

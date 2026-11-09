@@ -1,7 +1,7 @@
 -- Deploy after article-required-category-review.sql. Deploy this BEFORE the updated Edge Function.
 -- Private, exact-version model result cache. No article data or existing review is changed.
 begin;
-create table internal.article_assessment_cache (
+create table if not exists internal.article_assessment_cache (
  user_id uuid not null references auth.users(id) on delete cascade,
  cache_key text not null,
  snapshot jsonb not null,
@@ -14,7 +14,7 @@ create table internal.article_assessment_cache (
 );
 alter table internal.article_assessment_cache enable row level security;
 revoke all on internal.article_assessment_cache from public,anon,authenticated;
-create function public.claim_article_assessment(p_user_id uuid,p_title text,p_content text,p_category_ids bigint[],p_tag_ids bigint[],p_policy text)
+create or replace function public.claim_article_assessment(p_user_id uuid,p_title text,p_content text,p_category_ids bigint[],p_tag_ids bigint[],p_policy text)
 returns jsonb language plpgsql security definer set search_path=public,pg_temp as $$
 declare snap jsonb; key text; entry internal.article_assessment_cache%rowtype; lease uuid:=gen_random_uuid();
 begin
@@ -35,7 +35,7 @@ begin
  where user_id=p_user_id and cache_key=key;
  return jsonb_build_object('state','claimed','token',lease);
 end $$;
-create function public.complete_article_assessment(p_user_id uuid,p_title text,p_content text,p_category_ids bigint[],p_tag_ids bigint[],p_policy text,p_token uuid,p_result jsonb)
+create or replace function public.complete_article_assessment(p_user_id uuid,p_title text,p_content text,p_category_ids bigint[],p_tag_ids bigint[],p_policy text,p_token uuid,p_result jsonb)
 returns void language plpgsql security definer set search_path=public,pg_temp as $$
 declare snap jsonb; key text;
 begin
@@ -47,7 +47,7 @@ begin
  and result is null and lease_until>clock_timestamp();
  if not found then raise exception 'Assessment lease expired'; end if;
 end $$;
-create function public.release_article_assessment(p_user_id uuid,p_title text,p_content text,p_category_ids bigint[],p_tag_ids bigint[],p_policy text,p_token uuid)
+create or replace function public.release_article_assessment(p_user_id uuid,p_title text,p_content text,p_category_ids bigint[],p_tag_ids bigint[],p_policy text,p_token uuid)
 returns void language plpgsql security definer set search_path=public,pg_temp as $$
 declare snap jsonb; key text;
 begin
@@ -56,7 +56,7 @@ begin
  update internal.article_assessment_cache set lease_until=clock_timestamp()
  where user_id=p_user_id and cache_key=key and snapshot=snap and policy=p_policy and token=p_token and result is null;
 end $$;
-create function public.issue_cached_article_review(p_user_id uuid,p_title text,p_content text,p_category_ids bigint[],p_tag_ids bigint[],p_policy text)
+create or replace function public.issue_cached_article_review(p_user_id uuid,p_title text,p_content text,p_category_ids bigint[],p_tag_ids bigint[],p_policy text)
 returns jsonb language plpgsql security definer set search_path=public,pg_temp as $$
 declare snap jsonb; key text; entry internal.article_assessment_cache%rowtype; output jsonb; score numeric; critical boolean; expiry timestamptz;
 begin

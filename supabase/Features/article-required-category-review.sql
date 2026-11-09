@@ -111,7 +111,8 @@ declare category_ids bigint[]; tag_ids bigint[]; receipt uuid; snap jsonb;
 begin
  if new.status<>'published' then return new; end if;
  if tg_op='UPDATE' and old.status='published' and new.title is not distinct from old.title and new.content is not distinct from old.content
- and new.category_id is not distinct from old.category_id and new.author_id is not distinct from old.author_id
+ and new.category_id is not distinct from old.category_id
+ and (new.author_id is not distinct from old.author_id or new.author_id is null)
  and new.published_at is not distinct from old.published_at
  and coalesce(current_setting('app.workspace_article',true),'')<>new.id::text then return new; end if;
  select array_agg(category_id order by category_id) into category_ids from public.article_categories where article_id=new.id;

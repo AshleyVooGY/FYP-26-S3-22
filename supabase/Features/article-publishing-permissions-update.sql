@@ -71,7 +71,8 @@ begin
  if tg_op = 'UPDATE' then
    if old.status = 'published' and new.title is not distinct from old.title
     and new.content is not distinct from old.content and new.category_id is not distinct from old.category_id
-    and new.author_id is not distinct from old.author_id and new.published_at is not distinct from old.published_at then return new; end if;
+    and (new.author_id is not distinct from old.author_id or new.author_id is null)
+    and new.published_at is not distinct from old.published_at then return new; end if;
  end if;
  select array_agg(category_id order by (category_id = new.category_id) desc, category_id)
  into categories from public.article_categories where article_id = new.id;

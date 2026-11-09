@@ -48,6 +48,8 @@ let originalTags = [];
 let originalActivity = true;
 let loadedPreferences;
 let preferencesSaving = false;
+const TAG_PAGE_SIZE = 12;
+let tagPage = 1;
 
 
 // ==========================================================
@@ -57,23 +59,8 @@ let preferencesSaving = false;
 const setupPage =
     document.getElementById("setupPage");
 
-const managePage =
-    document.getElementById("managePage");
-
 const interestGrid =
     document.getElementById("interestGrid");
-
-const preferenceList =
-    document.getElementById("preferenceList");
-
-const selectedInterestsContainer =
-    document.getElementById("selectedInterests");
-
-const interestSelect =
-    document.getElementById("interestSelect");
-
-const savePreferencesButton =
-    document.getElementById("savePreferences");
 
 const skipPreferencesButton =
     document.getElementById("skipPreferences");
@@ -81,15 +68,8 @@ const skipPreferencesButton =
 const cancelButton =
     document.getElementById("cancelButton");
 
-const addInterestButton =
-    document.getElementById("addInterest");
-
 const saveChangesButton =
     document.getElementById("saveChanges");
-
-const successMessage =
-    document.getElementById("successMessage");
-
 
 // ==========================================================
 // AUTHENTICATION
@@ -104,7 +84,7 @@ async function getCurrentUser() { return authCurrentUser(); }
 async function loadCategories() {
  loadedPreferences=await getNewsPreferences();
  categories=loadedPreferences.categories.map(category=>({...category,id:Number(category.id),icon:categoryIcons[category.name] || ICONS.cpu}));
- allTags=loadedPreferences.tags;
+ allTags=[...loadedPreferences.tags].sort((a,b)=>a.name.localeCompare(b.name) || Number(a.id)-Number(b.id));
  originalActivity=loadedPreferences.useActivity;
  document.getElementById('use-reading-activity').checked=originalActivity;
  selectedTags=[...loadedPreferences.tagIds]; originalTags=[...selectedTags];
@@ -159,300 +139,6 @@ function toggleInterest(
     setPreferenceStatus('Unsaved changes. Save preferences to update For You.');
     renderInterestCards();
 
-    renderPreferenceList();
-
-    renderSelectedInterestTags();
-
-    populateInterestSelect();
-
-}
-
-
-// ==========================================================
-// RENDER PREFERENCE LIST
-// ==========================================================
-
-function renderPreferenceList() {
-
-    if (!preferenceList) {
-
-        return;
-
-    }
-
-
-    preferenceList.innerHTML =
-        categories
-            .map(
-                category => {
-
-                    const checked =
-                        selectedInterests.includes(
-                            category.id
-                        );
-
-
-                    return `
-
-                        <label
-                            class="preference-item
-                            ${checked ? "is-checked" : ""}"
-                        >
-
-                            <input
-                                type="checkbox"
-                                value="${category.id}"
-                                ${checked ? "checked" : ""}
-                            />
-
-
-                            <span class="pref-icon">
-                                ${category.icon}
-                            </span>
-
-
-                            <span>
-                                ${escapeHtml(
-                                    category.name
-                                )}
-                            </span>
-
-                        </label>
-
-                    `;
-
-                }
-            )
-            .join("");
-
-
-    preferenceList
-        .querySelectorAll(
-            'input[type="checkbox"]'
-        )
-        .forEach(
-            checkbox => {
-
-                checkbox.addEventListener(
-                    "change",
-                    event => {
-
-                        const categoryId =
-                            Number(
-                                event.target.value
-                            );
-
-
-                        toggleInterest(
-                            categoryId
-                        );
-
-                    }
-                );
-
-            }
-        );
-
-}
-
-
-// ==========================================================
-// RENDER SELECTED INTEREST TAGS
-// ==========================================================
-
-function renderSelectedInterestTags() {
-
-    if (!selectedInterestsContainer) {
-
-        return;
-
-    }
-
-
-    const selectedCategories =
-        categories.filter(
-            category =>
-                selectedInterests.includes(
-                    category.id
-                )
-        );
-
-
-    if (
-        selectedCategories.length === 0
-    ) {
-
-        selectedInterestsContainer.innerHTML = `
-
-            <span>
-                No interests selected.
-            </span>
-
-        `;
-
-        return;
-
-    }
-
-
-    selectedInterestsContainer.innerHTML =
-        selectedCategories
-            .map(
-                category => `
-
-                    <span class="interest-tag">
-
-                        ${escapeHtml(
-                            category.name
-                        )}
-
-                        <button
-                            class="remove-interest"
-                            type="button"
-                            data-category-id="${category.id}"
-                            aria-label="Remove ${escapeHtml(
-                                category.name
-                            )}"
-                        >
-                            ×
-                        </button>
-
-                    </span>
-
-                `
-            )
-            .join("");
-
-
-    selectedInterestsContainer
-        .querySelectorAll(
-            ".remove-interest"
-        )
-        .forEach(
-            button => {
-
-                button.addEventListener(
-                    "click",
-                    event => {
-
-                        event.stopPropagation();
-
-
-                        toggleInterest(
-                            Number(
-                                button.dataset.categoryId
-                            )
-                        );
-
-                    }
-                );
-
-            }
-        );
-
-}
-
-
-// ==========================================================
-// POPULATE SELECT
-// ==========================================================
-
-function populateInterestSelect() {
-
-    if (!interestSelect) {
-
-        return;
-
-    }
-
-
-    const available =
-        categories.filter(
-            category =>
-                !selectedInterests.includes(
-                    category.id
-                )
-        );
-
-
-    interestSelect.innerHTML = `
-
-        <option value="">
-            Choose a category
-        </option>
-
-        ${
-            available
-                .map(
-                    category => `
-
-                        <option
-                            value="${category.id}"
-                        >
-                            ${escapeHtml(
-                                category.name
-                            )}
-                        </option>
-
-                    `
-                )
-                .join("")
-        }
-
-    `;
-
-}
-
-
-// ==========================================================
-// ADD INTEREST
-// ==========================================================
-
-if (addInterestButton) {
-
-    addInterestButton.addEventListener(
-        "click",
-        () => {
-
-            const categoryId =
-                Number(
-                    interestSelect.value
-                );
-
-
-            if (!categoryId) {
-
-                setPreferenceStatus('Please choose a category.', true);
-
-                return;
-
-            }
-
-
-            if (
-                !selectedInterests.includes(
-                    categoryId
-                )
-            ) {
-
-                selectedInterests.push(
-                    categoryId
-                );
-
-            }
-
-
-            renderInterestCards();
-
-            renderPreferenceList();
-
-            renderSelectedInterestTags();
-
-            populateInterestSelect();
-
-        }
-    );
-
 }
 
 
@@ -478,51 +164,6 @@ async function saveCurrentPreferences() {
 }
 
 // ==========================================================
-// SAVE INITIAL PREFERENCES
-// ==========================================================
-
-if (savePreferencesButton) {
-
-    savePreferencesButton.addEventListener(
-        "click",
-        async () => {
-
-            try {
-
-                const saved =
-                    await saveCurrentPreferences();
-
-
-                if (!saved) {
-
-                    return;
-
-                }
-
-
-                setPreferenceStatus('Preferences saved successfully!');
-
-
-                showManagePage();
-
-            } catch (error) {
-
-                console.error(
-                    error
-                );
-
-
-                setPreferenceStatus(error.message || 'Unable to save preferences. Please try again.', true);
-
-            }
-
-        }
-    );
-
-}
-
-
-// ==========================================================
 // SKIP
 // ==========================================================
 
@@ -532,7 +173,7 @@ if (skipPreferencesButton) {
         "click",
         () => {
 
-            showManagePage();
+            document.getElementById('preference-tag-search').focus();
 
         }
     );
@@ -563,7 +204,7 @@ if (saveChangesButton) {
                 }
 
 
-                showManagePage();
+                renderInterestCards();
                 showSuccessMessage();
 
             } catch (error) {
@@ -601,12 +242,6 @@ if (cancelButton) {
             document.getElementById('use-reading-activity').checked=originalActivity;
             renderTagPreferences();
             renderInterestCards();
-
-            renderPreferenceList();
-
-            renderSelectedInterestTags();
-
-            populateInterestSelect();
             setPreferenceStatus('Changes cancelled. Your saved preferences are unchanged.');
 
         }
@@ -620,39 +255,6 @@ if (cancelButton) {
 // ==========================================================
 
 function showSuccessMessage() { setPreferenceStatus('Preferences saved. Your For You feed is ready.'); }
-
-// ==========================================================
-// SHOW MANAGE PAGE
-// ==========================================================
-
-function showManagePage() {
-
-    if (setupPage) {
-
-        setupPage.classList.add(
-            "hidden"
-        );
-
-    }
-
-
-    if (managePage) {
-
-        managePage.classList.remove(
-            "hidden"
-        );
-
-    }
-
-
-    renderPreferenceList();
-
-    renderSelectedInterestTags();
-
-    populateInterestSelect();
-
-}
-
 
 // The shared auth module renders the Settings display name in the header.
 
@@ -701,13 +303,64 @@ function setPreferenceStatus(message,isError=false) {
 }
 function renderTagPreferences() {
  const field=document.getElementById('tag-preferences');
- field.innerHTML=allTags.length ? allTags.map(tag=>`<label class="preference-tag"><input type="checkbox" value="${Number(tag.id)}" ${selectedTags.includes(Number(tag.id))?'checked':''}> ${escapeHtml(tag.name)}</label>`).join('') : '<p>No tags available yet. You can still follow categories.</p>';
- field.querySelectorAll('input').forEach(input=>input.addEventListener('change',()=>{
-  const id=Number(input.value);
-  selectedTags=input.checked ? [...selectedTags,id] : selectedTags.filter(item=>item!==id);
-  setPreferenceStatus('Unsaved changes. Save preferences to update For You.');
- }));
+ const query=document.getElementById('preference-tag-search').value.trim().toLocaleLowerCase();
+ const matches=allTags.filter(tag=>tag.name.toLocaleLowerCase().includes(query));
+ const pages=Math.max(1,Math.ceil(matches.length/TAG_PAGE_SIZE));
+ tagPage=Math.max(1,Math.min(tagPage,pages));
+ const start=(tagPage-1)*TAG_PAGE_SIZE;
+ const followed=new Set(selectedTags);
+ const selected=allTags.filter(tag=>followed.has(Number(tag.id)));
+ document.getElementById('followed-tag-count').textContent=`(${selected.length})`;
+ document.getElementById('clear-followed-tags').hidden=selectedTags.length===0;
+ document.getElementById('followed-tags').innerHTML=selected.length
+  ? selected.map(tag=>`<button class="followed-tag" type="button" data-remove-tag="${Number(tag.id)}" aria-label="Unfollow ${escapeHtml(tag.name)}"><span>${escapeHtml(tag.name)}</span><span aria-hidden="true">×</span></button>`).join('')
+  : '<p class="tag-picker__hint">No tags selected yet. Choose topics below or just follow categories.</p>';
+ field.innerHTML=matches.length ? matches.slice(start,start+TAG_PAGE_SIZE).map(tag=>`<label class="preference-tag" title="${escapeHtml(tag.name)}"><input id="preference-tag-${Number(tag.id)}" type="checkbox" value="${Number(tag.id)}" ${followed.has(Number(tag.id))?'checked':''}><span>${escapeHtml(tag.name)}</span></label>`).join('')
+  : `<p class="tag-picker__hint">${allTags.length ? 'No tags match your search. Try another topic.' : 'No tags available yet. You can still follow categories.'}</p>`;
+ document.getElementById('preference-tag-results').textContent=matches.length ? `Showing ${start+1}–${Math.min(start+TAG_PAGE_SIZE,matches.length)} of ${matches.length} tags` : '0 tags';
+ document.getElementById('clear-tag-search').hidden=!document.getElementById('preference-tag-search').value;
+ document.getElementById('preference-tag-pagination').hidden=pages===1;
+ document.getElementById('preference-tag-page').textContent=`Page ${tagPage} of ${pages}`;
+ document.getElementById('previous-tag-page').disabled=tagPage===1;
+ document.getElementById('next-tag-page').disabled=tagPage===pages;
 }
+function markTagsChanged() {
+ setPreferenceStatus('Unsaved changes. Save preferences to update For You.');
+ renderTagPreferences();
+}
+document.getElementById('tag-preferences').addEventListener('change',event=>{
+ if(preferencesSaving || !event.target.matches('input[type="checkbox"]')) return;
+ const input=event.target,id=Number(input.value),focusId=input.id;
+ selectedTags=input.checked ? [...new Set([...selectedTags,id])] : selectedTags.filter(item=>item!==id);
+ markTagsChanged();
+ document.getElementById(focusId)?.focus({preventScroll:true});
+});
+document.getElementById('followed-tags').addEventListener('click',event=>{
+ const button=event.target.closest('[data-remove-tag]');
+ if(preferencesSaving || !button) return;
+ selectedTags=selectedTags.filter(id=>id!==Number(button.dataset.removeTag));
+ markTagsChanged();
+ document.getElementById('preference-tag-search').focus({preventScroll:true});
+});
+document.getElementById('clear-followed-tags').addEventListener('click',()=>{
+ if(preferencesSaving) return;
+ selectedTags=[];
+ markTagsChanged();
+ document.getElementById('preference-tag-search').focus({preventScroll:true});
+});
+document.getElementById('preference-tag-search').addEventListener('input',()=>{tagPage=1;renderTagPreferences();});
+document.getElementById('preference-tag-search').addEventListener('keydown',event=>{
+ if(event.key!=='Enter' || event.isComposing) return;
+ event.preventDefault();
+ tagPage=1;
+ renderTagPreferences();
+});
+document.getElementById('clear-tag-search').addEventListener('click',()=>{
+ document.getElementById('preference-tag-search').value='';tagPage=1;renderTagPreferences();
+ document.getElementById('preference-tag-search').focus();
+});
+document.getElementById('previous-tag-page').addEventListener('click',()=>{tagPage--;renderTagPreferences();});
+document.getElementById('next-tag-page').addEventListener('click',()=>{tagPage++;renderTagPreferences();});
 async function initialise() {
  const fields=document.getElementById('preference-fields');
  fields.disabled=true;
@@ -718,9 +371,8 @@ async function initialise() {
   if(!currentUser){ window.location.href='login.html'; return; }
   await loadCategories();
   selectedInterests=await loadUserPreferences(); originalInterests=[...selectedInterests];
-  renderInterestCards(); renderPreferenceList(); renderSelectedInterestTags(); populateInterestSelect();
-  if(selectedInterests.length || selectedTags.length) showManagePage();
-  else { setupPage.classList.remove('hidden');managePage.classList.add('hidden'); }
+  renderInterestCards();
+  setupPage.classList.remove('hidden');
   setPreferenceStatus('Choose categories and tags for For You. You can clear all selections at any time.');
   fields.disabled=false;
  } catch(error) {

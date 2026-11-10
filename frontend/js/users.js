@@ -20,7 +20,7 @@ function rowHtml(p) {
   return `<tr>
     <td>${escapeHtml(p.display_name)}${isSelf ? ' (you)' : ''}<small class="user-account-id">ID: ${escapeHtml(p.id)}</small></td>
     <td><span class="badge">${roleName(p.role)}</span></td>
-    <td><button class="article-action is-live" data-id="${escapeHtml(p.id)}" data-next-role="${isAdmin ? 'registered_user' : 'system_admin'}" ${isSelf ? 'disabled title="Can\'t change your own role"' : ''}>${isAdmin ? 'Demote to User' : 'Promote to Admin'}</button></td>
+    <td><button class="article-action${isSelf ? '' : ' is-live'}" data-id="${escapeHtml(p.id)}" data-next-role="${isAdmin ? 'registered_user' : 'system_admin'}" ${isSelf ? 'disabled title="Can\'t change your own role"' : ''}>${isAdmin ? 'Demote to User' : 'Promote to Admin'}</button></td>
     <td><span class="plan-badge plan-badge--${isPremium ? 'premium' : 'free'}">${tierName(p.subscription_tier)}</span></td>
     <td><button class="article-action is-live" data-id="${escapeHtml(p.id)}" data-next-tier="${isPremium ? 'free' : 'premium'}">${isPremium ? 'Downgrade to Free' : 'Upgrade to Premium'}</button></td>
   </tr>`;
@@ -43,9 +43,9 @@ function render() {
     <thead><tr><th>Name / Account ID</th><th>Role</th><th></th><th>Plan</th><th></th></tr></thead>
     <tbody>${visibleProfiles.map(rowHtml).join('')}</tbody></table></div>
     <nav class="users-pagination" aria-label="User list pages" ${pageCount === 1 ? 'hidden' : ''}>
-      <button type="button" class="article-action is-live" data-users-page="${usersPage - 1}" ${usersPage === 1 ? 'disabled' : ''}>Previous</button>
+      <button type="button" class="article-action${usersPage === 1 ? '' : ' is-live'}" data-users-page="${usersPage - 1}" ${usersPage === 1 ? 'disabled' : ''}>Previous</button>
       <span>Page ${usersPage} of ${pageCount}</span>
-      <button type="button" class="article-action is-live" data-users-page="${usersPage + 1}" ${usersPage === pageCount ? 'disabled' : ''}>Next</button>
+      <button type="button" class="article-action${usersPage === pageCount ? '' : ' is-live'}" data-users-page="${usersPage + 1}" ${usersPage === pageCount ? 'disabled' : ''}>Next</button>
     </nav></div>`;
 }
 

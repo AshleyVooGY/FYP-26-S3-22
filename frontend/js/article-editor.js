@@ -329,7 +329,7 @@ function render() {
           <div id="selected-tags" class="tag-selected" aria-label="Selected tags"></div>
           <div id="new-tag-controls" class="tag-new-controls" hidden>
             <label for="new-tag-name">New tag name</label>
-            <div class="tag-new-row"><input id="new-tag-name" type="text" maxlength="100" placeholder="e.g. Public Transport" /><button type="button" class="article-editor__btn" id="add-tag-btn">Add tag</button></div>
+            <div class="tag-new-row"><input id="new-tag-name" type="text" maxlength="100" placeholder="e.g. Public Transport" /><button type="button" class="article-editor__btn" id="add-tag-btn">Add tag</button><button type="button" class="article-editor__btn" id="cancel-tag-btn">Cancel</button></div>
           </div>
           <p id="tag-status" class="classification-help" role="status" aria-live="polite"></p>
           <div class="classification-picker" id="tag-options" hidden>
@@ -378,10 +378,12 @@ function render() {
   bindTagSearch();
   document.getElementById('new-tag-toggle').addEventListener('click', () => {
     const panel = document.getElementById('new-tag-controls');
-    panel.hidden = !panel.hidden;
-    document.getElementById('new-tag-toggle').setAttribute('aria-expanded', String(!panel.hidden));
-    if (!panel.hidden) document.getElementById('new-tag-name').focus();
+    if (!panel.hidden) return cancelNewTag();
+    panel.hidden = false;
+    document.getElementById('new-tag-toggle').setAttribute('aria-expanded', 'true');
+    document.getElementById('new-tag-name').focus();
   });
+  document.getElementById('cancel-tag-btn').addEventListener('click', cancelNewTag);
   document.getElementById('add-tag-btn').addEventListener('click', handleAddTag);
   document.getElementById('new-tag-name').addEventListener('keydown', event => {
     if (event.key === 'Enter') { event.preventDefault(); handleAddTag(); }
@@ -498,6 +500,14 @@ const normaliseTagName = name => String(name).trim().toLowerCase();
 function tagStatus(message = '') {
   document.getElementById('tag-status').textContent = message;
 }
+function cancelNewTag() {
+  if (addingTag) return;
+  document.getElementById('new-tag-controls').hidden = true;
+  document.getElementById('new-tag-name').value = '';
+  document.getElementById('new-tag-toggle').setAttribute('aria-expanded', 'false');
+  tagStatus();
+  document.getElementById('new-tag-toggle').focus();
+}
 function updateTagCount() {
   const count = selectedTags().length;
   document.getElementById('tag-count').textContent = `${count}/${MAX_ARTICLE_TAGS} selected`;
@@ -599,6 +609,7 @@ async function handleAddTag() {
   updatePublishingState();
   const button = document.getElementById('add-tag-btn');
   button.disabled = true;
+  document.getElementById('cancel-tag-btn').disabled = true;
   tagStatus('Adding tag…');
   try {
     const tag = existing || await getOrCreateTag(name);
@@ -609,7 +620,7 @@ async function handleAddTag() {
     document.getElementById('new-tag-toggle').setAttribute('aria-expanded', 'false');
     document.getElementById('tag-search').focus();
   } catch (error) { tagStatus(error.message); }
-  finally { addingTag = false; button.disabled = false; updatePublishingState(); }
+  finally { addingTag = false; button.disabled = false; document.getElementById('cancel-tag-btn').disabled = false; updatePublishingState(); }
 }
 
 function handleArticleInput() {

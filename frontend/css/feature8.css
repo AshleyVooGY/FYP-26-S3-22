@@ -228,8 +228,8 @@
 .tag-new-controls[hidden] { display:none; }
 .tag-new-controls { margin-bottom:10px; }
 .tag-new-controls label { display:block; margin-bottom:6px; font-size:12px; }
-.tag-new-row { display:flex; gap:8px; align-items:center; }
-.tag-new-row input { min-width:0; flex:1; }
+.tag-new-row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.tag-new-row input { min-width:0; flex:1 1 180px; }
 .tag-new-toggle:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
 
 /* Search existing tags without expanding the full shared tag list. */

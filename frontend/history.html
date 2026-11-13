@@ -198,7 +198,7 @@
 
         <span id="user-label">
           Guest
-        </span>
+        </span><script>try{var n=localStorage.getItem("cachedDisplayName");if(n){var l=document.getElementById("user-label");if(l)l.textContent=n;}}catch(e){}</script>
 
       </a>
 
@@ -217,7 +217,7 @@
       </div>
     </main>
   </div>
-  <script type="module" src="js/auth.js?v=user-chip-fix-20261113"></script>
+  <script type="module" src="js/auth.js?v=session-check-fix-20261113"></script>
   <script type="module" src="js/history.js?v=premium-approval-20261105"></script>
 </body>
 </html>

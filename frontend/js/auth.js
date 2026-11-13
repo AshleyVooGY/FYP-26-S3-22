@@ -26,11 +26,17 @@ export async function signOut() {
 }
 
 export async function getCurrentUser() {
-  const { data, error } = await supabase.auth.getUser();
+  // getSession() reads the already-stored (and auto-refreshed) session
+  // from local storage with no network round trip, unlike getUser(),
+  // which re-validates against the Supabase server on every call. That
+  // network dependency made this intermittently and briefly report "no
+  // user" on a slow/flaky connection, flashing the shared nav to its
+  // guest state even though the session was still valid.
+  const { data, error } = await supabase.auth.getSession();
   if (error) {
     return null;
   }
-  return data.user;
+  return data.session?.user ?? null;
 }
 
 // Guards pages that require a Registered User. Redirects guests to login.html.

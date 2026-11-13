@@ -1,4 +1,4 @@
-import { requireAuth } from "./auth.js?v=user-chip-fix-20261113";
+import { requireAuth } from "./auth.js?v=session-check-fix-20261113";
 import { getMyArticles, deleteArticle } from "../../services/feature8Service.js?v=apply-tags-20261024";
 import { escapeHtml, formatCount, formatRelativeTime, thumbHtml } from "./format.js";
 

@@ -1,4 +1,4 @@
-import { signIn, getCurrentUser } from "./auth.js?v=user-chip-fix-20261113";
+import { signIn, getCurrentUser } from "./auth.js?v=session-check-fix-20261113";
 
 const form = document.getElementById("login-form");
 const submitBtn = document.getElementById("submit-btn");

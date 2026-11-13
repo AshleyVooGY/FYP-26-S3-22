@@ -1,4 +1,4 @@
-import { requireAuth } from "./auth.js?v=user-chip-fix-20261113";
+import { requireAuth } from "./auth.js?v=session-check-fix-20261113";
 import { getReadingHistory } from "../../services/readingHistoryService.js";
 import { formatCount, formatRelativeTime, escapeHtml, thumbHtml } from "./format.js";
 

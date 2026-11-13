@@ -1,4 +1,4 @@
-import { requireAuth } from "./auth.js?v=user-chip-fix-20261113";
+import { requireAuth } from "./auth.js?v=session-check-fix-20261113";
 import { getTrendingArticles } from "../../services/feature5Service.js?v=account-settings-20261027";
 import { formatCount, formatRelativeTime, escapeHtml, thumbHtml } from "./format.js";
 import { renderPagination as renderPaginationControl } from "./pagination.js";

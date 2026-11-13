@@ -98,7 +98,7 @@
           </svg>
 
         </span>
-        <span id="user-label">Guest</span>
+        <span id="user-label">Guest</span><script>try{var n=localStorage.getItem("cachedDisplayName");if(n){var l=document.getElementById("user-label");if(l)l.textContent=n;}}catch(e){}</script>
       </a>
     </div>
   </header>
@@ -120,7 +120,7 @@
   </div>
 
   <div id="toast-region" class="toast-region" aria-live="polite"></div>
-  <script type="module" src="js/auth.js?v=user-chip-fix-20261113"></script>
+  <script type="module" src="js/auth.js?v=session-check-fix-20261113"></script>
   <script type="module" src="js/for-you.js?v=premium-approval-20261105"></script>
 </body>
 </html>

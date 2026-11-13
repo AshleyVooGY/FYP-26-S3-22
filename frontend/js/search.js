@@ -1,4 +1,4 @@
-import { requireAuth } from "./auth.js?v=user-chip-fix-20261113";
+import { requireAuth } from "./auth.js?v=session-check-fix-20261113";
 import { escapeHtml, formatCount, formatRelativeTime, thumbHtml } from "./format.js";
 import { getCategories, searchArticlesPage } from "../features-01-02-10/featureService.js?v=classification-pages-20261105";
 

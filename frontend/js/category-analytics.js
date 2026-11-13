@@ -1,4 +1,4 @@
-import { requireAdmin } from "./auth.js?v=user-chip-fix-20261113";
+import { requireAdmin } from "./auth.js?v=session-check-fix-20261113";
 import { getCategoryPopularity } from "../../services/feature6Service.js";
 import { formatCount, escapeHtml, forbiddenStateHtml } from "./format.js";
 

@@ -27,7 +27,7 @@
       <a class="btn-publish is-live" href="article-editor.html">+ Publish</a>
       <a href="login.html" class="user-chip" id="user-chip">
         <span class="user-chip__avatar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-1.5A4.5 4.5 0 0 0 15.5 15h-7A4.5 4.5 0 0 0 4 19.5V21"/><circle cx="12" cy="7.5" r="4"/></svg></span>
-        <span id="user-label">Guest</span>
+        <span id="user-label">Guest</span><script>try{var n=localStorage.getItem("cachedDisplayName");if(n){var l=document.getElementById("user-label");if(l)l.textContent=n;}}catch(e){}</script>
       </a>
     </div>
   </header>
@@ -44,7 +44,7 @@
     </main>
   </div>
 
-  <script type="module" src="js/auth.js?v=user-chip-fix-20261113"></script>
+  <script type="module" src="js/auth.js?v=session-check-fix-20261113"></script>
   <script type="module" src="js/category-analytics.js?v=premium-approval-20261105"></script>
 </body>
 </html>

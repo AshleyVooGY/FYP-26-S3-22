@@ -1,4 +1,4 @@
-import { requireAdmin } from "./auth.js?v=user-chip-fix-20261113";
+import { requireAdmin } from "./auth.js?v=session-check-fix-20261113";
 import { getAllProfiles, setUserRole, setUserSubscriptionTier } from "../../services/userManagementService.js?v=required-category-20261022";
 import { getPendingPremiumRequests, reviewPremiumUpgrade } from "../../services/premiumService.js?v=premium-approval-20261105";
 import { escapeHtml, forbiddenStateHtml } from "./format.js";

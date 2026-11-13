@@ -4,7 +4,7 @@ import { supabase } from "../../config/supabaseClient.js";
 
 import {
     requireAuth
-} from "./auth.js?v=user-chip-fix-20261113";
+} from "./auth.js?v=session-check-fix-20261113";
 
 import {
     getArticleById,

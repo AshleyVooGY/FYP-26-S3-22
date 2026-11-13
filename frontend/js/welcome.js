@@ -1,4 +1,4 @@
-import { getCurrentUser } from "./auth.js?v=premium-approval-20261105";
+import { getCurrentUser } from "./auth.js?v=user-chip-fix-20261113";
 import { getTrendingArticles } from "../../services/feature5Service.js?v=account-settings-20261027";
 import { escapeHtml, formatCount } from "./format.js";
 

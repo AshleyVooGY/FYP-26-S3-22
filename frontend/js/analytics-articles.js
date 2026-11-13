@@ -1,4 +1,4 @@
-import { requireAdmin } from "./auth.js?v=premium-approval-20261105";
+import { requireAdmin } from "./auth.js?v=user-chip-fix-20261113";
 import { getArticleViewStats } from "../../services/feature6Service.js";
 import { formatCount, formatRelativeTime, escapeHtml, forbiddenStateHtml } from "./format.js";
 import { renderPagination } from "./pagination.js";

@@ -1,4 +1,4 @@
-import { requireAuth } from "./auth.js?v=premium-approval-20261105";
+import { requireAuth } from "./auth.js?v=user-chip-fix-20261113";
 import {
   getCategories,
   getTags,

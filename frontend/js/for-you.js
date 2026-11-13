@@ -1,4 +1,4 @@
-import { requireAuth } from './auth.js?v=premium-approval-20261105';
+import { requireAuth } from './auth.js?v=user-chip-fix-20261113';
 import { getPersonalizedNews } from '../../services/personalizationService.js?v=feed-selection-20261104';
 import { escapeHtml, thumbHtml, formatRelativeTime, formatCount } from './format.js';
 const grid=document.getElementById('feed-grid'),status=document.getElementById('feed-status'),state=document.getElementById('feed-state');

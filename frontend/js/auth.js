@@ -21,6 +21,7 @@ export async function signIn(email, password) {
 }
 
 export async function signOut() {
+  try { localStorage.removeItem("cachedDisplayName"); } catch { /* ignore */ }
   return supabase.auth.signOut();
 }
 
@@ -190,6 +191,22 @@ function wirePrimaryNavigation() {
   });
 }
 
+const CACHED_NAME_KEY = "cachedDisplayName";
+
+// Shows the last known display name immediately, before the Supabase
+// session/profile round-trip resolves, so a returning user doesn't see
+// the page flash "Guest" (or nothing) first on every single navigation.
+// renderUserChip() below still fetches the real value and corrects the
+// label if it has changed since the cache was written.
+(function paintCachedUserChipEarly() {
+  const label = document.getElementById("user-label");
+  if (!label) return;
+  try {
+    const cached = localStorage.getItem(CACHED_NAME_KEY);
+    if (cached) label.textContent = cached;
+  } catch { /* localStorage can be unavailable (private mode, etc). */ }
+})();
+
 async function renderUserChip() {
   const label = document.getElementById("user-label");
   const chip = document.getElementById("user-chip");
@@ -199,8 +216,9 @@ async function renderUserChip() {
 
     setupNotifications(user);
     if (user) {
-      label.textContent = "Account";
-      label.textContent = await getMyDisplayName(user);
+      const name = await getMyDisplayName(user);
+      label.textContent = name;
+      try { localStorage.setItem(CACHED_NAME_KEY, name); } catch { /* ignore */ }
       if (chip) {
         chip.href = "settings.html";
         chip.removeAttribute("data-logout");
@@ -208,6 +226,7 @@ async function renderUserChip() {
       }
     } else {
       label.textContent = "Guest";
+      try { localStorage.removeItem(CACHED_NAME_KEY); } catch { /* ignore */ }
       if (chip) {
         chip.href = "login.html";
         chip.removeAttribute("data-logout");

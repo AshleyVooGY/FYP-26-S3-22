@@ -1,4 +1,4 @@
-import { requireAdmin } from "./auth.js?v=premium-approval-20261105";
+import { requireAdmin } from "./auth.js?v=user-chip-fix-20261113";
 import {
   getAnalyticsOverview,
   getArticleViewStats,

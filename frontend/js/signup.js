@@ -1,4 +1,4 @@
-import { signUp, getCurrentUser } from "./auth.js?v=premium-approval-20261105";
+import { signUp, getCurrentUser } from "./auth.js?v=user-chip-fix-20261113";
 
 const form = document.getElementById("signup-form");
 const submitBtn = document.getElementById("submit-btn");
